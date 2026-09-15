@@ -686,7 +686,9 @@ p {
   object-fit: cover;
 }
 
-.product__gallery figure:first-child:nth-last-child(1) {
+/* An odd image count would leave a hole in the two-column mosaic, so the last
+   one spans the full width instead — which is what the source site does. */
+.product__gallery figure:last-child:nth-child(odd) {
   grid-column: span 2;
   aspect-ratio: 4 / 3;
 }
@@ -1903,8 +1905,9 @@ p {
   .product__gallery {
     grid-template-columns: 1fr;
   }
-  .product__gallery figure:first-child:nth-last-child(1) {
+  .product__gallery figure:last-child:nth-child(odd) {
     grid-column: auto;
+    aspect-ratio: 1 / 1;
   }
   .field-row {
     grid-template-columns: 1fr;
