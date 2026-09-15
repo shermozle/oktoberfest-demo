@@ -1,0 +1,14 @@
+{
+  "name": "laneway-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mocked Laneway storefront for demonstrating Amplitude and Braze together. Static, no dependencies.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "catalog": "node scripts/build-catalog.mjs",
+    "images": "./scripts/fetch-images.sh",
+    "serve": "python3 -m http.server 8000 --directory docs",
+    "check": "node scripts/check-links.mjs"
+  }
+}

@@ -1,0 +1,3439 @@
+{
+  "site": {
+    "name": "Laneway",
+    "announcement": "Melbourne-designed branded merchandise, made to be kept.",
+    "logo": "assets/img/site/logo.jpg",
+    "logoRemote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/Laneway_Logo.jpg?v=1774775441&width=400",
+    "currency": "AUD",
+    "footerNote": "Laneway is a simulated teaching store by RMIT's Marketing Technology Lab.",
+    "footerNote2": "Nothing here is real or for sale.",
+    "newsletterHeading": "Join our email list",
+    "newsletterBody": "Be first to see new collections and collaborations."
+  },
+  "pages": {
+    "about": {
+      "title": "About this store",
+      "lede": "Laneway isn't real — and that's the point.",
+      "body": [
+        "Most of what shapes a modern shopping experience is invisible. The email that arrives just after you abandon a cart. The \"you might also like\" that's quietly built from your browsing. The way three different analytics tools can watch the same click and count it three different ways.",
+        "Laneway exists to make all of that visible. It's a fully working store — real storefront, real product data, real marketing technology — built by RMIT University's Marketing Technology Lab so students can get inside the machinery instead of reading about it.",
+        "Everything you see is simulated for teaching. The products won't ship. The customers are personas. Southbank Coffee Co. and Volta Studio are invented brands; RMIT's own products appear here under a teaching arrangement. No real orders, no real payments, no real personal data.",
+        "The technology underneath, though, is exactly what the industry runs on. That's the part we want you to see."
+      ]
+    },
+    "services": {
+      "title": "Merch your audience actually wants",
+      "lede": "Laneway is a Melbourne design studio. We design branded merchandise and retail experiences for brands.",
+      "whatWeDo": "Most branded merch is an afterthought. We treat it as design — from a single considered collection to a full pop-up launch, we make merchandise people choose to keep.",
+      "servicesHeading": "You've already seen our work, now be part of it",
+      "items": [
+        {
+          "name": "Brand Merch Audit",
+          "price": "From $1,500",
+          "body": "A clear-eyed review of what your brand puts into the world. We audit your current merch, benchmark it, and hand back a prioritised set of recommendations — what to keep, cut, and create.",
+          "bestFor": "Best for brands whose existing merch isn't landing."
+        },
+        {
+          "name": "Custom Collection Design",
+          "price": "From $5,000",
+          "body": "A bespoke branded collection, designed end to end — concept, design, materials and production-ready specs, the way we built the Southbank Coffee Co. range.",
+          "bestFor": "Best for brands launching or refreshing a merch line."
+        },
+        {
+          "name": "Pop-Up & Launch",
+          "price": "From $15,000",
+          "body": "The full experience — we design, build and launch a physical or digital pop-up that brings your brand to life in a space, the way Laneway built its own.",
+          "bestFor": "Best for launches, activations and flagship moments."
+        }
+      ],
+      "enquiryNote": "Tell us what you're working on and we'll be in touch within two business days.",
+      "disclaimer": "Laneway is a teaching simulation by RMIT's Marketing Technology Lab. Enquiries demonstrate how B2B marketing technology works and won't result in a real engagement."
+    },
+    "home": {
+      "heroHeading": "COOL MERCH FROM COOL BRANDS",
+      "heroSub": "Laneway makes merch for your favourite brands.",
+      "heroImage": "assets/img/site/hero.webp",
+      "heroRemote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SB_Reference.png?v=1782041236&width=2400",
+      "pitchHeading": "OUR SHOP IS OUR PORTFOLIO",
+      "pitchBody": "Laneway works with brands to design custom merchandise that reflects who they are. Every product in our shop began as a client collaboration or a studio project — so our retail range is proof of what we do. If you like what you see, imagine what we could make for your brand.",
+      "collectionListHeading": "SHOP BY COLLECTION",
+      "collectionListSub": "Every label here is a brand we've designed for. Browse the work by who it was made with.",
+      "signatureHeading": "THE SIGNATURE RANGE",
+      "signatureSub": "The work we make to no brief but our own — limited, considered, made at the studio's highest standard."
+    },
+    "site": {
+      "name": "Laneway",
+      "announcement": "Melbourne-designed branded merchandise, made to be kept.",
+      "logo": "assets/img/site/logo.jpg",
+      "logoRemote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/Laneway_Logo.jpg?v=1774775441&width=400",
+      "currency": "AUD",
+      "footerNote": "Laneway is a simulated teaching store by RMIT's Marketing Technology Lab.",
+      "footerNote2": "Nothing here is real or for sale.",
+      "newsletterHeading": "Join our email list",
+      "newsletterBody": "Be first to see new collections and collaborations."
+    }
+  },
+  "collections": [
+    {
+      "handle": "accessories",
+      "title": "Accessories",
+      "subtitle": "Totes, notebooks and the small things — the finishing pieces of the collection.",
+      "image": "assets/img/products/SBNotebook1.webp",
+      "remoteImage": null,
+      "isBrand": false,
+      "products": [
+        "southbank-notebook",
+        "laneway-canvas-tote",
+        "limited-edition-art-print",
+        "the-makers-gift-set",
+        "laneway-weekender-bag",
+        "laneway-leather-cardholder",
+        "southbank-tote",
+        "southbank-coaster-set",
+        "laneway-rmit-a5-notebook",
+        "laneway-rmit-tote"
+      ]
+    },
+    {
+      "handle": "all-tees",
+      "title": "All Tees",
+      "subtitle": "Every tee in the store, across all three labels. Same staple, three different houses.",
+      "image": "assets/img/products/RMIT-Store-Everyday-Tee-White-Marle-Modelled-Front-Single-Model-Campus.webp",
+      "remoteImage": null,
+      "isBrand": false,
+      "products": [
+        "laneway-rmit-essential-tee",
+        "laneway-studio-tee",
+        "southbank-barista-tee"
+      ]
+    },
+    {
+      "handle": "all-totes",
+      "title": "All Totes",
+      "subtitle": "Every tote we carry, from each brand in the range.",
+      "image": "assets/img/products/LWTote.webp",
+      "remoteImage": null,
+      "isBrand": false,
+      "products": [
+        "laneway-canvas-tote",
+        "southbank-tote",
+        "laneway-rmit-tote"
+      ]
+    },
+    {
+      "handle": "apparel",
+      "title": "Apparel",
+      "subtitle": "Tees, hoodies, caps and more — across every label in the range.",
+      "image": "assets/img/products/LWJacket1.webp",
+      "remoteImage": null,
+      "isBrand": false,
+      "products": [
+        "heavyweight-studio-jacket",
+        "laneway-cap",
+        "laneway-studio-crew",
+        "laneway-studio-tee",
+        "laneway-rmit-essential-hoodie",
+        "laneway-rmit-essential-tee",
+        "laneway-rmit-flex-fit-cap",
+        "southbank-apron",
+        "southbank-barista-tee",
+        "southbank-beanie"
+      ]
+    },
+    {
+      "handle": "drinkware",
+      "title": "Drinkware",
+      "subtitle": "Cups, mugs and bottles built for the daily ritual, from every brand we work with.",
+      "image": "assets/img/products/SBMug3.webp",
+      "remoteImage": null,
+      "isBrand": false,
+      "products": [
+        "southbank-mug",
+        "laneway-rmit-everyday-bottle",
+        "southbank-pour-over-dripper",
+        "laneway-mug",
+        "laneway-flask",
+        "laneway-reusable-cup",
+        "southbank-reusable-cup",
+        "laneway-rmit-essential-mug",
+        "laneway-rmit-everyday-reusable-cup"
+      ]
+    },
+    {
+      "handle": "laneway",
+      "title": "Laneway",
+      "subtitle": "Our own studio line — the pieces we make when the brief is ours.",
+      "image": "assets/img/collections/LW_Banner_with_jacket.webp",
+      "remoteImage": "https://cdn.shopify.com/s/files/1/0806/5571/2515/collections/LW_Banner_with_jacket.png?v=1782036171",
+      "isBrand": true,
+      "products": [
+        "heavyweight-studio-jacket",
+        "laneway-canvas-tote",
+        "limited-edition-art-print",
+        "the-makers-gift-set",
+        "laneway-weekender-bag",
+        "laneway-leather-cardholder",
+        "laneway-mug",
+        "laneway-flask",
+        "laneway-reusable-cup",
+        "laneway-cap",
+        "laneway-studio-crew",
+        "laneway-studio-tee"
+      ]
+    },
+    {
+      "handle": "new-season",
+      "title": "New Season",
+      "subtitle": "The latest drop in the Laneway range.",
+      "image": "assets/img/products/LWJacket1.webp",
+      "remoteImage": null,
+      "isBrand": false,
+      "products": [
+        "heavyweight-studio-jacket",
+        "southbank-notebook",
+        "southbank-mug",
+        "laneway-canvas-tote",
+        "laneway-rmit-everyday-bottle",
+        "laneway-rmit-essential-tee",
+        "limited-edition-art-print",
+        "the-makers-gift-set",
+        "laneway-weekender-bag",
+        "laneway-leather-cardholder",
+        "southbank-tote",
+        "southbank-pour-over-dripper",
+        "laneway-mug",
+        "laneway-flask",
+        "laneway-reusable-cup",
+        "laneway-cap",
+        "laneway-studio-crew",
+        "laneway-studio-tee",
+        "southbank-coaster-set",
+        "southbank-reusable-cup",
+        "southbank-beanie",
+        "southbank-apron",
+        "southbank-barista-tee",
+        "laneway-rmit-a5-notebook",
+        "laneway-rmit-tote",
+        "laneway-rmit-essential-mug",
+        "laneway-rmit-everyday-reusable-cup",
+        "laneway-rmit-flex-fit-cap",
+        "laneway-rmit-essential-hoodie"
+      ]
+    },
+    {
+      "handle": "rmit",
+      "title": "RMIT",
+      "subtitle": "Our collaboration with RMIT University — everyday essentials, brought into the Laneway range.",
+      "image": "assets/img/collections/RMIT-Store-fairtrade-cotton-tote-bag-natural-modelled-close-up-blue-logo.webp",
+      "remoteImage": "https://cdn.shopify.com/s/files/1/0806/5571/2515/collections/RMIT-Store-fairtrade-cotton-tote-bag-natural-modelled-close-up-blue-logo.webp?v=1782036267",
+      "isBrand": true,
+      "products": [
+        "laneway-rmit-everyday-bottle",
+        "laneway-rmit-essential-tee",
+        "laneway-rmit-badge",
+        "laneway-rmit-a5-notebook",
+        "laneway-rmit-tote",
+        "laneway-rmit-essential-mug",
+        "laneway-rmit-everyday-reusable-cup",
+        "laneway-rmit-flex-fit-cap",
+        "laneway-rmit-essential-hoodie"
+      ]
+    },
+    {
+      "handle": "signature",
+      "title": "Signature",
+      "subtitle": "Signature is the work we make to no brief but our own. Where the rest of Laneway is shaped by what a client needs, this is the studio answering only to itself — a small, considered capsule of pieces made in limited numbers and held to a higher standard.",
+      "image": "assets/img/products/LWJacket1.webp",
+      "remoteImage": null,
+      "isBrand": false,
+      "products": [
+        "heavyweight-studio-jacket",
+        "limited-edition-art-print",
+        "the-makers-gift-set"
+      ]
+    },
+    {
+      "handle": "southbank-coffee-co",
+      "title": "Southbank Coffee Co.",
+      "subtitle": "Branded merchandise we designed for Southbank Coffee Co., a Melbourne specialty roaster.",
+      "image": "assets/img/collections/SB_Header.webp",
+      "remoteImage": "https://cdn.shopify.com/s/files/1/0806/5571/2515/collections/SB_Header.png?v=1782036299",
+      "isBrand": true,
+      "products": [
+        "southbank-notebook",
+        "southbank-mug",
+        "southbank-tote",
+        "southbank-pour-over-dripper",
+        "southbank-coaster-set",
+        "southbank-reusable-cup",
+        "southbank-beanie",
+        "southbank-apron",
+        "southbank-barista-tee"
+      ]
+    }
+  ],
+  "products": [
+    {
+      "handle": "limited-edition-art-print",
+      "title": "Limited Edition Art Print",
+      "brand": "Laneway",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:premium",
+        "type:print"
+      ],
+      "tier": "premium",
+      "season": "2026s1",
+      "typeTag": "print",
+      "priceMin": 140,
+      "priceMax": 140,
+      "images": [
+        {
+          "src": "assets/img/products/LWPrint.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWPrint.png?v=1782034320",
+          "alt": "Limited Edition Art Print"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440119984387",
+          "title": "Default Title",
+          "price": 140,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "Once a season we make something with no brief but our own."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "An original studio artwork, giclée-printed on cotton rag in an edition of fifty, each signed and numbered, sized to a standard frame so it's easy to live with."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Giclée on 310gsm cotton rag",
+            "A2",
+            "Edition of 50, signed and numbered",
+            "Unframed"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING Once a season we make something with no brief but our own. THE DECISIONS An original studio artwork, giclée-printed on cotton rag in an edition of fifty, each signed and numbered, sized to a standard frame so it's easy to live with. DETAILS Giclée on 310gsm cotton rag A2 Edition of 50, signed and numbered Unframed",
+      "publishedAt": "2026-06-20T21:53:30+10:00"
+    },
+    {
+      "handle": "the-makers-gift-set",
+      "title": "The Maker's Gift Set",
+      "brand": "Laneway",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:premium",
+        "type:giftset"
+      ],
+      "tier": "premium",
+      "season": "2026s1",
+      "typeTag": "giftset",
+      "priceMin": 120,
+      "priceMax": 120,
+      "images": [
+        {
+          "src": "assets/img/products/LWGift.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWGift.png?v=1782034374",
+          "alt": "The Maker's Gift Set"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440117657859",
+          "title": "Default Title",
+          "price": 120,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "The set we assemble for clients on launch day, opened up to everyone."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "Our cardholder, the studio mug and a numbered print, boxed in a cloth-wrapped case with a hand-finished closure — built to be given, not just bought."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Includes leather cardholder, studio mug, A4 numbered print",
+            "Cloth-wrapped rigid box",
+            "Ribbon closure"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING The set we assemble for clients on launch day, opened up to everyone. THE DECISIONS Our cardholder, the studio mug and a numbered print, boxed in a cloth-wrapped case with a hand-finished closure — built to be given, not just bought. DETAILS Includes leather cardholder, studio mug, A4 numbered print Cloth-wrapped rigid box Ribbon closure",
+      "publishedAt": "2026-06-20T21:51:57+10:00"
+    },
+    {
+      "handle": "heavyweight-studio-jacket",
+      "title": "Heavyweight Studio Jacket",
+      "brand": "Laneway",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:premium",
+        "type:jacket"
+      ],
+      "tier": "premium",
+      "season": "2026s1",
+      "typeTag": "jacket",
+      "priceMin": 165,
+      "priceMax": 165,
+      "images": [
+        {
+          "src": "assets/img/products/LWJacket1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWJacket1.png?v=1782035076",
+          "alt": "Heavyweight Studio Jacket"
+        },
+        {
+          "src": "assets/img/products/LWJacketworn.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWJacketworn.png?v=1782035076",
+          "alt": "Heavyweight Studio Jacket"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Gray",
+            "Black"
+          ]
+        },
+        {
+          "name": "Size",
+          "values": [
+            "XL",
+            "L",
+            "M",
+            "S",
+            "XS"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48440115396867",
+          "title": "Gray / XL",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Gray",
+            "XL"
+          ]
+        },
+        {
+          "id": "48440115429635",
+          "title": "Gray / L",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Gray",
+            "L"
+          ]
+        },
+        {
+          "id": "48440115462403",
+          "title": "Gray / M",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Gray",
+            "M"
+          ]
+        },
+        {
+          "id": "48440115495171",
+          "title": "Gray / S",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Gray",
+            "S"
+          ]
+        },
+        {
+          "id": "48440115527939",
+          "title": "Gray / XS",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Gray",
+            "XS"
+          ]
+        },
+        {
+          "id": "48440115560707",
+          "title": "Black / XL",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Black",
+            "XL"
+          ]
+        },
+        {
+          "id": "48440115593475",
+          "title": "Black / L",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Black",
+            "L"
+          ]
+        },
+        {
+          "id": "48440115626243",
+          "title": "Black / M",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Black",
+            "M"
+          ]
+        },
+        {
+          "id": "48440115659011",
+          "title": "Black / S",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Black",
+            "S"
+          ]
+        },
+        {
+          "id": "48440115691779",
+          "title": "Black / XS",
+          "price": 165,
+          "available": true,
+          "options": [
+            "Black",
+            "XS"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "The signature piece — what a year of making things for other people taught us to make for ourselves."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "A 480gsm brushed-back fleece cut like outerwear, a two-way zip, and a collar that stands without help. Made in a run of limited numbers."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "480gsm brushed-back cotton fleece",
+            "Two-way YKK zip",
+            "Structured collar, bound seams",
+            "Ink"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING The signature piece — what a year of making things for other people taught us to make for ourselves. THE DECISIONS A 480gsm brushed-back fleece cut like outerwear, a two-way zip, and a collar that stands without help. Made in a run of limited numbers. DETAILS 480gsm brushed-back cotton fleece Two-way YKK zip Structured collar, bound seams Ink",
+      "publishedAt": "2026-06-20T21:50:37+10:00"
+    },
+    {
+      "handle": "laneway-weekender-bag",
+      "title": "Laneway Weekender Bag",
+      "brand": "Laneway",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:premium",
+        "type:weekender"
+      ],
+      "tier": "premium",
+      "season": "2026s1",
+      "typeTag": "weekender",
+      "priceMin": 180,
+      "priceMax": 180,
+      "images": [
+        {
+          "src": "assets/img/products/Imagespread.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/Imagespread.png?v=1782034445",
+          "alt": "Laneway Weekender Bag"
+        },
+        {
+          "src": "assets/img/products/LWWeekendermodel.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWWeekendermodel.png?v=1782034446",
+          "alt": "Laneway Weekender Bag"
+        },
+        {
+          "src": "assets/img/products/LWWeekenderWall.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWWeekenderWall.png?v=1782034445",
+          "alt": "Laneway Weekender Bag"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440107598083",
+          "title": "Default Title",
+          "price": 180,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "The piece that says what the studio can do when nothing's holding it back."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "A waxed-canvas body on a full leather base, brass hardware chosen to age rather than shine, and a separate shoe/wash compartment because we travel like this ourselves."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Waxed canvas, full-grain leather base",
+            "Brass hardware",
+            "End compartment",
+            "40L, field tan"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING The piece that says what the studio can do when nothing's holding it back. THE DECISIONS A waxed-canvas body on a full leather base, brass hardware chosen to age rather than shine, and a separate shoe/wash compartment because we travel like this ourselves. DETAILS Waxed canvas, full-grain leather base Brass hardware End compartment 40L, field tan",
+      "publishedAt": "2026-06-20T21:45:42+10:00"
+    },
+    {
+      "handle": "laneway-leather-cardholder",
+      "title": "Laneway Leather Cardholder",
+      "brand": "Laneway",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:premium",
+        "type:cardholder"
+      ],
+      "tier": "premium",
+      "season": "2026s1",
+      "typeTag": "cardholder",
+      "priceMin": 95,
+      "priceMax": 95,
+      "images": [
+        {
+          "src": "assets/img/products/LWCardHolder.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWCardHolder.png?v=1782034465",
+          "alt": "Laneway Leather Cardholder"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440073847043",
+          "title": "Default Title",
+          "price": 95,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "The first thing we ever made for ourselves — and still the test of whether we've earned the price."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "Full-grain vegetable-tanned leather cut to four pockets and a centre pull, edge-painted by hand and left unlined so it patinas with use."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Full-grain veg-tan leather",
+            "4 pockets, centre pull",
+            "Hand-painted edges, unlined",
+            "Tan, ages darker"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING The first thing we ever made for ourselves — and still the test of whether we've earned the price. THE DECISIONS Full-grain vegetable-tanned leather cut to four pockets and a centre pull, edge-painted by hand and left unlined so it patinas with use. DETAILS Full-grain veg-tan leather 4 pockets, centre pull Hand-painted edges, unlined Tan, ages darker",
+      "publishedAt": "2026-06-20T21:44:31+10:00"
+    },
+    {
+      "handle": "laneway-canvas-tote",
+      "title": "Laneway Canvas Tote",
+      "brand": "Laneway",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:tote"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "tote",
+      "priceMin": 45,
+      "priceMax": 45,
+      "images": [
+        {
+          "src": "assets/img/products/LWTote.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWTote.png?v=1782034500",
+          "alt": "Laneway Canvas Tote"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440070177027",
+          "title": "Default Title",
+          "price": 45,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "A studio tote takes a beating — laptops, samples, the market on Sunday."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "A heavyweight waxed canvas with a reinforced base and webbing handles rated past the usual tote, finished with a leather tab."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "16oz waxed canvas",
+            "Reinforced base",
+            "Webbing handles, leather tab",
+            "Charcoal"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING A studio tote takes a beating — laptops, samples, the market on Sunday. THE DECISIONS A heavyweight waxed canvas with a reinforced base and webbing handles rated past the usual tote, finished with a leather tab. DETAILS 16oz waxed canvas Reinforced base Webbing handles, leather tab Charcoal",
+      "publishedAt": "2026-06-20T21:43:02+10:00"
+    },
+    {
+      "handle": "laneway-mug",
+      "title": "Laneway Mug",
+      "brand": "Laneway",
+      "type": "Drinkware",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:mug"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "mug",
+      "priceMin": 32,
+      "priceMax": 32,
+      "images": [
+        {
+          "src": "assets/img/products/LWMug.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWMug.png?v=1782034534",
+          "alt": "Laneway Mug"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440066212099",
+          "title": "Default Title",
+          "price": 32,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "Every studio has the mug everyone fights over. We made enough of ours to go around."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "A heavy stoneware with an unglazed raw foot and a handle sized for a real grip, in a reactive glaze so no two are quite identical."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Stoneware, 400ml",
+            "Reactive glaze",
+            "Raw clay foot",
+            "Dishwasher safe"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING Every studio has the mug everyone fights over. We made enough of ours to go around. THE DECISIONS A heavy stoneware with an unglazed raw foot and a handle sized for a real grip, in a reactive glaze so no two are quite identical. DETAILS Stoneware, 400ml Reactive glaze Raw clay foot Dishwasher safe",
+      "publishedAt": "2026-06-20T21:41:56+10:00"
+    },
+    {
+      "handle": "laneway-flask",
+      "title": "Laneway Insulated Bottle",
+      "brand": "Laneway",
+      "type": "Drinkware",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:bottle"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "bottle",
+      "priceMin": 54,
+      "priceMax": 54,
+      "images": [
+        {
+          "src": "assets/img/products/LWBottle.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWBottle.png?v=1782034787",
+          "alt": "Laneway Insulated Bottle"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440060870915",
+          "title": "Default Title",
+          "price": 54,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "The studio runs on long blacks and longer days. The insulated bottle earns its desk space."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "A clean silhouette that slips into a bag, double-walled to hold heat (or cold) past the afternoon, and a screw-top lid that seals against spills."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Vacuum stainless, 500ml",
+            "Screw-top insulated lid",
+            "12-hour heat retention, 24-hour cold retention",
+            "Graphite"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING The studio runs on long blacks and longer days. The insulated bottle earns its desk space. THE DECISIONS A clean silhouette that slips into a bag, double-walled to hold heat (or cold) past the afternoon, and a screw-top lid that seals against spills. DETAILS Vacuum stainless, 500ml Screw-top insulated lid 12-hour heat retention, 24-hour cold retention Graphite",
+      "publishedAt": "2026-06-20T21:40:15+10:00"
+    },
+    {
+      "handle": "laneway-reusable-cup",
+      "title": "Laneway Reusable Cup",
+      "brand": "Laneway",
+      "type": "Drinkware",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:reusablecup"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "reusablecup",
+      "priceMin": 36,
+      "priceMax": 36,
+      "images": [
+        {
+          "src": "assets/img/products/LWCup_d5657cfc-714d-46c0-8c2d-c3346890e2ff.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWCup_d5657cfc-714d-46c0-8c2d-c3346890e2ff.png?v=1782034638",
+          "alt": "Laneway Reusable Cup"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440057561347",
+          "title": "Default Title",
+          "price": 36,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "We design these for clients constantly. This is the one we kept for ourselves."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "A ceramic-lined stainless body that doesn't taint the coffee, in a glaze-effect finish you'd not expect on metal."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Ceramic-lined stainless, 8oz",
+            "Press lid",
+            "Matte stone finish"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING We design these for clients constantly. This is the one we kept for ourselves. THE DECISIONS A ceramic-lined stainless body that doesn't taint the coffee, in a glaze-effect finish you'd not expect on metal. DETAILS Ceramic-lined stainless, 8oz Press lid Matte stone finish",
+      "publishedAt": "2026-06-20T21:39:13+10:00"
+    },
+    {
+      "handle": "laneway-cap",
+      "title": "Laneway Cap",
+      "brand": "Laneway",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:cap"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "cap",
+      "priceMin": 39,
+      "priceMax": 39,
+      "images": [
+        {
+          "src": "assets/img/products/LWCap1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWCap1.png?v=1782034905",
+          "alt": "Laneway Cap"
+        },
+        {
+          "src": "assets/img/products/LWCapworn.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWCapworn.png?v=1782034905",
+          "alt": "Laneway Cap"
+        },
+        {
+          "src": "assets/img/products/LWCap2.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWCap2.png?v=1782034905",
+          "alt": "Laneway Cap"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Beige",
+            "Black"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48440053956867",
+          "title": "Beige",
+          "price": 39,
+          "available": true,
+          "options": [
+            "Beige"
+          ]
+        },
+        {
+          "id": "48440053989635",
+          "title": "Black",
+          "price": 39,
+          "available": true,
+          "options": [
+            "Black"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "A cap is the easiest thing to over-design. We wanted the opposite."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "An unstructured six-panel in washed cotton that creases in rather than sits stiff, with our mark embroidered tonally so it reads as texture, not logo."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Washed cotton, unstructured six-panel",
+            "Tonal embroidery",
+            "Adjustable strap",
+            "Ecru"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING A cap is the easiest thing to over-design. We wanted the opposite. THE DECISIONS An unstructured six-panel in washed cotton that creases in rather than sits stiff, with our mark embroidered tonally so it reads as texture, not logo. DETAILS Washed cotton, unstructured six-panel Tonal embroidery Adjustable strap Ecru",
+      "publishedAt": "2026-06-20T21:38:13+10:00"
+    },
+    {
+      "handle": "laneway-studio-crew",
+      "title": "Laneway Studio Crew",
+      "brand": "Laneway",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:crew"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "crew",
+      "priceMin": 0,
+      "priceMax": 0,
+      "images": [
+        {
+          "src": "assets/img/products/LWCrew1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWCrew1.png?v=1782034958",
+          "alt": "Laneway Studio Crew"
+        },
+        {
+          "src": "assets/img/products/LWCrew2.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWCrew2.png?v=1782034958",
+          "alt": "Laneway Studio Crew"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Black",
+            "Gray"
+          ]
+        },
+        {
+          "name": "Size",
+          "values": [
+            "XL",
+            "L",
+            "M",
+            "S",
+            "XS"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48440037146883",
+          "title": "Black / XL",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Black",
+            "XL"
+          ]
+        },
+        {
+          "id": "48440037179651",
+          "title": "Black / L",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Black",
+            "L"
+          ]
+        },
+        {
+          "id": "48440037212419",
+          "title": "Black / M",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Black",
+            "M"
+          ]
+        },
+        {
+          "id": "48440037245187",
+          "title": "Black / S",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Black",
+            "S"
+          ]
+        },
+        {
+          "id": "48440037277955",
+          "title": "Black / XS",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Black",
+            "XS"
+          ]
+        },
+        {
+          "id": "48440037310723",
+          "title": "Gray / XL",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Gray",
+            "XL"
+          ]
+        },
+        {
+          "id": "48440037343491",
+          "title": "Gray / L",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Gray",
+            "L"
+          ]
+        },
+        {
+          "id": "48440037376259",
+          "title": "Gray / M",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Gray",
+            "M"
+          ]
+        },
+        {
+          "id": "48440037409027",
+          "title": "Gray / S",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Gray",
+            "S"
+          ]
+        },
+        {
+          "id": "48440037441795",
+          "title": "Gray / XS",
+          "price": 0,
+          "available": true,
+          "options": [
+            "Gray",
+            "XS"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "The jumper we kept borrowing from the sample rail. We finally made our own."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "A mid-weight loopback that holds shape without the gym-sweat bulk, set-in sleeves for a cleaner line, and a colour we mixed to sit between concrete and oat."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "340gsm cotton loopback",
+            "Set-in sleeve",
+            "Ribbed cuffs and hem",
+            "Stone"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING The jumper we kept borrowing from the sample rail. We finally made our own. THE DECISIONS A mid-weight loopback that holds shape without the gym-sweat bulk, set-in sleeves for a cleaner line, and a colour we mixed to sit between concrete and oat. DETAILS 340gsm cotton loopback Set-in sleeve Ribbed cuffs and hem Stone",
+      "publishedAt": "2026-06-20T21:35:49+10:00"
+    },
+    {
+      "handle": "laneway-studio-tee",
+      "title": "Laneway Studio Tee",
+      "brand": "Laneway",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:tee"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "tee",
+      "priceMin": 49,
+      "priceMax": 49,
+      "images": [
+        {
+          "src": "assets/img/products/LWTee1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWTee1.png?v=1782035129",
+          "alt": "Laneway Studio Tee"
+        },
+        {
+          "src": "assets/img/products/LWTee4.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWTee4.png?v=1782035129",
+          "alt": "Laneway Studio Tee"
+        },
+        {
+          "src": "assets/img/products/LWTee3.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/LWTee3.png?v=1782035129",
+          "alt": "Laneway Studio Tee"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "White",
+            "Black",
+            "Gray"
+          ]
+        },
+        {
+          "name": "Size",
+          "values": [
+            "XL",
+            "L",
+            "M",
+            "S",
+            "XS"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48440031707395",
+          "title": "White / XL",
+          "price": 49,
+          "available": true,
+          "options": [
+            "White",
+            "XL"
+          ]
+        },
+        {
+          "id": "48440031740163",
+          "title": "White / L",
+          "price": 49,
+          "available": true,
+          "options": [
+            "White",
+            "L"
+          ]
+        },
+        {
+          "id": "48440031772931",
+          "title": "White / M",
+          "price": 49,
+          "available": true,
+          "options": [
+            "White",
+            "M"
+          ]
+        },
+        {
+          "id": "48440031805699",
+          "title": "White / S",
+          "price": 49,
+          "available": true,
+          "options": [
+            "White",
+            "S"
+          ]
+        },
+        {
+          "id": "48440031838467",
+          "title": "White / XS",
+          "price": 49,
+          "available": true,
+          "options": [
+            "White",
+            "XS"
+          ]
+        },
+        {
+          "id": "48440031871235",
+          "title": "Black / XL",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Black",
+            "XL"
+          ]
+        },
+        {
+          "id": "48440031904003",
+          "title": "Black / L",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Black",
+            "L"
+          ]
+        },
+        {
+          "id": "48440031936771",
+          "title": "Black / M",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Black",
+            "M"
+          ]
+        },
+        {
+          "id": "48440031969539",
+          "title": "Black / S",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Black",
+            "S"
+          ]
+        },
+        {
+          "id": "48440032002307",
+          "title": "Black / XS",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Black",
+            "XS"
+          ]
+        },
+        {
+          "id": "48440032035075",
+          "title": "Gray / XL",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Gray",
+            "XL"
+          ]
+        },
+        {
+          "id": "48440032067843",
+          "title": "Gray / L",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Gray",
+            "L"
+          ]
+        },
+        {
+          "id": "48440032100611",
+          "title": "Gray / M",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Gray",
+            "M"
+          ]
+        },
+        {
+          "id": "48440032133379",
+          "title": "Gray / S",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Gray",
+            "S"
+          ]
+        },
+        {
+          "id": "48440032166147",
+          "title": "Gray / XS",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Gray",
+            "XS"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE THINKING"
+        },
+        {
+          "type": "para",
+          "text": "We make things for other people all year. The Studio Tee was the brief we set ourselves: the blank we actually wanted to wear between projects."
+        },
+        {
+          "type": "heading",
+          "text": "THE DECISIONS"
+        },
+        {
+          "type": "para",
+          "text": "A heavier 220gsm so it hangs rather than clings, a longer body, and a collar reinforced to survive the wash that kills most tees. Branding lives on a tonal hem label."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "220 GSM combed cotton, garment-washed",
+            "Relaxed studio fit, longer body",
+            "Reinforced collar, tonal hem label",
+            "No front print"
+          ]
+        }
+      ],
+      "descriptionText": "THE THINKING We make things for other people all year. The Studio Tee was the brief we set ourselves: the blank we actually wanted to wear between projects. THE DECISIONS A heavier 220gsm so it hangs rather than clings, a longer body, and a collar reinforced to survive the wash that kills most tees. Branding lives on a tonal hem label. DETAILS 220 GSM combed cotton, garment-washed Relaxed studio fit, longer body Reinforced collar, tonal hem label No front print",
+      "publishedAt": "2026-06-20T21:34:17+10:00"
+    },
+    {
+      "handle": "southbank-coaster-set",
+      "title": "Southbank Coaster Set",
+      "brand": "Southbank",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:coaster"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "coaster",
+      "priceMin": 26,
+      "priceMax": 26,
+      "images": [
+        {
+          "src": "assets/img/products/SBCoasters.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBCoasters.png?v=1782035186",
+          "alt": "Southbank Coaster Set"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440029610243",
+          "title": "Default Title",
+          "price": 26,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE BRIEF"
+        },
+        {
+          "type": "para",
+          "text": "A small thing for regulars to take the café ritual home."
+        },
+        {
+          "type": "heading",
+          "text": "WHAT WE DID"
+        },
+        {
+          "type": "para",
+          "text": "Pressed cork faced with the roastery's clay colourway, in a set of four banded with a paper sleeve rather than plastic."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Set of 4",
+            "Cork with printed face",
+            "Paper band, no plastic",
+            "95mm"
+          ]
+        }
+      ],
+      "descriptionText": "THE BRIEF A small thing for regulars to take the café ritual home. WHAT WE DID Pressed cork faced with the roastery's clay colourway, in a set of four banded with a paper sleeve rather than plastic. DETAILS Set of 4 Cork with printed face Paper band, no plastic 95mm",
+      "publishedAt": "2026-06-20T21:32:46+10:00"
+    },
+    {
+      "handle": "southbank-notebook",
+      "title": "Southbank Notebook",
+      "brand": "Southbank",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:notebook"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "notebook",
+      "priceMin": 22,
+      "priceMax": 22,
+      "images": [
+        {
+          "src": "assets/img/products/SBNotebook1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBNotebook1.png?v=1782035209",
+          "alt": "Southbank Notebook"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440027382019",
+          "title": "Default Title",
+          "price": 22,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE BRIEF"
+        },
+        {
+          "type": "para",
+          "text": "For the roastery's own cupping notes — and the customers who started asking for one."
+        },
+        {
+          "type": "heading",
+          "text": "WHAT WE DID"
+        },
+        {
+          "type": "para",
+          "text": "A lay-flat bound book with a dot grid for tasting wheels, in a board cover the colour of a roasted bean."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "A5, lay-flat binding",
+            "Dot-grid recycled paper",
+            "Espresso board cover"
+          ]
+        }
+      ],
+      "descriptionText": "THE BRIEF For the roastery's own cupping notes — and the customers who started asking for one. WHAT WE DID A lay-flat bound book with a dot grid for tasting wheels, in a board cover the colour of a roasted bean. DETAILS A5, lay-flat binding Dot-grid recycled paper Espresso board cover",
+      "publishedAt": "2026-06-20T21:31:23+10:00"
+    },
+    {
+      "handle": "southbank-tote",
+      "title": "Southbank Tote",
+      "brand": "Southbank",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:tote"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "tote",
+      "priceMin": 28,
+      "priceMax": 28,
+      "images": [
+        {
+          "src": "assets/img/products/SBTote1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBTote1.png?v=1782035233",
+          "alt": "Southbank Tote"
+        },
+        {
+          "src": "assets/img/products/SBTote2.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBTote2.png?v=1782035233",
+          "alt": "Southbank Tote"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440026431747",
+          "title": "Default Title",
+          "price": 28,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE BRIEF"
+        },
+        {
+          "type": "para",
+          "text": "A bag for the bean run — sturdy enough for two 1kg bags and the weekend market."
+        },
+        {
+          "type": "heading",
+          "text": "WHAT WE DID"
+        },
+        {
+          "type": "para",
+          "text": "Heavy calico with a flat gusseted base so it stands on its own, and a discreet side print so it carries beyond the café."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "12oz calico",
+            "Gusseted base",
+            "Long shoulder handles",
+            "Natural"
+          ]
+        }
+      ],
+      "descriptionText": "THE BRIEF A bag for the bean run — sturdy enough for two 1kg bags and the weekend market. WHAT WE DID Heavy calico with a flat gusseted base so it stands on its own, and a discreet side print so it carries beyond the café. DETAILS 12oz calico Gusseted base Long shoulder handles Natural",
+      "publishedAt": "2026-06-20T21:30:40+10:00"
+    },
+    {
+      "handle": "southbank-mug",
+      "title": "Southbank Mug",
+      "brand": "Southbank",
+      "type": "Drinkware",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:mug"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "mug",
+      "priceMin": 24,
+      "priceMax": 24,
+      "images": [
+        {
+          "src": "assets/img/products/SBMug3.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBMug3.png?v=1782035269",
+          "alt": "Southbank Mug"
+        },
+        {
+          "src": "assets/img/products/SBMug1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBMug1.png?v=1782035268",
+          "alt": "Southbank Mug"
+        },
+        {
+          "src": "assets/img/products/SBMug2.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBMug2.png?v=1782035269",
+          "alt": "Southbank Mug"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440025219331",
+          "title": "Default Title",
+          "price": 24,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE BRIEF"
+        },
+        {
+          "type": "para",
+          "text": "The cup for people drinking in — and the one regulars kept asking to buy."
+        },
+        {
+          "type": "heading",
+          "text": "WHAT WE DID"
+        },
+        {
+          "type": "para",
+          "text": "A thick-walled stoneware in a glaze we matched to the crema, weighty enough to feel like the café at home."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Stoneware, 350ml",
+            "Reactive crema glaze",
+            "Dishwasher safe"
+          ]
+        }
+      ],
+      "descriptionText": "THE BRIEF The cup for people drinking in — and the one regulars kept asking to buy. WHAT WE DID A thick-walled stoneware in a glaze we matched to the crema, weighty enough to feel like the café at home. DETAILS Stoneware, 350ml Reactive crema glaze Dishwasher safe",
+      "publishedAt": "2026-06-20T21:29:59+10:00"
+    },
+    {
+      "handle": "southbank-pour-over-dripper",
+      "title": "Southbank Pour-Over Dripper",
+      "brand": "Southbank",
+      "type": "Drinkware",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:pourover"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "pourover",
+      "priceMin": 42,
+      "priceMax": 42,
+      "images": [
+        {
+          "src": "assets/img/products/SBFilter1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBFilter1.png?v=1782035312",
+          "alt": "Southbank Pour-Over Dripper"
+        },
+        {
+          "src": "assets/img/products/SBFilter3.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBFilter3.png?v=1782035312",
+          "alt": "Southbank Pour-Over Dripper"
+        },
+        {
+          "src": "assets/img/products/SBFilter2.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBFilter2.png?v=1782035312",
+          "alt": "Southbank Pour-Over Dripper"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48440023449859",
+          "title": "Default Title",
+          "price": 42,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE BRIEF"
+        },
+        {
+          "type": "para",
+          "text": "Southbank wanted regulars to brew the roastery's filter range at home the way the café does — properly, not guessed."
+        },
+        {
+          "type": "heading",
+          "text": "WHAT WE DID"
+        },
+        {
+          "type": "para",
+          "text": "A ceramic cone dripper in the roastery's clay glaze, with a wide cone and tall internal ribs tuned for a slow, even extraction, and a flat base that sits on any mug or carafe."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Glazed stoneware cone dripper",
+            "Size 02 (1–4 cups)",
+            "Fits standard #2 filter papers",
+            "Clay glaze"
+          ]
+        }
+      ],
+      "descriptionText": "THE BRIEF Southbank wanted regulars to brew the roastery's filter range at home the way the café does — properly, not guessed. WHAT WE DID A ceramic cone dripper in the roastery's clay glaze, with a wide cone and tall internal ribs tuned for a slow, even extraction, and a flat base that sits on any mug or carafe. DETAILS Glazed stoneware cone dripper Size 02 (1–4 cups) Fits standard #2 filter papers Clay glaze",
+      "publishedAt": "2026-06-20T21:28:57+10:00"
+    },
+    {
+      "handle": "southbank-reusable-cup",
+      "title": "Southbank Reusable Cup",
+      "brand": "Southbank",
+      "type": "Drinkware",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:reusablecup"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "reusablecup",
+      "priceMin": 32,
+      "priceMax": 32,
+      "images": [
+        {
+          "src": "assets/img/products/SBCup1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBCup1.png?v=1782035348",
+          "alt": "Southbank Reusable Cup"
+        },
+        {
+          "src": "assets/img/products/SBBeanie3.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBBeanie3.png?v=1782035352",
+          "alt": "Southbank Reusable Cup"
+        }
+      ],
+      "options": [
+        {
+          "name": "Colour",
+          "values": [
+            "Clay",
+            "Cream"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48440014307587",
+          "title": "Clay",
+          "price": 32,
+          "available": true,
+          "options": [
+            "Clay"
+          ]
+        },
+        {
+          "id": "48440014340355",
+          "title": "Cream",
+          "price": 32,
+          "available": true,
+          "options": [
+            "Cream"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE BRIEF"
+        },
+        {
+          "type": "para",
+          "text": "Regulars wanted to carry the roastery with them, but most reusable cups either look like merch or don't work behind the machine."
+        },
+        {
+          "type": "heading",
+          "text": "WHAT WE DID"
+        },
+        {
+          "type": "para",
+          "text": "We sized it to sit cleanly under a standard group head and finished it in the roastery's clay and cream rather than a printed logo — the colour is the branding."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Double-walled, 8oz",
+            "Barista-standard group-head fit",
+            "Silicone band and splash lid",
+            "Clay and cream, no external print"
+          ]
+        }
+      ],
+      "descriptionText": "THE BRIEF Regulars wanted to carry the roastery with them, but most reusable cups either look like merch or don't work behind the machine. WHAT WE DID We sized it to sit cleanly under a standard group head and finished it in the roastery's clay and cream rather than a printed logo — the colour is the branding. DETAILS Double-walled, 8oz Barista-standard group-head fit Silicone band and splash lid Clay and cream, no external print",
+      "publishedAt": "2026-06-20T21:23:58+10:00"
+    },
+    {
+      "handle": "southbank-beanie",
+      "title": "Southbank Beanie",
+      "brand": "Southbank",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:beanie"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "beanie",
+      "priceMin": 34,
+      "priceMax": 34,
+      "images": [
+        {
+          "src": "assets/img/products/SBBeanie1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBBeanie1.png?v=1782035380",
+          "alt": "Southbank Beanie"
+        },
+        {
+          "src": "assets/img/products/SBBeanie3_d555cd6c-3d89-4087-977e-c273b5ff2fd2.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBBeanie3_d555cd6c-3d89-4087-977e-c273b5ff2fd2.png?v=1782035382",
+          "alt": "Southbank Beanie"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "White",
+            "Gray"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48439999070467",
+          "title": "White",
+          "price": 34,
+          "available": true,
+          "options": [
+            "White"
+          ]
+        },
+        {
+          "id": "48439999103235",
+          "title": "Gray",
+          "price": 34,
+          "available": true,
+          "options": [
+            "Gray"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE BRIEF"
+        },
+        {
+          "type": "para",
+          "text": "Something for the 6am openers and the regulars who linger."
+        },
+        {
+          "type": "heading",
+          "text": "WHAT WE DID"
+        },
+        {
+          "type": "para",
+          "text": "A fine-knit fold-up beanie with a woven tab rather than a print, so it works off the clock as easily as on."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Fine merino-blend knit",
+            "Fold cuff",
+            "Woven tab label",
+            "Oat and charcoal"
+          ]
+        }
+      ],
+      "descriptionText": "THE BRIEF Something for the 6am openers and the regulars who linger. WHAT WE DID A fine-knit fold-up beanie with a woven tab rather than a print, so it works off the clock as easily as on. DETAILS Fine merino-blend knit Fold cuff Woven tab label Oat and charcoal",
+      "publishedAt": "2026-06-20T21:13:37+10:00"
+    },
+    {
+      "handle": "southbank-apron",
+      "title": "Southbank Apron",
+      "brand": "Southbank",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:apron"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "apron",
+      "priceMin": 49,
+      "priceMax": 49,
+      "images": [
+        {
+          "src": "assets/img/products/SBApron1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBApron1.png?v=1782035410",
+          "alt": "Southbank Apron"
+        },
+        {
+          "src": "assets/img/products/SBApron3.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBApron3.png?v=1782035410",
+          "alt": "Southbank Apron"
+        },
+        {
+          "src": "assets/img/products/SBApronClose.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBApronClose.png?v=1782035410",
+          "alt": "Southbank Apron"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48439996186883",
+          "title": "Default Title",
+          "price": 49,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE BRIEF"
+        },
+        {
+          "type": "para",
+          "text": "An apron that reads as craft, not hospitality-supplier beige."
+        },
+        {
+          "type": "heading",
+          "text": "WHAT WE DID"
+        },
+        {
+          "type": "para",
+          "text": "Waxed-finish canvas in the roastery's clay tone, cross-back straps to save the neck over long shifts, and a chest pocket sized for a thermometer and cloth."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Cotton canvas, water-resistant finish",
+            "Adjustable cross-back straps",
+            "Single chest pocket",
+            "Clay"
+          ]
+        }
+      ],
+      "descriptionText": "THE BRIEF An apron that reads as craft, not hospitality-supplier beige. WHAT WE DID Waxed-finish canvas in the roastery's clay tone, cross-back straps to save the neck over long shifts, and a chest pocket sized for a thermometer and cloth. DETAILS Cotton canvas, water-resistant finish Adjustable cross-back straps Single chest pocket Clay",
+      "publishedAt": "2026-06-20T21:11:37+10:00"
+    },
+    {
+      "handle": "southbank-barista-tee",
+      "title": "Southbank Barista Tee",
+      "brand": "Southbank",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:tee"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "tee",
+      "priceMin": 42,
+      "priceMax": 42,
+      "images": [
+        {
+          "src": "assets/img/products/SBTShirts1.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBTShirts1.png?v=1782035472",
+          "alt": "Southbank Barista Tee"
+        },
+        {
+          "src": "assets/img/products/SBTsirt3.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBTsirt3.png?v=1782035472",
+          "alt": "Southbank Barista Tee"
+        },
+        {
+          "src": "assets/img/products/SBTShirt2.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/SBTShirt2.png?v=1782035472",
+          "alt": "Southbank Barista Tee"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Brown",
+            "White"
+          ]
+        },
+        {
+          "name": "Size",
+          "values": [
+            "XS",
+            "M",
+            "S",
+            "L",
+            "XL"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48439994777859",
+          "title": "Brown / XS",
+          "price": 42,
+          "available": true,
+          "options": [
+            "Brown",
+            "XS"
+          ]
+        },
+        {
+          "id": "48439994810627",
+          "title": "Brown / M",
+          "price": 42,
+          "available": true,
+          "options": [
+            "Brown",
+            "M"
+          ]
+        },
+        {
+          "id": "48439994843395",
+          "title": "Brown / S",
+          "price": 42,
+          "available": true,
+          "options": [
+            "Brown",
+            "S"
+          ]
+        },
+        {
+          "id": "48439994876163",
+          "title": "Brown / L",
+          "price": 42,
+          "available": true,
+          "options": [
+            "Brown",
+            "L"
+          ]
+        },
+        {
+          "id": "48439994908931",
+          "title": "Brown / XL",
+          "price": 42,
+          "available": true,
+          "options": [
+            "Brown",
+            "XL"
+          ]
+        },
+        {
+          "id": "48439994941699",
+          "title": "White / XS",
+          "price": 42,
+          "available": true,
+          "options": [
+            "White",
+            "XS"
+          ]
+        },
+        {
+          "id": "48439994974467",
+          "title": "White / M",
+          "price": 42,
+          "available": true,
+          "options": [
+            "White",
+            "M"
+          ]
+        },
+        {
+          "id": "48439995007235",
+          "title": "White / S",
+          "price": 42,
+          "available": true,
+          "options": [
+            "White",
+            "S"
+          ]
+        },
+        {
+          "id": "48439995040003",
+          "title": "White / L",
+          "price": 42,
+          "available": true,
+          "options": [
+            "White",
+            "L"
+          ]
+        },
+        {
+          "id": "48439995072771",
+          "title": "White / XL",
+          "price": 42,
+          "available": true,
+          "options": [
+            "White",
+            "XL"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "THE BRIEF"
+        },
+        {
+          "type": "para",
+          "text": "Southbank wanted floor staff to look like part of the roastery, not a uniform catalogue."
+        },
+        {
+          "type": "heading",
+          "text": "WHAT WE DID"
+        },
+        {
+          "type": "para",
+          "text": "We kept it to a single tonal chest mark in the roastery's espresso brown, on a heavyweight tee that survives a busy shift and a hot wash."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "220 GSM combed cotton",
+            "Relaxed fit",
+            "Tonal screen print",
+            "Espresso and oat"
+          ]
+        }
+      ],
+      "descriptionText": "THE BRIEF Southbank wanted floor staff to look like part of the roastery, not a uniform catalogue. WHAT WE DID We kept it to a single tonal chest mark in the roastery's espresso brown, on a heavyweight tee that survives a busy shift and a hot wash. DETAILS 220 GSM combed cotton Relaxed fit Tonal screen print Espresso and oat",
+      "publishedAt": "2026-06-20T21:09:41+10:00"
+    },
+    {
+      "handle": "laneway-rmit-badge",
+      "title": "RMIT Badge",
+      "brand": "RMIT",
+      "type": "Other",
+      "tags": [
+        "Iterable"
+      ],
+      "tier": null,
+      "season": null,
+      "typeTag": null,
+      "priceMin": 1.99,
+      "priceMax": 1.99,
+      "images": [
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Badge-Black-On-Green-Jacket.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Badge-Black-On-Green-Jacket.webp?v=1782035502",
+          "alt": "RMIT Badge"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Badge-White-On-Green-Jacket.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Badge-White-On-Green-Jacket.webp?v=1782035502",
+          "alt": "RMIT Badge"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Black",
+            "White"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48439991206147",
+          "title": "Black",
+          "price": 1.99,
+          "available": true,
+          "options": [
+            "Black"
+          ]
+        },
+        {
+          "id": "48439991238915",
+          "title": "White",
+          "price": 1.99,
+          "available": true,
+          "options": [
+            "White"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "IN THE RANGE"
+        },
+        {
+          "type": "para",
+          "text": "A small, cheerful finishing piece — brought in because the best ranges have something at pocket-money price."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Metal button badge, spring-pin back",
+            "Approx. 23mm diameter",
+            "Black or white with RMIT logo",
+            "Made in Australia"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "WHAT OUR PARTNER SAYS"
+        },
+        {
+          "type": "para",
+          "text": "From RMIT: “With a metal spring pin you can attach this RMIT button badge to your shirt, backpack or even your pencil case. Comes in black or white with the official RMIT logo, approx. 23mm diameter.”"
+        }
+      ],
+      "descriptionText": "IN THE RANGE A small, cheerful finishing piece — brought in because the best ranges have something at pocket-money price. DETAILS Metal button badge, spring-pin back Approx. 23mm diameter Black or white with RMIT logo Made in Australia WHAT OUR PARTNER SAYS… From RMIT: “With a metal spring pin you can attach this RMIT button badge to your shirt, backpack or even your pencil case. Comes in black or white with the official RMIT logo, approx. 23mm diameter.”",
+      "publishedAt": "2026-06-20T21:05:31+10:00"
+    },
+    {
+      "handle": "laneway-rmit-a5-notebook",
+      "title": "RMIT A5 Recycled Notebook",
+      "brand": "RMIT",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:notebook"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "notebook",
+      "priceMin": 9.95,
+      "priceMax": 9.95,
+      "images": [
+        {
+          "src": "assets/img/products/RMIT-Store-A5-Recycled-Notebook-Modelled-Closed.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-A5-Recycled-Notebook-Modelled-Closed.webp?v=1782035532",
+          "alt": "RMIT A5 Recycled Notebook"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-A5-Recycled-Notebook-Open-Side-Modelled-Holding.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-A5-Recycled-Notebook-Open-Side-Modelled-Holding.webp?v=1782035531",
+          "alt": "RMIT A5 Recycled Notebook"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-A4-A5-Recycled-Notebooks-Modelled-Holding.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-A4-A5-Recycled-Notebooks-Modelled-Holding.webp?v=1782035531",
+          "alt": "RMIT A5 Recycled Notebook"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48439990354179",
+          "title": "Default Title",
+          "price": 9.95,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "IN THE RANGE"
+        },
+        {
+          "type": "para",
+          "text": "A neat, sustainable notebook we added for the note-takers."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "A5 (21.5 x 15.5 cm)",
+            "100% recycled paper, FSC-certified",
+            "Brown kraft cover, spiral bound"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "WHAT OUR PARTNER SAYS"
+        },
+        {
+          "type": "para",
+          "text": "From RMIT: “Keep things compact and sustainable with the A5 Recycled Notebook. Crafted from 100% recycled paper, it's the perfect eco-conscious choice for capturing ideas on the go.”"
+        }
+      ],
+      "descriptionText": "IN THE RANGE A neat, sustainable notebook we added for the note-takers. DETAILS A5 (21.5 x 15.5 cm) 100% recycled paper, FSC-certified Brown kraft cover, spiral bound WHAT OUR PARTNER SAYS… From RMIT: “Keep things compact and sustainable with the A5 Recycled Notebook. Crafted from 100% recycled paper, it's the perfect eco-conscious choice for capturing ideas on the go.”",
+      "publishedAt": "2026-06-20T21:04:12+10:00"
+    },
+    {
+      "handle": "laneway-rmit-tote",
+      "title": "RMIT Fairtrade Cotton Tote",
+      "brand": "RMIT",
+      "type": "Accessories",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:tote"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "tote",
+      "priceMin": 14.95,
+      "priceMax": 14.95,
+      "images": [
+        {
+          "src": "assets/img/products/RMIT-Store-fairtrade-cotton-tote-bag-natural-modelled-close-up-blue-logo.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-fairtrade-cotton-tote-bag-natural-modelled-close-up-blue-logo.webp?v=1782035644",
+          "alt": "RMIT Fairtrade Cotton Tote"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-Everyday-Campus-Tote-Carlton-Brunswick-Bundoora-Hanging-On-Rail.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Everyday-Campus-Tote-Carlton-Brunswick-Bundoora-Hanging-On-Rail.jpg?v=1782035644",
+          "alt": "RMIT Fairtrade Cotton Tote"
+        }
+      ],
+      "options": [],
+      "variants": [
+        {
+          "id": "48439985537283",
+          "title": "Default Title",
+          "price": 14.95,
+          "available": true,
+          "options": [
+            "Default Title"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "IN THE RANGE"
+        },
+        {
+          "type": "para",
+          "text": "An easy yes for the range — RMIT's Fairtrade tote, the bag that goes everywhere."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "100% organic Fairtrade cotton",
+            "Classic calico with navy RMIT logo",
+            "Twin shoulder handles",
+            "Ethically made in India"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "WHAT OUR PARTNER SAYS"
+        },
+        {
+          "type": "para",
+          "text": "From RMIT: “Our updated RMIT Cotton Tote Bag is a must-have essential — a versatile tote in classic calico with a navy RMIT University logo on front. Our Fairtrade products are 100% organic cotton, ethically sourced in India.”"
+        }
+      ],
+      "descriptionText": "IN THE RANGE An easy yes for the range — RMIT's Fairtrade tote, the bag that goes everywhere. DETAILS 100% organic Fairtrade cotton Classic calico with navy RMIT logo Twin shoulder handles Ethically made in India WHAT OUR PARTNER SAYS… From RMIT: “Our updated RMIT Cotton Tote Bag is a must-have essential — a versatile tote in classic calico with a navy RMIT University logo on front. Our Fairtrade products are 100% organic cotton, ethically sourced in India.”",
+      "publishedAt": "2026-06-20T21:00:39+10:00"
+    },
+    {
+      "handle": "laneway-rmit-essential-mug",
+      "title": "RMIT Essential Mug",
+      "brand": "RMIT",
+      "type": "Drinkware",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:mug"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "mug",
+      "priceMin": 19.95,
+      "priceMax": 19.95,
+      "images": [
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Mug-Indigo-Upright-On-Table.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Mug-Indigo-Upright-On-Table.webp?v=1782035679",
+          "alt": "RMIT Essential Mug"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Mug-Black-Red-Interior-Modelled-Held-Front.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Mug-Black-Red-Interior-Modelled-Held-Front.webp?v=1782035679",
+          "alt": "RMIT Essential Mug"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Mug-Black-Red-Interior-Modelled-Left-Hand-Drinking.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Mug-Black-Red-Interior-Modelled-Left-Hand-Drinking.webp?v=1782035679",
+          "alt": "RMIT Essential Mug"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Blue",
+            "Red",
+            "Black"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48439984619779",
+          "title": "Blue",
+          "price": 19.95,
+          "available": true,
+          "options": [
+            "Blue"
+          ]
+        },
+        {
+          "id": "48439984652547",
+          "title": "Red",
+          "price": 19.95,
+          "available": true,
+          "options": [
+            "Red"
+          ]
+        },
+        {
+          "id": "48439984685315",
+          "title": "Black",
+          "price": 19.95,
+          "available": true,
+          "options": [
+            "Black"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "IN THE RANGE"
+        },
+        {
+          "type": "para",
+          "text": "The desk mug, brought into the range for the studio and the home alike."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "330ml",
+            "Matte exterior with a colour pop inside",
+            "Dishwasher safe",
+            "Indigo, Red, Black"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "WHAT OUR PARTNER SAYS"
+        },
+        {
+          "type": "para",
+          "text": "From RMIT: “330ml capacity with a black matte finish and a pop of colour on the inside. Dishwasher safe.”"
+        }
+      ],
+      "descriptionText": "IN THE RANGE The desk mug, brought into the range for the studio and the home alike. DETAILS 330ml Matte exterior with a colour pop inside Dishwasher safe Indigo, Red, Black WHAT OUR PARTNER SAYS… From RMIT: “330ml capacity with a black matte finish and a pop of colour on the inside. Dishwasher safe.”",
+      "publishedAt": "2026-06-20T20:57:40+10:00"
+    },
+    {
+      "handle": "laneway-rmit-everyday-bottle",
+      "title": "RMIT Everyday Bottle",
+      "brand": "RMIT",
+      "type": "Drinkware",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:bottle"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "bottle",
+      "priceMin": 14.95,
+      "priceMax": 14.95,
+      "images": [
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Everyday-Bottle-Multi-Colour-Group-Front-Display-On-Table.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Everyday-Bottle-Multi-Colour-Group-Front-Display-On-Table.webp?v=1782035831",
+          "alt": "RMIT Everyday Bottle"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Everyday-Bottle-Red-Front-Upright-On-Table-Logo-Focused.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Everyday-Bottle-Red-Front-Upright-On-Table-Logo-Focused.webp?v=1782035831",
+          "alt": "RMIT Everyday Bottle"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Everyday-Bottle-Black-Front-Upright-On-Table-Logo-Focused.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Everyday-Bottle-Black-Front-Upright-On-Table-Logo-Focused.webp?v=1782035831",
+          "alt": "RMIT Everyday Bottle"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Black",
+            "Red",
+            "Navy"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48439982555395",
+          "title": "Black",
+          "price": 14.95,
+          "available": true,
+          "options": [
+            "Black"
+          ]
+        },
+        {
+          "id": "48439982588163",
+          "title": "Red",
+          "price": 14.95,
+          "available": true,
+          "options": [
+            "Red"
+          ]
+        },
+        {
+          "id": "48439982620931",
+          "title": "Navy",
+          "price": 14.95,
+          "available": true,
+          "options": [
+            "Navy"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "IN THE RANGE"
+        },
+        {
+          "type": "para",
+          "text": "The no-fuss everyday water bottle — RMIT's own, brought into Laneway as the simple, low-cost option for basic campus hydration."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "750ml",
+            "Leak-proof lid",
+            "Non-insulated, lightweight",
+            "Red, Blue, Black"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "WHAT OUR PARTNER SAYS"
+        },
+        {
+          "type": "para",
+          "text": "From RMIT: “A simple bottle that covers daily use without overcomplicating things. The 750 ml size carries enough water for long stretches on campus without constant refills.”"
+        }
+      ],
+      "descriptionText": "IN THE RANGE The no-fuss everyday water bottle — RMIT's own, brought into Laneway as the simple, low-cost option for basic campus hydration. DETAILS 750ml Leak-proof lid Non-insulated, lightweight Red, Blue, Black WHAT OUR PARTNER SAYS… From RMIT: “A simple bottle that covers daily use without overcomplicating things. The 750 ml size carries enough water for long stretches on campus without constant refills.”",
+      "publishedAt": "2026-06-20T20:52:11+10:00"
+    },
+    {
+      "handle": "laneway-rmit-everyday-reusable-cup",
+      "title": "RMIT Everyday Reusable Cup",
+      "brand": "RMIT",
+      "type": "Drinkware",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:reusablecup"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "reusablecup",
+      "priceMin": 44.95,
+      "priceMax": 44.95,
+      "images": [
+        {
+          "src": "assets/img/products/RMIT-Store-Everyday-Reusable-Cup-Espresso-Front-On-Table-With-Packaging.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Everyday-Reusable-Cup-Espresso-Front-On-Table-With-Packaging.webp?v=1782035916",
+          "alt": "RMIT Everyday Reusable Cup"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-Everyday-Reusable-Cup-Frost-Front-On-Table-Fressko-Branding.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Everyday-Reusable-Cup-Frost-Front-On-Table-Fressko-Branding.webp?v=1782035917",
+          "alt": "RMIT Everyday Reusable Cup"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-Everyday-Reusable-Cup-Denim-Front-On-Table-With-Packaging.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Everyday-Reusable-Cup-Denim-Front-On-Table-With-Packaging.webp?v=1782035917",
+          "alt": "RMIT Everyday Reusable Cup"
+        }
+      ],
+      "options": [
+        {
+          "name": "Colour",
+          "values": [
+            "Frost",
+            "Denim",
+            "Coal"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48439980720387",
+          "title": "Frost",
+          "price": 44.95,
+          "available": true,
+          "options": [
+            "Frost"
+          ]
+        },
+        {
+          "id": "48439980753155",
+          "title": "Denim",
+          "price": 44.95,
+          "available": true,
+          "options": [
+            "Denim"
+          ]
+        },
+        {
+          "id": "48439980785923",
+          "title": "Coal",
+          "price": 44.95,
+          "available": true,
+          "options": [
+            "Coal"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "IN THE RANGE"
+        },
+        {
+          "type": "para",
+          "text": "A reliable everyday cup we brought into Laneway — RMIT's made-by-Fressko reusable, built for the campus-to-café commute."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "340ml / 12oz",
+            "Double-walled vacuum stainless, BPA-free",
+            "Spill-proof, one-hand-open lid",
+            "Barista-friendly internal measure lines",
+            "Denim, Coal and Frost"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "WHAT OUR PARTNER SAYS"
+        },
+        {
+          "type": "para",
+          "text": "From RMIT: “Keeps your drink at temperature long enough to get through a lecture or commute without a second coffee run. The 340ml size fits standard café pours and the internal lines make it easy for baristas to use.”"
+        }
+      ],
+      "descriptionText": "IN THE RANGE A reliable everyday cup we brought into Laneway — RMIT's made-by-Fressko reusable, built for the campus-to-café commute. DETAILS 340ml / 12oz Double-walled vacuum stainless, BPA-free Spill-proof, one-hand-open lid Barista-friendly internal measure lines Denim, Coal and Frost WHAT OUR PARTNER SAYS… From RMIT: “Keeps your drink at temperature long enough to get through a lecture or commute without a second coffee run. The 340ml size fits standard café pours and the internal lines make it easy for baristas to use.”",
+      "publishedAt": "2026-06-20T20:49:11+10:00"
+    },
+    {
+      "handle": "laneway-rmit-flex-fit-cap",
+      "title": "RMIT Flex Fit Cap",
+      "brand": "RMIT",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:entry",
+        "type:cap"
+      ],
+      "tier": "entry",
+      "season": "2026s1",
+      "typeTag": "cap",
+      "priceMin": 29.95,
+      "priceMax": 29.95,
+      "images": [
+        {
+          "src": "assets/img/products/RMIT-Store-Flex-Fit-Cap-Modelled-Seated-Side.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Flex-Fit-Cap-Modelled-Seated-Side.webp?v=1782036007",
+          "alt": "RMIT Flex Fit Cap"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-Flex-Fit-Cap-Modelled-Seated-Front.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Flex-Fit-Cap-Modelled-Seated-Front.webp?v=1782036007",
+          "alt": "RMIT Flex Fit Cap"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-Flex-Fit-Cap-Modelled-Side.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Flex-Fit-Cap-Modelled-Side.webp?v=1782036007",
+          "alt": "RMIT Flex Fit Cap"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Beige",
+            "Navy"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48439916265731",
+          "title": "Beige",
+          "price": 29.95,
+          "available": true,
+          "options": [
+            "Beige"
+          ]
+        },
+        {
+          "id": "48439916298499",
+          "title": "Navy",
+          "price": 29.95,
+          "available": true,
+          "options": [
+            "Navy"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "IN THE RANGE"
+        },
+        {
+          "type": "para",
+          "text": "A clean campus cap we added for the days a tee needs a finish. RMIT-made, simply done."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "100% cotton",
+            "Flex-fit form",
+            "Lower-right logo with red accents",
+            "Beige"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "WHAT OUR PARTNER SAYS"
+        },
+        {
+          "type": "para",
+          "text": "From RMIT: “The RMIT Flex Fit Cap is made from 100% cotton, designed for both comfort and style. It features the 'RMIT University' logo on the bottom right, with red accents along the top.”"
+        }
+      ],
+      "descriptionText": "IN THE RANGE A clean campus cap we added for the days a tee needs a finish. RMIT-made, simply done. DETAILS 100% cotton Flex-fit form Lower-right logo with red accents Beige WHAT OUR PARTNER SAYS… From RMIT: “The RMIT Flex Fit Cap is made from 100% cotton, designed for both comfort and style. It features the 'RMIT University' logo on the bottom right, with red accents along the top.”",
+      "publishedAt": "2026-06-20T20:38:31+10:00"
+    },
+    {
+      "handle": "laneway-rmit-essential-hoodie",
+      "title": "RMIT Essential Hoodie",
+      "brand": "RMIT",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:hoodie"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "hoodie",
+      "priceMin": 79.95,
+      "priceMax": 79.95,
+      "images": [
+        {
+          "src": "assets/img/products/RMIT-Store-Essential-Hoodie-Navy-Modelled-Front-Sitting-Stairs-Smile.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Essential-Hoodie-Navy-Modelled-Front-Sitting-Stairs-Smile.webp?v=1782036037",
+          "alt": "RMIT Essential Hoodie"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Essential-Hoodie-Navy-Modelled-Rear-Hood-Up-Back-Plain.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Essential-Hoodie-Navy-Modelled-Rear-Hood-Up-Back-Plain.webp?v=1782036038",
+          "alt": "RMIT Essential Hoodie"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-Essential-Hoodie-Navy-Modelled-Front-Sitting-Relaxed-Stairs.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Essential-Hoodie-Navy-Modelled-Front-Sitting-Relaxed-Stairs.webp?v=1782036038",
+          "alt": "RMIT Essential Hoodie"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Navy",
+            "Black"
+          ]
+        },
+        {
+          "name": "Size",
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48439846633731",
+          "title": "Navy / XS",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "XS"
+          ]
+        },
+        {
+          "id": "48439846666499",
+          "title": "Navy / S",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "S"
+          ]
+        },
+        {
+          "id": "48439846699267",
+          "title": "Navy / M",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "M"
+          ]
+        },
+        {
+          "id": "48439846732035",
+          "title": "Navy / L",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "L"
+          ]
+        },
+        {
+          "id": "48439846764803",
+          "title": "Navy / XL",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "XL"
+          ]
+        },
+        {
+          "id": "48439846797571",
+          "title": "Black / XS",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Black",
+            "XS"
+          ]
+        },
+        {
+          "id": "48439846830339",
+          "title": "Black / S",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Black",
+            "S"
+          ]
+        },
+        {
+          "id": "48439846863107",
+          "title": "Black / M",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Black",
+            "M"
+          ]
+        },
+        {
+          "id": "48439846895875",
+          "title": "Black / L",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Black",
+            "L"
+          ]
+        },
+        {
+          "id": "48439846928643",
+          "title": "Black / XL",
+          "price": 79.95,
+          "available": true,
+          "options": [
+            "Black",
+            "XL"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "IN THE RANGE"
+        },
+        {
+          "type": "para",
+          "text": "RMIT's everyday hoodie, brought into the range as the layer that does the most work — warm, plain, and easy to live in."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Mid-weight fleece",
+            "Centre-chest logo",
+            "Drawstring hood, ribbed cuffs",
+            "Navy",
+            "Machine wash cold"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "WHAT OUR PARTNER SAYS"
+        },
+        {
+          "type": "para",
+          "text": "From RMIT: “A straightforward hoodie that keeps the RMIT branding front and centre without overcomplicating the design. The mid-weight fleece balances warmth and comfort across cold mornings and indoor spaces.”"
+        }
+      ],
+      "descriptionText": "IN THE RANGE RMIT's everyday hoodie, brought into the range as the layer that does the most work — warm, plain, and easy to live in. DETAILS • Mid-weight fleece • Centre-chest logo • Drawstring hood, ribbed cuffs • Navy • Machine wash cold WHAT OUR PARTNER SAYS… From RMIT: “A straightforward hoodie that keeps the RMIT branding front and centre without overcomplicating the design. The mid-weight fleece balances warmth and comfort across cold mornings and indoor spaces.”",
+      "publishedAt": "2026-06-20T20:32:32+10:00"
+    },
+    {
+      "handle": "laneway-rmit-essential-tee",
+      "title": "RMIT Essential Tee",
+      "brand": "RMIT",
+      "type": "Apparel",
+      "tags": [
+        "Iterable",
+        "season:2026s1",
+        "tier:mid",
+        "type:tee"
+      ],
+      "tier": "mid",
+      "season": "2026s1",
+      "typeTag": "tee",
+      "priceMin": 39.95,
+      "priceMax": 39.95,
+      "images": [
+        {
+          "src": "assets/img/products/RMIT-Store-Everyday-Tee-White-Marle-Modelled-Front-Single-Model-Campus.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Everyday-Tee-White-Marle-Modelled-Front-Single-Model-Campus.webp?v=1782036089",
+          "alt": "RMIT Essential Tee"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-RMIT-Essential-Tee-Navy-Modelled-Front-Standing-Hands-In-Pockets.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-RMIT-Essential-Tee-Navy-Modelled-Front-Standing-Hands-In-Pockets.webp?v=1782036089",
+          "alt": "RMIT Essential Tee"
+        },
+        {
+          "src": "assets/img/products/RMIT-Store-Everyday-Tee-White-Marle-1-Shopify.webp",
+          "remote": "https://cdn.shopify.com/s/files/1/0806/5571/2515/files/RMIT-Store-Everyday-Tee-White-Marle-1-Shopify.webp?v=1782036089",
+          "alt": "RMIT Essential Tee"
+        }
+      ],
+      "options": [
+        {
+          "name": "Color",
+          "values": [
+            "Navy",
+            "White",
+            "Black"
+          ]
+        },
+        {
+          "name": "Size",
+          "values": [
+            "XS",
+            "S",
+            "M",
+            "L",
+            "XL"
+          ]
+        }
+      ],
+      "variants": [
+        {
+          "id": "48439844700419",
+          "title": "Navy / XS",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "XS"
+          ]
+        },
+        {
+          "id": "48439844733187",
+          "title": "Navy / S",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "S"
+          ]
+        },
+        {
+          "id": "48439844765955",
+          "title": "Navy / M",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "M"
+          ]
+        },
+        {
+          "id": "48439844798723",
+          "title": "Navy / L",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "L"
+          ]
+        },
+        {
+          "id": "48439844831491",
+          "title": "Navy / XL",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Navy",
+            "XL"
+          ]
+        },
+        {
+          "id": "48439844864259",
+          "title": "White / XS",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "White",
+            "XS"
+          ]
+        },
+        {
+          "id": "48439844897027",
+          "title": "White / S",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "White",
+            "S"
+          ]
+        },
+        {
+          "id": "48439844929795",
+          "title": "White / M",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "White",
+            "M"
+          ]
+        },
+        {
+          "id": "48439844962563",
+          "title": "White / L",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "White",
+            "L"
+          ]
+        },
+        {
+          "id": "48439844995331",
+          "title": "White / XL",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "White",
+            "XL"
+          ]
+        },
+        {
+          "id": "48439845028099",
+          "title": "Black / XS",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Black",
+            "XS"
+          ]
+        },
+        {
+          "id": "48439845060867",
+          "title": "Black / S",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Black",
+            "S"
+          ]
+        },
+        {
+          "id": "48439845093635",
+          "title": "Black / M",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Black",
+            "M"
+          ]
+        },
+        {
+          "id": "48439845126403",
+          "title": "Black / L",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Black",
+            "L"
+          ]
+        },
+        {
+          "id": "48439845159171",
+          "title": "Black / XL",
+          "price": 39.95,
+          "available": true,
+          "options": [
+            "Black",
+            "XL"
+          ]
+        }
+      ],
+      "descriptionBlocks": [
+        {
+          "type": "heading",
+          "text": "IN THE RANGE"
+        },
+        {
+          "type": "para",
+          "text": "A wardrobe staple we were glad to bring into Laneway. RMIT's own everyday tee — here because a good range needs a dependable piece you reach for without thinking."
+        },
+        {
+          "type": "heading",
+          "text": "DETAILS"
+        },
+        {
+          "type": "list",
+          "items": [
+            "100% cotton",
+            "Regular fit, ribbed crew neck",
+            "Small left-chest logo",
+            "Navy and White Marle",
+            "Machine wash cold"
+          ]
+        },
+        {
+          "type": "heading",
+          "text": "WHAT OUR PARTNER SAYS"
+        },
+        {
+          "type": "para",
+          "text": "From RMIT: “You get a clean way to show you're part of RMIT without it dominating your outfit. The 100% cotton keeps it breathable through long days moving between lectures and indoor spaces.”"
+        }
+      ],
+      "descriptionText": "IN THE RANGE A wardrobe staple we were glad to bring into Laneway. RMIT's own everyday tee — here because a good range needs a dependable piece you reach for without thinking. DETAILS • 100% cotton • Regular fit, ribbed crew neck • Small left-chest logo • Navy and White Marle • Machine wash cold WHAT OUR PARTNER SAYS… From RMIT: “You get a clean way to show you're part of RMIT without it dominating your outfit. The 100% cotton keeps it breathable through long days moving between lectures and indoor spaces.”",
+      "publishedAt": "2026-06-20T20:26:07+10:00"
+    }
+  ]
+}

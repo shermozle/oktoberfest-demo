@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Season – Laneway</title>
+<meta name="description" content="The latest drop in the Laneway range.">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:title" content="New Season – Laneway">
+<meta property="og:description" content="The latest drop in the Laneway range.">
+<link rel="icon" href="../../assets/img/site/logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="../../assets/css/site.css">
+</head>
+<body data-page="collection">
+
+<div class="announcement">Melbourne-designed branded merchandise, made to be kept.</div>
+<header class="site-header">
+  <button class="icon-btn nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="site-header__logo" href="../../index.html" aria-label="Laneway home">
+    <img src="../../assets/img/site/logo.jpg" alt="Laneway" width="96" height="18">
+  </a>
+  <nav class="site-nav" id="site-nav" aria-label="Main">
+    <div class="site-nav__item"><a href="../../index.html" data-nav-link="header">Home</a></div>
+    <div class="site-nav__item"><a href="../../pages/about/" data-nav-link="header">About</a></div>
+    <div class="site-nav__item"><a href="../../pages/services/" data-nav-link="header">Services</a></div>
+    <div class="site-nav__item">
+      <a href="../../collections/" data-nav-link="header" aria-haspopup="true">Shop</a>
+      <div class="mega">
+        <div>
+          <p class="mega__title"><a href="../../collections/">By Collaboration</a></p>
+          <ul class="mega__list"><li><a href="../../collections/rmit/" data-nav-link="mega">RMIT</a></li><li><a href="../../collections/southbank-coffee-co/" data-nav-link="mega">Southbank Coffee Co.</a></li><li><a href="../../collections/laneway/" data-nav-link="mega">Laneway</a></li><li><a href="../../collections/signature/" data-nav-link="mega">Signature</a></li></ul>
+        </div>
+        <div>
+          <p class="mega__title"><a href="../../collections/">By Category</a></p>
+          <ul class="mega__list"><li><a href="../../collections/accessories/" data-nav-link="mega">Accessories</a></li><li><a href="../../collections/all-tees/" data-nav-link="mega">All Tees</a></li><li><a href="../../collections/all-totes/" data-nav-link="mega">All Totes</a></li><li><a href="../../collections/apparel/" data-nav-link="mega">Apparel</a></li><li><a href="../../collections/drinkware/" data-nav-link="mega">Drinkware</a></li></ul>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <div class="site-header__actions">
+    <button class="icon-btn" type="button" data-search-open aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg></button>
+    <button class="icon-btn" type="button" data-cards-toggle aria-label="Messages">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.5 3h15L18 16Z"/><path d="M10 21h4"/></svg><span class="badge" data-cards-count hidden>0</span>
+    </button>
+    <a class="icon-btn" href="../../account/" aria-label="Account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></a>
+    <a class="icon-btn" href="../../cart/" aria-label="Cart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span class="badge" data-cart-count hidden>0</span>
+    </a>
+  </div>
+</header>
+
+<div class="cards-panel" id="cards-panel" hidden>
+  <p class="mega__title" style="margin-bottom:12px">Your messages</p>
+  <div data-cards-list></div>
+</div>
+
+<div class="search-overlay" id="search-overlay" hidden>
+  <div style="display:flex;justify-content:flex-end">
+    <button class="icon-btn" type="button" data-search-close aria-label="Close search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+  <div class="search-overlay__bar">
+    <label class="visually-hidden" for="search-input">Search products</label>
+    <input id="search-input" type="search" placeholder="Search products&hellip;" autocomplete="off">
+  </div>
+  <div class="search-results"></div>
+</div>
+<main>
+
+<div class="collection-banner">
+  <img class="collection-banner__media" src="../../assets/img/products/LWJacket1.webp" alt="" fetchpriority="high">
+  <h1>New Season</h1>
+  <p>The latest drop in the Laneway range.</p>
+</div>
+<div class="toolbar">
+  <div class="filter-pop">
+    <button class="btn--sm" type="button" data-pop-toggle="pop-availability"
+      style="border:0;background:none;cursor:pointer;padding:6px 0">Availability &#9662;</button>
+    <div class="filter-pop__panel" id="pop-availability" hidden>
+      <label class="check"><input type="checkbox" value="in-stock" data-filter-availability><span>In stock</span></label>
+      <label class="check"><input type="checkbox" value="out-of-stock" data-filter-availability><span>Out of stock</span></label>
+    </div>
+  </div>
+  <div class="filter-pop">
+    <button class="btn--sm" type="button" data-pop-toggle="pop-price"
+      style="border:0;background:none;cursor:pointer;padding:6px 0">Price &#9662;</button>
+    <div class="filter-pop__panel" id="pop-price" hidden>
+      <div class="field-row">
+        <label class="field"><span>From</span><input type="number" min="0" placeholder="0" data-price-min></label>
+        <label class="field"><span>To</span><input type="number" min="0" placeholder="180" data-price-max></label>
+      </div>
+      <p class="muted" style="font-size:12px;margin:0 0 10px">Highest price is $180.00</p>
+      <button class="btn btn--sm btn--outline" type="button" data-filter-clear>Clear all</button>
+    </div>
+  </div>
+  <span class="toolbar__count" data-collection-count>29 items</span>
+  <label>
+    <span class="visually-hidden">Sort by</span>
+    <select data-sort>
+      <option value="featured">Featured</option>
+      <option value="title-asc">Alphabetically, A-Z</option>
+      <option value="title-desc">Alphabetically, Z-A</option>
+      <option value="price-asc">Price, low to high</option>
+      <option value="price-desc">Price, high to low</option>
+      <option value="date-desc">Date, new to old</option>
+      <option value="date-asc">Date, old to new</option>
+    </select>
+  </label>
+</div>
+<section class="section--tight page" data-placement="collection-grid">
+  <div class="grid grid--4" data-collection-grid>
+    <article class="card" data-product-card="heavyweight-studio-jacket">
+  <a class="card__media" href="../../products/heavyweight-studio-jacket/">
+    <img src="../../assets/img/products/LWJacket1.webp" alt="Heavyweight Studio Jacket" loading="lazy">
+    <img src="../../assets/img/products/LWJacketworn.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/heavyweight-studio-jacket/">Heavyweight Studio Jacket</a>
+    <div class="card__price">$165.00</div>
+  </div>
+</article><article class="card" data-product-card="southbank-notebook">
+  <a class="card__media" href="../../products/southbank-notebook/">
+    <img src="../../assets/img/products/SBNotebook1.webp" alt="Southbank Notebook" loading="lazy">
+    
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Southbank</span>
+    <a class="card__title" href="../../products/southbank-notebook/">Southbank Notebook</a>
+    <div class="card__price">$22.00</div>
+  </div>
+</article><article class="card" data-product-card="southbank-mug">
+  <a class="card__media" href="../../products/southbank-mug/">
+    <img src="../../assets/img/products/SBMug3.webp" alt="Southbank Mug" loading="lazy">
+    <img src="../../assets/img/products/SBMug1.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Southbank</span>
+    <a class="card__title" href="../../products/southbank-mug/">Southbank Mug</a>
+    <div class="card__price">$24.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-canvas-tote">
+  <a class="card__media" href="../../products/laneway-canvas-tote/">
+    <img src="../../assets/img/products/LWTote.webp" alt="Laneway Canvas Tote" loading="lazy">
+    
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/laneway-canvas-tote/">Laneway Canvas Tote</a>
+    <div class="card__price">$45.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-rmit-everyday-bottle">
+  <a class="card__media" href="../../products/laneway-rmit-everyday-bottle/">
+    <img src="../../assets/img/products/RMIT-Store-RMIT-Everyday-Bottle-Multi-Colour-Group-Front-Display-On-Table.webp" alt="RMIT Everyday Bottle" loading="lazy">
+    <img src="../../assets/img/products/RMIT-Store-RMIT-Everyday-Bottle-Red-Front-Upright-On-Table-Logo-Focused.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">RMIT</span>
+    <a class="card__title" href="../../products/laneway-rmit-everyday-bottle/">RMIT Everyday Bottle</a>
+    <div class="card__price">$14.95</div>
+  </div>
+</article><article class="card" data-product-card="laneway-rmit-essential-tee">
+  <a class="card__media" href="../../products/laneway-rmit-essential-tee/">
+    <img src="../../assets/img/products/RMIT-Store-Everyday-Tee-White-Marle-Modelled-Front-Single-Model-Campus.webp" alt="RMIT Essential Tee" loading="lazy">
+    <img src="../../assets/img/products/RMIT-Store-RMIT-Essential-Tee-Navy-Modelled-Front-Standing-Hands-In-Pockets.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">RMIT</span>
+    <a class="card__title" href="../../products/laneway-rmit-essential-tee/">RMIT Essential Tee</a>
+    <div class="card__price">$39.95</div>
+  </div>
+</article><article class="card" data-product-card="limited-edition-art-print">
+  <a class="card__media" href="../../products/limited-edition-art-print/">
+    <img src="../../assets/img/products/LWPrint.webp" alt="Limited Edition Art Print" loading="lazy">
+    
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/limited-edition-art-print/">Limited Edition Art Print</a>
+    <div class="card__price">$140.00</div>
+  </div>
+</article><article class="card" data-product-card="the-makers-gift-set">
+  <a class="card__media" href="../../products/the-makers-gift-set/">
+    <img src="../../assets/img/products/LWGift.webp" alt="The Maker&#39;s Gift Set" loading="lazy">
+    
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/the-makers-gift-set/">The Maker&#39;s Gift Set</a>
+    <div class="card__price">$120.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-weekender-bag">
+  <a class="card__media" href="../../products/laneway-weekender-bag/">
+    <img src="../../assets/img/products/Imagespread.webp" alt="Laneway Weekender Bag" loading="lazy">
+    <img src="../../assets/img/products/LWWeekendermodel.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/laneway-weekender-bag/">Laneway Weekender Bag</a>
+    <div class="card__price">$180.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-leather-cardholder">
+  <a class="card__media" href="../../products/laneway-leather-cardholder/">
+    <img src="../../assets/img/products/LWCardHolder.webp" alt="Laneway Leather Cardholder" loading="lazy">
+    
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/laneway-leather-cardholder/">Laneway Leather Cardholder</a>
+    <div class="card__price">$95.00</div>
+  </div>
+</article><article class="card" data-product-card="southbank-tote">
+  <a class="card__media" href="../../products/southbank-tote/">
+    <img src="../../assets/img/products/SBTote1.webp" alt="Southbank Tote" loading="lazy">
+    <img src="../../assets/img/products/SBTote2.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Southbank</span>
+    <a class="card__title" href="../../products/southbank-tote/">Southbank Tote</a>
+    <div class="card__price">$28.00</div>
+  </div>
+</article><article class="card" data-product-card="southbank-pour-over-dripper">
+  <a class="card__media" href="../../products/southbank-pour-over-dripper/">
+    <img src="../../assets/img/products/SBFilter1.webp" alt="Southbank Pour-Over Dripper" loading="lazy">
+    <img src="../../assets/img/products/SBFilter3.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Southbank</span>
+    <a class="card__title" href="../../products/southbank-pour-over-dripper/">Southbank Pour-Over Dripper</a>
+    <div class="card__price">$42.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-mug">
+  <a class="card__media" href="../../products/laneway-mug/">
+    <img src="../../assets/img/products/LWMug.webp" alt="Laneway Mug" loading="lazy">
+    
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/laneway-mug/">Laneway Mug</a>
+    <div class="card__price">$32.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-flask">
+  <a class="card__media" href="../../products/laneway-flask/">
+    <img src="../../assets/img/products/LWBottle.webp" alt="Laneway Insulated Bottle" loading="lazy">
+    
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/laneway-flask/">Laneway Insulated Bottle</a>
+    <div class="card__price">$54.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-reusable-cup">
+  <a class="card__media" href="../../products/laneway-reusable-cup/">
+    <img src="../../assets/img/products/LWCup_d5657cfc-714d-46c0-8c2d-c3346890e2ff.webp" alt="Laneway Reusable Cup" loading="lazy">
+    
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/laneway-reusable-cup/">Laneway Reusable Cup</a>
+    <div class="card__price">$36.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-cap">
+  <a class="card__media" href="../../products/laneway-cap/">
+    <img src="../../assets/img/products/LWCap1.webp" alt="Laneway Cap" loading="lazy">
+    <img src="../../assets/img/products/LWCapworn.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/laneway-cap/">Laneway Cap</a>
+    <div class="card__price">$39.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-studio-crew">
+  <a class="card__media" href="../../products/laneway-studio-crew/">
+    <img src="../../assets/img/products/LWCrew1.webp" alt="Laneway Studio Crew" loading="lazy">
+    <img src="../../assets/img/products/LWCrew2.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/laneway-studio-crew/">Laneway Studio Crew</a>
+    <div class="card__price">$0.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-studio-tee">
+  <a class="card__media" href="../../products/laneway-studio-tee/">
+    <img src="../../assets/img/products/LWTee1.webp" alt="Laneway Studio Tee" loading="lazy">
+    <img src="../../assets/img/products/LWTee4.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Laneway</span>
+    <a class="card__title" href="../../products/laneway-studio-tee/">Laneway Studio Tee</a>
+    <div class="card__price">$49.00</div>
+  </div>
+</article><article class="card" data-product-card="southbank-coaster-set">
+  <a class="card__media" href="../../products/southbank-coaster-set/">
+    <img src="../../assets/img/products/SBCoasters.webp" alt="Southbank Coaster Set" loading="lazy">
+    
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Southbank</span>
+    <a class="card__title" href="../../products/southbank-coaster-set/">Southbank Coaster Set</a>
+    <div class="card__price">$26.00</div>
+  </div>
+</article><article class="card" data-product-card="southbank-reusable-cup">
+  <a class="card__media" href="../../products/southbank-reusable-cup/">
+    <img src="../../assets/img/products/SBCup1.webp" alt="Southbank Reusable Cup" loading="lazy">
+    <img src="../../assets/img/products/SBBeanie3.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Southbank</span>
+    <a class="card__title" href="../../products/southbank-reusable-cup/">Southbank Reusable Cup</a>
+    <div class="card__price">$32.00</div>
+  </div>
+</article><article class="card" data-product-card="southbank-beanie">
+  <a class="card__media" href="../../products/southbank-beanie/">
+    <img src="../../assets/img/products/SBBeanie1.webp" alt="Southbank Beanie" loading="lazy">
+    <img src="../../assets/img/products/SBBeanie3_d555cd6c-3d89-4087-977e-c273b5ff2fd2.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Southbank</span>
+    <a class="card__title" href="../../products/southbank-beanie/">Southbank Beanie</a>
+    <div class="card__price">$34.00</div>
+  </div>
+</article><article class="card" data-product-card="southbank-apron">
+  <a class="card__media" href="../../products/southbank-apron/">
+    <img src="../../assets/img/products/SBApron1.webp" alt="Southbank Apron" loading="lazy">
+    <img src="../../assets/img/products/SBApron3.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Southbank</span>
+    <a class="card__title" href="../../products/southbank-apron/">Southbank Apron</a>
+    <div class="card__price">$49.00</div>
+  </div>
+</article><article class="card" data-product-card="southbank-barista-tee">
+  <a class="card__media" href="../../products/southbank-barista-tee/">
+    <img src="../../assets/img/products/SBTShirts1.webp" alt="Southbank Barista Tee" loading="lazy">
+    <img src="../../assets/img/products/SBTsirt3.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">Southbank</span>
+    <a class="card__title" href="../../products/southbank-barista-tee/">Southbank Barista Tee</a>
+    <div class="card__price">$42.00</div>
+  </div>
+</article><article class="card" data-product-card="laneway-rmit-a5-notebook">
+  <a class="card__media" href="../../products/laneway-rmit-a5-notebook/">
+    <img src="../../assets/img/products/RMIT-Store-A5-Recycled-Notebook-Modelled-Closed.webp" alt="RMIT A5 Recycled Notebook" loading="lazy">
+    <img src="../../assets/img/products/RMIT-Store-A5-Recycled-Notebook-Open-Side-Modelled-Holding.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">RMIT</span>
+    <a class="card__title" href="../../products/laneway-rmit-a5-notebook/">RMIT A5 Recycled Notebook</a>
+    <div class="card__price">$9.95</div>
+  </div>
+</article><article class="card" data-product-card="laneway-rmit-tote">
+  <a class="card__media" href="../../products/laneway-rmit-tote/">
+    <img src="../../assets/img/products/RMIT-Store-fairtrade-cotton-tote-bag-natural-modelled-close-up-blue-logo.webp" alt="RMIT Fairtrade Cotton Tote" loading="lazy">
+    <img src="../../assets/img/products/RMIT-Store-Everyday-Campus-Tote-Carlton-Brunswick-Bundoora-Hanging-On-Rail.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">RMIT</span>
+    <a class="card__title" href="../../products/laneway-rmit-tote/">RMIT Fairtrade Cotton Tote</a>
+    <div class="card__price">$14.95</div>
+  </div>
+</article><article class="card" data-product-card="laneway-rmit-essential-mug">
+  <a class="card__media" href="../../products/laneway-rmit-essential-mug/">
+    <img src="../../assets/img/products/RMIT-Store-RMIT-Mug-Indigo-Upright-On-Table.webp" alt="RMIT Essential Mug" loading="lazy">
+    <img src="../../assets/img/products/RMIT-Store-RMIT-Mug-Black-Red-Interior-Modelled-Held-Front.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">RMIT</span>
+    <a class="card__title" href="../../products/laneway-rmit-essential-mug/">RMIT Essential Mug</a>
+    <div class="card__price">$19.95</div>
+  </div>
+</article><article class="card" data-product-card="laneway-rmit-everyday-reusable-cup">
+  <a class="card__media" href="../../products/laneway-rmit-everyday-reusable-cup/">
+    <img src="../../assets/img/products/RMIT-Store-Everyday-Reusable-Cup-Espresso-Front-On-Table-With-Packaging.webp" alt="RMIT Everyday Reusable Cup" loading="lazy">
+    <img src="../../assets/img/products/RMIT-Store-Everyday-Reusable-Cup-Frost-Front-On-Table-Fressko-Branding.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">RMIT</span>
+    <a class="card__title" href="../../products/laneway-rmit-everyday-reusable-cup/">RMIT Everyday Reusable Cup</a>
+    <div class="card__price">$44.95</div>
+  </div>
+</article><article class="card" data-product-card="laneway-rmit-flex-fit-cap">
+  <a class="card__media" href="../../products/laneway-rmit-flex-fit-cap/">
+    <img src="../../assets/img/products/RMIT-Store-Flex-Fit-Cap-Modelled-Seated-Side.webp" alt="RMIT Flex Fit Cap" loading="lazy">
+    <img src="../../assets/img/products/RMIT-Store-Flex-Fit-Cap-Modelled-Seated-Front.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">RMIT</span>
+    <a class="card__title" href="../../products/laneway-rmit-flex-fit-cap/">RMIT Flex Fit Cap</a>
+    <div class="card__price">$29.95</div>
+  </div>
+</article><article class="card" data-product-card="laneway-rmit-essential-hoodie">
+  <a class="card__media" href="../../products/laneway-rmit-essential-hoodie/">
+    <img src="../../assets/img/products/RMIT-Store-Essential-Hoodie-Navy-Modelled-Front-Sitting-Stairs-Smile.webp" alt="RMIT Essential Hoodie" loading="lazy">
+    <img src="../../assets/img/products/RMIT-Store-RMIT-Essential-Hoodie-Navy-Modelled-Rear-Hood-Up-Back-Plain.webp" alt="" loading="lazy">
+  </a>
+  <div class="card__body">
+    <span class="card__brand">RMIT</span>
+    <a class="card__title" href="../../products/laneway-rmit-essential-hoodie/">RMIT Essential Hoodie</a>
+    <div class="card__price">$79.95</div>
+  </div>
+</article>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer__top">
+    <div>
+      <p class="footer__note">Laneway is a simulated teaching store by RMIT&#39;s Marketing Technology Lab.</p>
+      <p class="footer__note">Nothing here is real or for sale.</p>
+      <p><a class="link-underline" href="../../pages/about/">[Why this exists &rarr;]</a></p>
+    </div>
+    <div class="newsletter">
+      <h3 style="margin-bottom:6px">Join our email list</h3>
+      <p class="muted">Be first to see new collections and collaborations.</p>
+      <form data-newsletter="footer" novalidate>
+        <label class="visually-hidden" for="footer-email">Email address</label>
+        <input id="footer-email" type="email" placeholder="Email address" autocomplete="email">
+        <button type="submit" aria-label="Subscribe"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </form>
+      <p class="newsletter__msg" role="status"></p>
+    </div>
+    <div>
+      <p class="mega__title">Shop</p>
+      <ul class="mega__list">
+        <li><a href="../../collections/accessories/">Accessories</a></li><li><a href="../../collections/all-tees/">All Tees</a></li><li><a href="../../collections/all-totes/">All Totes</a></li><li><a href="../../collections/apparel/">Apparel</a></li><li><a href="../../collections/drinkware/">Drinkware</a></li><li><a href="../../collections/laneway/">Laneway</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer__bottom">
+    <span>&copy; 2026 Laneway &mdash; mocked for demonstration</span>
+    <a href="../../pages/about/">About this store</a>
+    <a href="../../account/">Account</a>
+  </div>
+</footer>
+
+<div class="gate" id="gate" hidden>
+  <div class="gate__inner">
+    <img class="gate__logo" src="../../assets/img/site/logo.jpg" alt="Laneway" width="96" height="16">
+    <h1>Demo Site</h1>
+    <p>This site is exclusively used for education within RMIT's Marketing Technology courses. Enter below with the password from your teacher.</p>
+    <p class="muted">Welcome to Laneway. Before you come in, one thing worth knowing: Laneway isn't a real business. It's a working teaching store built by RMIT University's Marketing Technology Lab, where students learn how modern marketing technology actually behaves in the wild. Everything inside is simulated. The brands, the products, the customers have all been created for teaching. Nothing is for sale, nothing ships, and no payment are ever taken. What is real is the technology running underneath &mdash; and once you're in, you'll be able to see exactly how it works.</p>
+    <p><strong>Password: MTL</strong></p>
+    <form novalidate>
+      <label class="visually-hidden" for="gate-password">Password</label>
+      <input id="gate-password" type="password" placeholder="Password" autocomplete="off">
+      <button class="btn" type="submit">Enter</button>
+    </form>
+    <p class="gate__error" role="alert" style="color:#c0392b;min-height:20px;margin-top:10px"></p>
+  </div>
+</div>
+<script>
+  window.LANEWAY_BASE = "../../";
+  window.LANEWAY_PAGE = {"name":"New Season","collection":{"handle":"new-season","title":"New Season","isBrand":false,"products":["heavyweight-studio-jacket","southbank-notebook","southbank-mug","laneway-canvas-tote","laneway-rmit-everyday-bottle","laneway-rmit-essential-tee","limited-edition-art-print","the-makers-gift-set","laneway-weekender-bag","laneway-leather-cardholder","southbank-tote","southbank-pour-over-dripper","laneway-mug","laneway-flask","laneway-reusable-cup","laneway-cap","laneway-studio-crew","laneway-studio-tee","southbank-coaster-set","southbank-reusable-cup","southbank-beanie","southbank-apron","southbank-barista-tee","laneway-rmit-a5-notebook","laneway-rmit-tote","laneway-rmit-essential-mug","laneway-rmit-everyday-reusable-cup","laneway-rmit-flex-fit-cap","laneway-rmit-essential-hoodie"]}};
+</script>
+<script src="../../assets/js/config.js"></script>
+<script src="../../assets/data/index.js"></script>
+<script src="../../assets/js/store.js"></script>
+<script src="../../assets/js/tracking.js"></script>
+<script src="../../assets/js/devtools.js"></script>
+<script src="../../assets/js/app.js"></script>
+</body>
+</html>
