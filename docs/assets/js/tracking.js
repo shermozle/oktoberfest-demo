@@ -172,7 +172,16 @@
     });
   }
 
-  async function initAmplitude() {
+  // Braze's device id, once Braze has loaded; null if it's unconfigured,
+  // failed, or slower than `waitMs`.
+  function brazeDeviceId(brazeLoading, waitMs) {
+    return Promise.race([
+      brazeLoading.then(() => (state.braze.ready ? window.braze.getDeviceId() || null : null)),
+      new Promise((resolve) => setTimeout(() => resolve(null), waitMs)),
+    ]);
+  }
+
+  async function initAmplitude(brazeLoading) {
     if (!state.amplitude.configured) {
       record(
         'amplitude',
@@ -184,17 +193,22 @@
     }
     try {
       const zone = cfg.AMPLITUDE_SERVER_ZONE || 'US';
-      await loadScript(AMPLITUDE_SCRIPT(cfg.AMPLITUDE_API_KEY, zone));
+      const [, brazeId] = await Promise.all([
+        loadScript(AMPLITUDE_SCRIPT(cfg.AMPLITUDE_API_KEY, zone)),
+        brazeDeviceId(brazeLoading, 5000),
+      ]);
       const amp = window.amplitude;
       if (!amp) throw new Error('window.amplitude missing after load');
 
+      // Braze Currents matches anonymous users to Amplitude by device id, and
+      // Braze can't be told which id to use, so Amplitude adopts Braze's.
+      // Without Braze, the mock's own id stands in.
+      const deviceId = brazeId || store.anonId();
       amp.init(cfg.AMPLITUDE_API_KEY, {
         serverZone: zone,
         autocapture: cfg.AMPLITUDE_AUTOCAPTURE,
         fetchRemoteConfig: true,
-        // Share the mock's own device id so Amplitude, Braze and the event
-        // stream all agree on who this anonymous visitor is.
-        deviceId: store.anonId(),
+        deviceId: deviceId,
       });
 
       // Session Replay ships inside the per-key script bundle.
@@ -207,7 +221,8 @@
       state.amplitude.ready = true;
       record('amplitude', 'SDK initialised', {
         serverZone: zone,
-        deviceId: store.anonId(),
+        deviceId: deviceId,
+        deviceIdSource: brazeId ? 'braze' : 'site fallback (Braze unavailable)',
       });
       flush('amplitude');
     } catch (err) {
@@ -281,7 +296,17 @@
       braze.requestContentCardsRefresh();
 
       state.braze.ready = true;
-      record('braze', 'SDK initialised', { baseUrl: cfg.BRAZE_SDK_ENDPOINT });
+      record('braze', 'SDK initialised', {
+        baseUrl: cfg.BRAZE_SDK_ENDPOINT,
+        deviceId: braze.getDeviceId(),
+      });
+      // Braze was too slow and Amplitude started on the fallback id: move it
+      // onto Braze's so anonymous Currents events still match.
+      const brazeId = braze.getDeviceId();
+      if (state.amplitude.ready && brazeId && window.amplitude.getDeviceId() !== brazeId) {
+        window.amplitude.setDeviceId(brazeId);
+        record('amplitude', 'setDeviceId (adopted Braze device id late)', { deviceId: brazeId });
+      }
       // Identify before replaying the queue, so queued events land on the
       // right Braze profile rather than an anonymous one.
       applyIdentityToBraze();
@@ -376,10 +401,18 @@
     const customer = store.getCustomer();
     if (!customer) return;
     const attrs = customerAttributes(customer);
+    // The same id Amplitude uses as user_id. Currents stamps every Braze
+    // event with the external id as its Amplitude user_id, so the two must
+    // match. With no usable id Braze stays anonymous, like Amplitude, and the
+    // shared device id links the two instead.
+    const userId = userIdFor(customer);
 
     const ok = send('braze', function () {
       const braze = window.braze;
-      braze.changeUser(customer.id);
+      if (userId) {
+        braze.changeUser(userId);
+        store.setPref('brazeExternalId', userId);
+      }
       const user = braze.getUser();
       if (customer.email) user.setEmail(customer.email);
       if (customer.firstName) user.setFirstName(customer.firstName);
@@ -393,18 +426,13 @@
         if (pair[1] !== null && pair[1] !== undefined)
           user.setCustomUserAttribute(pair[0], pair[1]);
       });
-      // Identity bridge: find this Braze profile from Amplitude and back.
-      user.setCustomUserAttribute('amplitude_device_id', store.anonId());
-      user.setCustomUserAttribute('amplitude_user_id', userIdFor(customer));
       braze.requestImmediateDataFlush();
     });
 
     record(
       'braze',
-      'changeUser + setCustomUserAttribute',
-      Object.assign({ external_id: customer.id }, attrs, {
-        amplitude_device_id: store.anonId(),
-      }),
+      userId ? 'changeUser + setCustomUserAttribute' : 'setCustomUserAttribute (anonymous: no usable id)',
+      Object.assign({ external_id: userId }, attrs),
       outcome('braze', ok)
     );
   }
@@ -420,36 +448,66 @@
       Object.entries(attrs).forEach(function (pair) {
         if (pair[1] !== null && pair[1] !== undefined) id.set(pair[0], pair[1]);
       });
-      // Identity bridge in the other direction.
-      id.set('braze_external_id', customer.id);
       amp.identify(id);
     });
     record(
       'amplitude',
       userId ? 'setUserId + identify' : 'identify (no user id: email too short)',
-      Object.assign({ user_id: userId }, attrs, {
-        braze_external_id: customer.id,
-      }),
+      Object.assign({ user_id: userId }, attrs),
       outcome('amplitude', ok)
     );
 
     applyIdentityToBraze();
   }
 
-  function resetIdentity() {
-    const ampOk = send('amplitude', function () {
-      window.amplitude.reset();
-      window.amplitude.setDeviceId(store.anonId());
-    });
-    record('amplitude', 'reset', { deviceId: store.anonId() }, outcome('amplitude', ampOk));
+  // The identifiers each SDK is actually using, for the drawer's State tab.
+  // Braze's external id is remembered when set, since signing out leaves it
+  // in place on Braze's side.
+  function ids() {
+    const amp = state.amplitude.ready ? window.amplitude : null;
+    const braze = state.braze.ready ? window.braze : null;
+    return {
+      amplitudeUserId: amp ? amp.getUserId() || null : null,
+      amplitudeDeviceId: amp ? amp.getDeviceId() || null : null,
+      brazeExternalId: braze ? store.getPrefs().brazeExternalId || null : null,
+      brazeDeviceId: braze ? braze.getDeviceId() || null : null,
+      ready: { amplitude: !!amp, braze: !!braze },
+    };
+  }
 
-    const brazeOk = send('braze', () => window.braze.changeUser(store.anonId()));
-    record(
-      'braze',
-      'changeUser (anonymous)',
-      { external_id: store.anonId() },
-      outcome('braze', brazeOk)
-    );
+  // Storefront sign-out. Braze says not to change the user on logout (it
+  // stops you re-engaging them), and an identified Braze user can't go back
+  // to anonymous anyway. So Braze keeps the user, and Amplitude drops its
+  // user id but keeps the shared device id, which still points both tools at
+  // the same person.
+  function signOut() {
+    const ok = send('amplitude', () => window.amplitude.setUserId(undefined));
+    record('amplitude', 'setUserId(undefined)', { deviceId: 'unchanged' }, outcome('amplitude', ok));
+    record('braze', 'no change', null, 'Braze keeps the user on logout, per Braze guidance');
+  }
+
+  // Demo reset, e.g. before switching persona: a genuinely new anonymous
+  // visitor in both tools. Braze's wipeData gives a new device id, and
+  // Amplitude adopts it so anonymous Currents events keep matching.
+  function wipeIdentity() {
+    const brazeOk = send('braze', function () {
+      window.braze.wipeData();
+      store.setPref('brazeExternalId', null);
+      const newId = window.braze.getDeviceId() || store.anonId();
+      record('braze', 'wipeData', { newDeviceId: newId });
+      send('amplitude', function () {
+        window.amplitude.reset();
+        window.amplitude.setDeviceId(newId);
+      });
+      record('amplitude', 'reset + setDeviceId', { deviceId: newId });
+    });
+    if (!brazeOk) {
+      const ampOk = send('amplitude', function () {
+        window.amplitude.reset();
+        window.amplitude.setDeviceId(store.anonId());
+      });
+      record('amplitude', 'reset', { deviceId: store.anonId() }, outcome('amplitude', ampOk));
+    }
   }
 
   /* ======================================================================
@@ -715,8 +773,8 @@
     const userId = userIdFor(store.getCustomer());
     if (userId) send('amplitude', () => window.amplitude.setUserId(userId));
 
-    initAmplitude();
-    initBraze();
+    // Braze first: Amplitude waits for its device id (see initAmplitude).
+    initAmplitude(initBraze());
   }
 
   const api = {
@@ -728,7 +786,9 @@
     listProducts,
     cartProducts,
     identify,
-    resetIdentity,
+    signOut,
+    wipeIdentity,
+    ids,
     setUserProperties,
     logInAppMessageInteraction,
     logContentCardClick,

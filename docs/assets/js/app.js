@@ -1219,7 +1219,7 @@
       $('[data-signout]').addEventListener('click', function () {
         track.track('Signed Out', { email: customer.email });
         store.signOut();
-        track.resetIdentity();
+        track.signOut();
         renderAuth();
       });
 
