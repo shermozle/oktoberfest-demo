@@ -132,7 +132,7 @@
 
     <section class="checkout__step" data-step hidden>
       <h1 style="font-size:24px;margin-bottom:18px">Review</h1>
-      <p class="muted">Placing the order writes it to localStorage and sends Amplitude an <code>Order Completed</code> event with a <code>products</code> array, plus one revenue event for the order total. Braze gets the same event and a <code>logPurchase</code> per line item.</p>
+      <p class="muted">Placing the order writes it to localStorage and sends Amplitude an <code>Order Completed</code> event carrying the order total as revenue and a <code>products</code> array. Braze gets the same event and a <code>logPurchase</code> per line item.</p>
       <button class="btn btn--outline" type="button" data-step-back>Back</button>
       <button class="btn" type="button" data-place-order>Place order</button>
     </section>
