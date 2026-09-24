@@ -98,7 +98,7 @@
       '<div class="dev-pane" data-dev-pane="controls" hidden>' +
       '<div class="dev-section"><h4>Identity</h4>' +
       '<div data-dev-personas></div>' +
-      '<button class="dev-btn" data-dev-signout>sign out + reset identity</button>' +
+      '<button class="dev-btn" data-dev-signout>reset identity (new anonymous visitor)</button>' +
       '</div>' +
       // Only offered while simulation is on; with it off they'd do nothing.
       (cfg.SIMULATE_IAM
@@ -226,11 +226,18 @@
     const customer = store.getCustomer();
     const cart = store.getCart();
     const totals = store.cartTotals(cart);
+    const id = track.ids();
+    const show = (v, loaded) => (loaded ? v || '(none: anonymous)' : '(SDK not loaded)');
+    const same = (a, b) =>
+      !id.ready.amplitude || !id.ready.braze ? '—' : a === b ? 'yes' : 'NO';
     const rows = [
-      ['device_id', store.anonId()],
+      ['amplitude user_id', show(id.amplitudeUserId, id.ready.amplitude)],
+      ['braze external_id', show(id.brazeExternalId, id.ready.braze)],
+      ['user ids match', same(id.amplitudeUserId, id.brazeExternalId)],
+      ['amplitude device_id', show(id.amplitudeDeviceId, id.ready.amplitude)],
+      ['braze device_id', show(id.brazeDeviceId, id.ready.braze)],
+      ['device ids match', same(id.amplitudeDeviceId, id.brazeDeviceId)],
       ['session_id', store.sessionId()],
-      ['user_id', customer ? customer.email : '(anonymous)'],
-      ['braze_external_id', customer ? customer.id : '(anonymous)'],
       ['persona', (customer && customer.persona) || '—'],
       ['lifetime_orders', customer ? customer.lifetimeOrders || 0 : 0],
       ['lifetime_value', customer ? store.money(customer.lifetimeValue || 0) : '—'],
@@ -250,7 +257,7 @@
         )
         .join('') +
       '</dl>' +
-      '<p class="dev-note" style="margin-top:16px">Amplitude sees <code>user_id</code> and a <code>braze_external_id</code> user property. Braze sees <code>external_id</code> and an <code>amplitude_device_id</code> custom attribute. That pair is what lets you take an Amplitude cohort and find the same people in Braze.</p>';
+      '<p class="dev-note" style="margin-top:16px">Braze Currents sends Braze events to Amplitude with the Braze external id as <code>user_id</code>, and matches anonymous visitors by device id. Both pairs have to match for content card and push interactions to land on the right Amplitude user. Signing out on the storefront keeps the Braze user, as Braze recommends; <em>reset identity</em> starts both tools afresh.</p>';
   }
 
   function updateFabCount() {
@@ -318,7 +325,7 @@
 
     $('[data-dev-signout]', drawer).addEventListener('click', function () {
       store.signOut();
-      track.resetIdentity();
+      track.wipeIdentity();
       renderState();
     });
 

@@ -97,10 +97,11 @@ or browsing a brand updates both tools in the same breath.
 when they're shown, clicked and dismissed, so campaign exposure lands in the
 same funnels as everything else and lift is measurable.
 
-**Identity.** Amplitude gets a `braze_external_id` user property; Braze gets an
-`amplitude_device_id` custom attribute. That pair is what lets you build a
-cohort in Amplitude and find the same people in Braze. Both tools also share
-the mock's own device id, so the anonymous visitor lines up before sign-in.
+**Identity.** Braze's external id and Amplitude's user id are the same (the
+email), and Amplitude uses Braze's device id. That's what Braze Currents needs
+to land Braze events, such as content card clicks, on the right Amplitude user,
+signed in or anonymous. The drawer's State tab shows both sets of ids and
+whether they match.
 
 See [TRACKING.md](TRACKING.md) for the full event and property list.
 

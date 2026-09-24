@@ -176,15 +176,32 @@ No form validates its input. An email only becomes the Amplitude user id if
 it's at least 5 characters, since Amplitude rejects shorter ids; a blank email
 leaves the visitor as they were.
 
-## Identity bridge
+## Identity
 
-| Tool | Identifier | Cross-reference it carries |
+Braze Currents sends Braze events (content card impressions and clicks, push
+opens and so on) to Amplitude with the Braze external id as the Amplitude
+`user_id`, and matches anonymous users by device id. So both pairs match:
+
+| | Amplitude | Braze |
 |---|---|---|
-| Amplitude | `user_id` is the email; `device_id` is the mock's anonymous id | `braze_external_id` user property |
-| Braze | `external_id` is a generated customer id | `amplitude_device_id` and `amplitude_user_id` custom attributes |
+| User id | `user_id` = the email | `external_id` = the same email |
+| Device id | `device_id` = Braze's device id | Braze's own device id |
 
-Before sign-in both tools share the same anonymous device id, so the
-pre-identification session stitches correctly.
+- **One user id, set in one place.** `userIdFor()` in `tracking.js` gives the
+  id both tools use. An email shorter than 5 characters (Amplitude's minimum)
+  gives none, and both tools stay anonymous rather than disagreeing.
+- **Amplitude adopts Braze's device id,** since Braze can't be told which id
+  to use. Amplitude waits up to 5 seconds for Braze to load before starting
+  (events fired meanwhile are queued), and switches over if Braze arrives
+  later than that.
+- **Storefront sign-out** leaves Braze on the same user, as Braze recommends,
+  and clears Amplitude's user id but keeps the shared device id, so both still
+  see the same person.
+- **"Reset identity"** in the event stream's Controls tab calls Braze's
+  `wipeData()` and Amplitude's `reset()`, giving a new anonymous visitor in
+  both with a new shared device id. Use it before switching persona in a demo.
+
+The State tab shows the ids each SDK is actually using and whether they match.
 
 ## Revenue
 
