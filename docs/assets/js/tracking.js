@@ -353,6 +353,59 @@
     };
   }
 
+  /* --- products array ---------------------------------------------------- */
+
+  // Every event that carries product detail carries it here, as a `products`
+  // object array in the shape Amplitude's Cart Analysis expects: one element
+  // per product or line item, with `revenue` as the line total. Turn on
+  // property splitting for `products` in Amplitude Data (Property Is Array)
+  // to unlock Cart Analysis. Braze receives the same array as a nested event
+  // property, which its Liquid templating can iterate over.
+
+  const round2 = (n) => Math.round(Number(n) * 100) / 100;
+
+  function pickOption(options, names) {
+    if (!options) return null;
+    for (const n of names) if (options[n]) return options[n];
+    return null;
+  }
+
+  // Accepts a catalogue product, a slim index entry or a cart line; `extra`
+  // overrides or adds fields (the selected variant, quantity, list position).
+  function productItem(source, extra) {
+    const s = Object.assign({}, source, extra);
+    const price = round2(s.price != null ? s.price : s.priceMin);
+    const item = {
+      product_id: s.handle,
+      product_name: s.title,
+      brand: s.brand || null,
+      category: s.category || null,
+      price: price,
+    };
+    if (s.tier) item.tier = s.tier;
+    if (s.variantId) item.variant_id = String(s.variantId);
+    if (s.variantTitle) item.variant = s.variantTitle;
+    const color = pickOption(s.selectedOptions, ['Color', 'Colour']);
+    const size = pickOption(s.selectedOptions, ['Size']);
+    if (color) item.color = color;
+    if (size) item.size = size;
+    if (s.quantity != null) {
+      item.quantity = s.quantity;
+      item.revenue = round2(price * s.quantity);
+    }
+    if (s.position != null) item.position = s.position;
+    return item;
+  }
+
+  // A list the visitor was shown (collection grid, search results,
+  // recommendations), with a 1-based position for merchandising analysis.
+  const listProducts = (list) =>
+    list.map((p, i) => productItem(p, { position: i + 1 }));
+
+  // Cart or order line items. Defaults to the current cart.
+  const cartProducts = (lines) =>
+    (lines || store.getCart().lines).map((l) => productItem(l));
+
   function track(name, props) {
     const payload = Object.assign({}, context(), props || {});
 
@@ -394,36 +447,28 @@
   /* --- revenue ----------------------------------------------------------- */
 
   function trackPurchase(order) {
-    // Amplitude: one Revenue object per line, so product-level revenue
-    // reporting works, plus a single event for funnel analysis.
-    order.lines.forEach(function (line) {
-      if (state.amplitude.ready) {
-        const rev = new window.amplitude.Revenue()
-          .setProductId(line.handle)
-          .setPrice(line.price)
-          .setQuantity(line.quantity)
-          .setRevenueType('purchase')
-          .setEventProperties({
-            order_id: order.id,
-            variant: line.variantTitle || null,
-            brand: line.brand,
-            category: line.category,
-          });
-        window.amplitude.revenue(rev);
-      }
-      record(
-        'amplitude',
-        'revenue',
-        {
-          productId: line.handle,
-          price: line.price,
-          quantity: line.quantity,
-          revenueType: 'purchase',
-          order_id: order.id,
-        },
-        state.amplitude.ready ? null : notSent('amplitude')
-      );
-    });
+    // Amplitude: one Revenue for the order total, so native revenue metrics
+    // and LTV work. Product-level revenue comes from Cart Analysis on
+    // `products.revenue` in Order Completed, not from per-line Revenue calls.
+    if (state.amplitude.ready) {
+      const rev = new window.amplitude.Revenue()
+        .setPrice(order.total)
+        .setQuantity(1)
+        .setRevenueType('purchase')
+        .setEventProperties({ order_id: order.id });
+      window.amplitude.revenue(rev);
+    }
+    record(
+      'amplitude',
+      'revenue',
+      {
+        price: order.total,
+        quantity: 1,
+        revenueType: 'purchase',
+        order_id: order.id,
+      },
+      state.amplitude.ready ? null : notSent('amplitude')
+    );
 
     // Braze: logPurchase per line drives revenue-based segmentation and
     // triggers post-purchase campaigns.
@@ -464,8 +509,7 @@
       shipping: order.shipping,
       tax_included: order.taxIncluded,
       item_count: order.lines.reduce((n, l) => n + l.quantity, 0),
-      product_handles: order.lines.map((l) => l.handle),
-      brands: [...new Set(order.lines.map((l) => l.brand))],
+      products: cartProducts(order.lines),
       shipping_method: order.shippingMethod || null,
       payment_method: order.paymentMethod || null,
     });
@@ -537,6 +581,9 @@
     track,
     trackAnalyticsOnly,
     trackPurchase,
+    productItem,
+    listProducts,
+    cartProducts,
     identify,
     resetIdentity,
     setUserProperties,

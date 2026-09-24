@@ -34,7 +34,8 @@ served over HTTP rather than opened as a `file://` path, or the SDKs won't load.
 ## Before you demo: add your keys
 
 Both keys are client-side keys designed to sit in public page source, so
-committing them is normal. Edit `docs/assets/js/config.js`:
+committing them is normal. Edit `src/assets/js/config.js`, then run
+`node build.mjs` to copy it into `docs/`:
 
 ```js
 AMPLITUDE_API_KEY: 'YOUR_AMPLITUDE_API_KEY',   // Amplitude → Settings → Projects → API Key
@@ -48,7 +49,9 @@ Until you fill these in the site runs in **dry-run mode**: every Amplitude and
 Braze call still appears in the event stream, flagged `NOT SENT`. That is the
 mode to rehearse in, so you don't fill a project with demo traffic.
 
-If you edit config in `src/` rather than `docs/`, re-run `node build.mjs`.
+The build regenerates `docs/` from scratch. If `docs/assets/js/config.js` has
+been edited directly, the build stops rather than overwrite it; copy the
+change into `src/` and rebuild, or pass `--force` to discard it.
 
 ## Deploy to GitHub Pages
 
@@ -78,8 +81,13 @@ Turn the whole thing off with `SHOW_DEV_DRAWER: false` for a clean storefront.
 
 ## How the two tools connect
 
-`docs/assets/js/tracking.js` is the only place either SDK is touched. One
+`src/assets/js/tracking.js` is the only place either SDK is touched. One
 `track()` call fans out to both, so events can't drift apart.
+
+**Product detail** travels in a `products` object array on every event that
+has any, in the shape Amplitude's Cart Analysis reads, with `revenue` as the
+line total on cart and order lines. Turn on property splitting for `products`
+in Amplitude Data to use it. Braze gets the same array for Liquid templating.
 
 **Amplitude → Braze.** On-site behaviour becomes Braze custom attributes and
 custom events, so Braze can segment and message on it: `last_brand_viewed`,

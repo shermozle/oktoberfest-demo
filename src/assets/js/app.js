@@ -226,7 +226,7 @@
         track.track('Search Performed', {
           query: lastQuery,
           results_count: hits.length,
-          top_result: hits[0] ? hits[0].title : null,
+          products: track.listProducts(hits),
         });
       }, 700);
     }
@@ -238,11 +238,13 @@
     input.addEventListener('input', () => render(input.value));
     overlay.addEventListener('click', function (e) {
       const hit = e.target.closest('[data-hit]');
-      if (hit) {
+      const p = hit && productByHandle(hit.dataset.hit);
+      if (p) {
         track.trackAnalyticsOnly('Search Result Clicked', {
           query: input.value.trim(),
-          product: hit.dataset.hit,
-          position: Number(hit.dataset.position),
+          products: [
+            track.productItem(p, { position: Number(hit.dataset.position) }),
+          ],
         });
       }
     });
@@ -281,6 +283,26 @@
       );
     }
 
+    // The product as currently configured on the page (selected variant,
+    // colour and size) as one element of a `products` array.
+    function selectedItem(extra) {
+      const v = currentVariant();
+      return track.productItem(
+        product,
+        Object.assign(
+          {
+            variantId: v ? v.id : null,
+            variantTitle: v && v.title !== 'Default Title' ? v.title : null,
+            price: v ? v.price : product.priceMin,
+            selectedOptions: product.options.length
+              ? Object.assign({}, selection)
+              : null,
+          },
+          extra
+        )
+      );
+    }
+
     const priceEl = $('[data-product-price]');
     const addBtn = $('[data-add-to-cart]');
     const qtyInput = $('[data-qty-input]');
@@ -312,12 +334,10 @@
         refresh();
         const v = currentVariant();
         track.trackAnalyticsOnly('Product Variant Selected', {
-          product: product.title,
-          product_handle: product.handle,
           option_name: name,
           option_value: value,
-          variant: v ? v.title : null,
           available: v ? v.available : false,
+          products: [selectedItem()],
         });
       });
     });
@@ -346,20 +366,17 @@
         brand: product.brand,
         category: product.category,
         tier: product.tier,
+        // Kept on the line so colour and size reach the products array on
+        // every later cart, checkout and order event.
+        selectedOptions: product.options.length
+          ? Object.assign({}, selection)
+          : null,
       };
       store.addToCart(line);
 
       track.track('Product Added to Cart', {
-        product: product.title,
-        product_handle: product.handle,
-        variant: line.variantTitle,
-        brand: product.brand,
-        category: product.category,
-        tier: product.tier,
-        price: v.price,
-        quantity: quantity,
-        line_value: Math.round(v.price * quantity * 100) / 100,
         add_source: source,
+        products: [track.productItem(line)],
       });
 
       // Behaviour observed here becomes Braze segmentation fuel.
@@ -392,16 +409,7 @@
 
     refresh();
 
-    track.track('Product Viewed', {
-      product: product.title,
-      product_handle: product.handle,
-      brand: product.brand,
-      category: product.category,
-      tier: product.tier,
-      price: product.priceMin,
-      variant_count: product.variants.length,
-      image_count: product.images.length,
-    });
+    track.track('Product Viewed', { products: [selectedItem()] });
 
     track.setUserProperties({
       last_brand_viewed: product.brand,
@@ -420,11 +428,7 @@
           (window.scrollY + window.innerHeight) / document.body.scrollHeight;
         if (seen > 0.7) {
           deepSeen = true;
-          track.track('Product Detail Read', {
-            product: product.title,
-            product_handle: product.handle,
-            brand: product.brand,
-          });
+          track.track('Product Detail Read', { products: [selectedItem()] });
         }
       },
       { passive: true }
@@ -494,6 +498,7 @@
           collection: collection.title,
           sort_by: sortEl.value,
           results_count: list.length,
+          products: track.listProducts(list),
         });
       });
 
@@ -506,6 +511,7 @@
           price_min: Number(priceMinEl && priceMinEl.value) || null,
           price_max: Number(priceMaxEl && priceMaxEl.value) || null,
           results_count: list.length,
+          products: track.listProducts(list),
         });
       });
     });
@@ -533,14 +539,14 @@
         $$('.filter-pop__panel').forEach((p) => (p.hidden = true));
     });
 
-    apply();
+    const shown = apply();
 
     track.track('Collection Viewed', {
       collection: collection.title,
       collection_handle: collection.handle,
       collection_type: collection.isBrand ? 'brand' : 'category',
       product_count: items.length,
-      brands: [...new Set(items.map((p) => p.brand))],
+      products: track.listProducts(shown),
     });
   }
 
@@ -621,9 +627,10 @@
       const items = recommend(seed, limit);
       holder.innerHTML = items.map(cardHtml).join('');
       track.trackAnalyticsOnly('Recommendations Shown', {
-        seed_product: seed,
-        products: items.map((p) => p.handle),
+        // The product the list was computed from, not one of those shown.
+        seed_product_id: seed,
         placement: holder.dataset.placement || 'you-may-also-like',
+        products: track.listProducts(items),
       });
     });
 
@@ -645,14 +652,14 @@
       if (!card) return;
       const p = productByHandle(card.dataset.productCard);
       if (!p) return;
+      const siblings = $$('[data-product-card]', card.parentElement);
       track.trackAnalyticsOnly('Product Card Clicked', {
-        product: p.title,
-        product_handle: p.handle,
-        brand: p.brand,
-        price: p.priceMin,
         placement: card.closest('[data-placement]')
           ? card.closest('[data-placement]').dataset.placement
           : 'grid',
+        products: [
+          track.productItem(p, { position: siblings.indexOf(card) + 1 }),
+        ],
       });
     });
   }
@@ -792,58 +799,53 @@
       if (!line) return;
 
       if (e.target.closest('[data-line-remove]')) {
-        store.setLineQuantity(handle, variantId, 0);
-        track.track('Product Removed from Cart', {
-          product: line.title,
-          product_handle: handle,
-          variant: line.variantTitle,
-          brand: line.brand,
-          quantity: line.quantity,
-          line_value: Math.round(line.price * line.quantity * 100) / 100,
-        });
-        render();
-        syncCartProperties();
+        changeQuantity(line, 0);
         return;
       }
-
       const step = e.target.closest('[data-line-step]');
-      if (step) {
-        const next = line.quantity + Number(step.dataset.lineStep);
-        store.setLineQuantity(handle, variantId, next);
-        track.track(
-          next <= 0 ? 'Product Removed from Cart' : 'Cart Quantity Changed',
-          {
-            product: line.title,
-            product_handle: handle,
-            variant: line.variantTitle,
-            brand: line.brand,
-            from_quantity: line.quantity,
-            to_quantity: Math.max(0, next),
-          }
-        );
-        render();
-        syncCartProperties();
-      }
+      if (step) changeQuantity(line, line.quantity + Number(step.dataset.lineStep));
     });
 
     linesEl.addEventListener('change', function (e) {
       const input = e.target.closest('[data-line-qty]');
       if (!input) return;
       const row = input.closest('[data-line]');
-      const next = Math.max(0, Number(input.value) || 0);
-      store.setLineQuantity(row.dataset.line, row.dataset.variant, next);
+      const line = store
+        .getCart()
+        .lines.find(
+          (l) => l.handle === row.dataset.line && l.variantId === row.dataset.variant
+        );
+      if (line) changeQuantity(line, Math.max(0, Number(input.value) || 0));
+    });
+
+    // One path for the remove button, the +/- steppers and typed quantities.
+    // A removal's products element carries the quantity that left the cart;
+    // a change carries the new quantity, with from/to on the event.
+    function changeQuantity(line, next) {
+      const previous = line.quantity;
+      if (next === previous) return;
+      store.setLineQuantity(line.handle, line.variantId, next);
+      if (next <= 0) {
+        track.track('Product Removed from Cart', {
+          products: [track.productItem(line)],
+        });
+      } else {
+        track.track('Cart Quantity Changed', {
+          from_quantity: previous,
+          to_quantity: next,
+          products: [track.productItem(line, { quantity: next })],
+        });
+      }
       render();
       syncCartProperties();
-    });
+    }
 
     render();
 
     const totals = store.cartTotals();
     track.track('Cart Viewed', {
-      cart_value: totals.subtotal,
-      cart_size: totals.count,
-      product_handles: store.getCart().lines.map((l) => l.handle),
       free_shipping_gap: totals.freeShippingGap,
+      products: track.cartProducts(),
     });
 
     const checkoutBtn = $('[data-checkout]');
@@ -851,12 +853,7 @@
       checkoutBtn.addEventListener('click', function () {
         const t = store.cartTotals();
         if (t.count === 0) return;
-        track.track('Checkout Started', {
-          cart_value: t.subtotal,
-          cart_size: t.count,
-          product_handles: store.getCart().lines.map((l) => l.handle),
-          brands: [...new Set(store.getCart().lines.map((l) => l.brand))],
-        });
+        track.track('Checkout Started', { products: track.cartProducts() });
         location.href = url('checkout/');
       });
   }
@@ -993,15 +990,14 @@
           track.trackAnalyticsOnly('Checkout Step Failed Validation', {
             step: current + 1,
             step_name: stepNames[current],
+            products: track.cartProducts(),
           });
           return;
         }
-        const t = totals();
         track.track('Checkout Step Completed', {
           step: current + 1,
           step_name: stepNames[current],
-          cart_value: t.subtotal,
-          cart_size: t.count,
+          products: track.cartProducts(),
         });
         // Capturing the email mid-checkout is what makes an abandoned-cart
         // campaign possible, so hand it to both tools as soon as it exists.
@@ -1034,6 +1030,8 @@
         renderSide();
         track.trackAnalyticsOnly('Shipping Method Selected', {
           method: radio.value,
+          shipping: totals().shipping,
+          products: track.cartProducts(),
         });
       });
     });
@@ -1042,6 +1040,7 @@
       radio.addEventListener('change', function () {
         track.trackAnalyticsOnly('Payment Method Selected', {
           method: radio.value,
+          products: track.cartProducts(),
         });
       });
     });
@@ -1099,10 +1098,8 @@
     renderSide();
     showStep(0);
 
-    const t = totals();
     track.trackAnalyticsOnly('Checkout Viewed', {
-      cart_value: t.subtotal,
-      cart_size: t.count,
+      products: track.cartProducts(),
     });
   }
 
@@ -1175,6 +1172,7 @@
     track.trackAnalyticsOnly('Order Confirmation Viewed', {
       order_id: order.id,
       revenue: order.total,
+      products: track.cartProducts(order.lines),
     });
   }
 
