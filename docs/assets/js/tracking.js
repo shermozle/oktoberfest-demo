@@ -243,7 +243,9 @@
           campaign: message.extras && message.extras.campaign,
           source: 'braze',
         };
-        api.track('In-App Message Shown', meta);
+        // Amplitude only: Braze records its own impressions when it shows the
+        // message, so echoing this back to Braze would count it twice.
+        api.trackAnalyticsOnly('In-App Message Shown', meta);
         braze.showInAppMessage(message);
       });
 

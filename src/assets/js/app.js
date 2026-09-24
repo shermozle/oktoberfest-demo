@@ -1078,10 +1078,8 @@
 
     renderSide();
     showStep(0);
-
-    track.trackAnalyticsOnly('Checkout Viewed', {
-      products: track.cartProducts(),
-    });
+    // No event on arrival: Checkout Started (from the cart button) and the
+    // autocaptured page view already cover it.
   }
 
   function mostCommonBrand(lines) {
@@ -1153,12 +1151,8 @@
           '</p>'
         : '') +
       '</div>';
-
-    track.trackAnalyticsOnly('Order Confirmation Viewed', {
-      order_id: order.id,
-      revenue: order.total,
-      products: track.cartProducts(order.lines),
-    });
+    // No event here: Order Completed, sent as the order is placed, carries
+    // the same order, and the page view is autocaptured.
   }
 
   /* ======================================================================
