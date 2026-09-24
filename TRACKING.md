@@ -122,6 +122,25 @@ Arriving on the checkout or order confirmation page sends nothing extra:
 `Checkout Started` and `Order Completed` already carry the cart and order, and
 the page view is autocaptured.
 
+## Web push
+
+Submitting the storefront password asks for notification permission, via the
+browser's own prompt inside the submit click (Safari and Firefox only allow it
+from a user action). Once granted, Braze subscribes the browser. Braze records
+the subscription and push opens itself; these go to Amplitude only:
+
+| Amplitude event | When | Properties |
+|---|---|---|
+| `Push Permission Requested` | The prompt is shown | `source` (`password_gate`) |
+| `Push Permission Granted` | The visitor allows it | `source` |
+| `Push Permission Denied` | The visitor blocks or dismisses it | `source`, `permission` (`denied` = blocked, `default` = dismissed) |
+
+Nothing is asked if the browser has already blocked notifications, and a
+returning visitor who already allowed them just has their subscription
+re-confirmed, with no events. Give push campaign links UTM parameters (e.g.
+`utm_source=braze&utm_medium=web_push`) and Amplitude's attribution
+autocapture will record web push as the channel that brought someone back.
+
 ## Content cards
 
 Only what the visitor does with cards is tracked:

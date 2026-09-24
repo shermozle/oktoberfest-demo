@@ -69,6 +69,11 @@ window.LANEWAY_CONFIG = {
     doNotLoadFontAwesome: true,
   },
 
+  // Ask for web push permission when the storefront password is submitted.
+  // Needs web push enabled for this app in Braze. The service worker is
+  // written to the site root by build.mjs.
+  WEB_PUSH_ON_UNLOCK: true,
+
   /* --- Storefront --------------------------------------------------------- */
 
   // The real store sits behind a Shopify storefront password. Keeping the gate
