@@ -962,47 +962,15 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function validate(index) {
-      const step = steps[index];
-      let ok = true;
-      $$('[required]', step).forEach(function (input) {
-        const wrap = input.closest('.field');
-        const value = input.value.trim();
-        let message = '';
-        if (!value) message = 'Required';
-        else if (input.type === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value))
-          message = 'Enter a valid email address';
-        if (message) ok = false;
-        if (wrap) {
-          wrap.classList.toggle('field--error', !!message);
-          const err = $('.field__error', wrap);
-          if (err) err.textContent = message;
-        }
-      });
-      return ok;
-    }
-
-    const stepNames = ['Contact', 'Shipping', 'Payment', 'Review'];
-
+    // No validation anywhere: every step advances whatever is filled in.
     $$('[data-step-next]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        if (!validate(current)) {
-          track.trackAnalyticsOnly('Checkout Step Failed Validation', {
-            step: current + 1,
-            step_name: stepNames[current],
-            products: track.cartProducts(),
-          });
-          return;
-        }
-        track.track('Checkout Step Completed', {
-          step: current + 1,
-          step_name: stepNames[current],
-          products: track.cartProducts(),
-        });
         // Capturing the email mid-checkout is what makes an abandoned-cart
         // campaign possible, so hand it to both tools as soon as it exists.
-        if (current === 0) {
-          const email = formEl.elements.email.value.trim();
+        // Left blank, the visitor stays as they were rather than being
+        // replaced by an empty customer.
+        const email = formEl.elements.email.value.trim();
+        if (current === 0 && email) {
           const optIn = formEl.elements.marketingOptIn
             ? formEl.elements.marketingOptIn.checked
             : false;
@@ -1048,7 +1016,6 @@
     const placeBtn = $('[data-place-order]');
     if (placeBtn)
       placeBtn.addEventListener('click', function () {
-        if (!validate(current)) return;
         const t = totals();
         const data = new FormData(formEl);
         const order = {
@@ -1135,9 +1102,13 @@
       '<h1 style="margin:8px 0 14px">Thanks' +
       (order.name ? ', ' + escapeHtml(order.name.split(' ')[0]) : '') +
       '.</h1>' +
-      '<p>A confirmation is on its way to <strong>' +
-      escapeHtml(order.email || '') +
-      '</strong>. Nothing ships — this is a teaching store.</p>' +
+      '<p>' +
+      (order.email
+        ? 'A confirmation is on its way to <strong>' +
+          escapeHtml(order.email) +
+          '</strong>. '
+        : '') +
+      'Nothing ships. This is a teaching store.</p>' +
       '<div class="order-card" style="margin-top:28px">' +
       '<div class="order-card__head"><strong>' +
       order.lines.reduce((n, l) => n + l.quantity, 0) +
@@ -1269,14 +1240,14 @@
         '</div>' +
         '<form data-auth-form novalidate>' +
         '<div data-register-only hidden>' +
-        '<label class="field"><span>First name</span><input name="firstName" autocomplete="given-name"><span class="field__error"></span></label>' +
+        '<label class="field"><span>First name</span><input name="firstName" autocomplete="given-name"></label>' +
         '</div>' +
-        '<label class="field"><span>Email</span><input name="email" type="email" required autocomplete="email"><span class="field__error"></span></label>' +
-        '<label class="field"><span>Password</span><input name="password" type="password" required autocomplete="current-password"><span class="field__error"></span></label>' +
+        '<label class="field"><span>Email</span><input name="email" type="email" autocomplete="email"></label>' +
+        '<label class="field"><span>Password</span><input name="password" type="password" autocomplete="current-password"></label>' +
         '<label class="check" data-register-only hidden><input type="checkbox" name="marketingOptIn"><span>Email me about new collections</span></label>' +
         '<button class="btn btn--block" type="submit" style="margin-top:10px" data-auth-submit>Sign in</button>' +
         '</form>' +
-        '<p class="muted" style="margin-top:18px;font-size:12px">No account is really created and no password is stored or checked. Any email works — the point is what Amplitude and Braze do with the identity.</p>';
+        '<p class="muted" style="margin-top:18px;font-size:12px">No account is really created and no password is stored or checked. Any email works, or none: the point is what Amplitude and Braze do with the identity.</p>';
 
       let mode = 'signin';
       const form = $('[data-auth-form]', root);
@@ -1297,13 +1268,8 @@
 
       form.addEventListener('submit', function (e) {
         e.preventDefault();
+        // Only reachable while signed out, so a blank email replaces nobody.
         const email = form.elements.email.value.trim();
-        const wrap = form.elements.email.closest('.field');
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-          wrap.classList.add('field--error');
-          $('.field__error', wrap).textContent = 'Enter a valid email address';
-          return;
-        }
         const customer = store.signIn({
           email: email,
           firstName: form.elements.firstName
@@ -1328,9 +1294,6 @@
     if (existing) renderSignedIn(existing);
     else renderAuth();
 
-    track.trackAnalyticsOnly('Account Page Viewed', {
-      signed_in: !!existing,
-    });
   }
 
   /* ======================================================================
@@ -1344,10 +1307,9 @@
         const input = $('input[type=email]', form);
         const msg = $('.newsletter__msg', form.parentElement) || null;
         const email = input.value.trim();
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-          if (msg) msg.textContent = 'Enter a valid email address.';
-          return;
-        }
+        // Nothing typed means nothing to subscribe. Anything typed is taken
+        // as-is, with no format check.
+        if (!email) return;
         const customer = store.signIn({
           email: email,
           marketingOptIn: true,
@@ -1366,37 +1328,26 @@
     $$('[data-enquiry]').forEach(function (form) {
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        let ok = true;
-        $$('[required]', form).forEach(function (input) {
-          const wrap = input.closest('.field');
-          const bad =
-            !input.value.trim() ||
-            (input.type === 'email' &&
-              !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.value.trim()));
-          if (bad) ok = false;
-          if (wrap) {
-            wrap.classList.toggle('field--error', bad);
-            const err = $('.field__error', wrap);
-            if (err) err.textContent = bad ? 'Required' : '';
-          }
-        });
-        if (!ok) return;
-
         const data = new FormData(form);
-        const customer = store.signIn({
-          email: String(data.get('email') || '').trim(),
-          firstName: String(data.get('name') || '').split(' ')[0],
-          company: data.get('company'),
-          marketingOptIn: true,
-          source: 'services_enquiry',
-        });
+        const email = String(data.get('email') || '').trim();
+        // Submits whatever is filled in. Without an email the visitor stays
+        // as they were, rather than being replaced by an empty customer.
+        if (email) {
+          const customer = store.signIn({
+            email: email,
+            firstName: String(data.get('name') || '').split(' ')[0],
+            company: data.get('company'),
+            marketingOptIn: true,
+            source: 'services_enquiry',
+          });
+          track.identify(customer);
+        }
         track.track('Enquiry Submitted', {
           service: data.get('service'),
           company: data.get('company'),
           budget: data.get('budget') || null,
           message_length: String(data.get('message') || '').length,
         });
-        track.identify(customer);
         track.setUserProperties({
           lead_type: 'b2b_enquiry',
           interested_service: data.get('service'),
@@ -1630,20 +1581,6 @@
   }
 
   /* ======================================================================
-     Page view
-     ====================================================================== */
-
-  function trackPageView() {
-    track.track('Page Viewed', {
-      page_type: document.body.dataset.page || 'other',
-      page_name: PAGE.name || document.title,
-      path: location.pathname,
-      referrer: document.referrer || null,
-      title: document.title,
-    });
-  }
-
-  /* ======================================================================
      Boot
      ====================================================================== */
 
@@ -1667,7 +1604,7 @@
     if (page === 'order') initOrder();
     if (page === 'account') initAccount();
 
-    trackPageView();
+    // Page views come from Amplitude autocapture (AMPLITUDE_AUTOCAPTURE).
     setTimeout(maybeShowReturningNudge, 2500);
 
     if (window.LanewayDevtools) window.LanewayDevtools.mount();

@@ -45,6 +45,21 @@ sent to both tools. Braze segmentation works on the scalar custom attributes
 listed below, while the array is there for Liquid templating, for example
 listing cart contents in an abandoned-cart message.
 
+## Page views
+
+Amplitude autocapture sends `[Amplitude] Page Viewed` on every page, with the
+URL, path, title and referrer. The site sends no page event of its own, and
+Braze gets no page events; it doesn't need them and each would cost a data
+point.
+
+## Delivery
+
+Both SDKs load asynchronously, and view events like `Product Viewed` fire as
+the page boots, before either has arrived. Calls made in that window are
+queued and replayed in order once the SDK is ready. Amplitude events keep the
+time they actually happened. The event stream marks a call `NOT SENT` only if
+it will never go: a placeholder key or a failed SDK load.
+
 ## Context on every event
 
 Added automatically, so any event can be broken down by it.
@@ -62,7 +77,6 @@ Added automatically, so any event can be broken down by it.
 
 | Event | Braze name | `products` holds | Other properties |
 |---|---|---|---|
-| `Page Viewed` | `page_viewed` | n/a | `page_type`, `page_name`, `path`, `referrer` |
 | `Collection Viewed` | `collection_viewed` | the grid, with `position` | `collection`, `collection_handle`, `collection_type` (brand/category), `product_count` |
 | `Product Viewed` | `product_viewed` | the product and its default variant | |
 | `Product Detail Read` | `product_detail_read` | the product as configured | Fires past 70% scroll depth. A browse-abandonment trigger. |
@@ -71,7 +85,6 @@ Added automatically, so any event can be broken down by it.
 | `Cart Quantity Changed` | `cart_quantity_changed` | the line, at its new quantity | `from_quantity`, `to_quantity` |
 | `Cart Viewed` | `cart_viewed` | the whole cart | `free_shipping_gap` |
 | `Checkout Started` | `checkout_started` | the whole cart | |
-| `Checkout Step Completed` | `checkout_step_completed` | the whole cart | `step` (1–3; the review step ends in `Order Completed`), `step_name` |
 | `Order Completed` | `order_completed` | the order lines | `order_id`, `revenue`, `subtotal`, `shipping`, `tax_included`, `item_count`, `shipping_method`, `payment_method` |
 | `Search Performed` | `search_performed` | the results, with `position` | `query`, `results_count` |
 | `Cart Seeded` | `cart_seeded` | the seeded lines | `source`. Demo control only. |
@@ -99,13 +112,12 @@ engagement tool.
 | `Collection Filtered` | the filtered grid, with `position` | `collection`, `availability`, `price_min`, `price_max`, `results_count` |
 | `Search Result Clicked` | the clicked result, with `position` | `query` |
 | `Checkout Viewed` | the whole cart | |
-| `Checkout Step Failed Validation` | the whole cart | `step`, `step_name` |
 | `Shipping Method Selected` | the whole cart | `method`, `shipping` |
 | `Payment Method Selected` | the whole cart | `method` |
 | `Order Confirmation Viewed` | the order lines | `order_id`, `revenue` |
 
-Also sent with no product detail: `Search Opened`, `Navigation Clicked`,
-`Account Page Viewed`, and `In-App Message Shown` / `Clicked` / `Dismissed`.
+Also sent with no product detail: `Search Opened`, `Navigation Clicked`, and
+`In-App Message Shown` / `Clicked` / `Dismissed`.
 
 ## Content cards
 
@@ -137,6 +149,10 @@ found in the other. They stay scalar because that's what Braze segments on.
 | `cart_value`, `cart_size` | Any cart change. Zeroed on order. |
 | `last_order_id`, `last_order_at` | Order placed |
 | `lead_type`, `interested_service` | Services enquiry |
+
+No form validates its input. An email only becomes the Amplitude user id if
+it's at least 5 characters, since Amplitude rejects shorter ids; a blank email
+leaves the visitor as they were.
 
 ## Identity bridge
 
@@ -174,9 +190,10 @@ data flush follows.
    `In-App Message Shown` to Amplitude, so campaign exposure is an analytics
    event and its lift is measurable. With no campaigns built yet, set
    `SIMULATE_IAM: true` and add something under $100 to see a simulated one.
-4. **Complete a checkout.** Three `Checkout Step Completed` events each carry
-   the cart, then `Order Completed` carries the lines with `revenue` per line,
-   Braze logs a purchase per line, and lifetime stats roll forward.
+4. **Complete a checkout.** No field is required, so you can click straight
+   through. `Checkout Started` carries the cart, then `Order Completed`
+   carries the lines with `revenue` per line, Braze logs a purchase per line,
+   and lifetime stats roll forward.
 5. **Open Cart Analysis** on `Order Completed` and group by `products.brand`
    or `products.size` to show which brand or size drives revenue.
 6. **Sign out, then back in.** Identity resets on both sides while the

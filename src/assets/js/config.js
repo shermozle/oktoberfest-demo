@@ -44,7 +44,7 @@ window.LANEWAY_CONFIG = {
   // Amplitude autocapture. Explicit events are always sent regardless.
   AMPLITUDE_AUTOCAPTURE: {
     attribution: true,
-    pageViews: false, // this site sends its own richer "Page Viewed"
+    pageViews: true, // Amplitude's own [Amplitude] Page Viewed; the site sends no page event of its own
     sessions: true,
     formInteractions: true,
     fileDownloads: false,

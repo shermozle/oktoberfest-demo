@@ -39,16 +39,32 @@
     '.js';
   const BRAZE_SCRIPT = 'https://js.appboycdn.com/web-sdk/5.9/braze.min.js';
 
+  // Amplitude rejects user ids shorter than 5 characters. The forms accept
+  // anything, so a short or blank email leaves the visitor on their device id
+  // instead of setting an id Amplitude would refuse.
+  const AMPLITUDE_MIN_ID_LENGTH = 5;
+
+  const userIdFor = (customer) =>
+    customer && customer.email && customer.email.length >= AMPLITUDE_MIN_ID_LENGTH
+      ? customer.email
+      : null;
+
   const PLACEHOLDER = /^(YOUR_|TODO|REPLACE|<)/i;
   const isReal = (v) => typeof v === 'string' && v.length > 8 && !PLACEHOLDER.test(v);
 
   const state = {
-    amplitude: { configured: isReal(cfg.AMPLITUDE_API_KEY), ready: false },
+    amplitude: {
+      configured: isReal(cfg.AMPLITUDE_API_KEY),
+      ready: false,
+      failed: false,
+      queue: [],
+    },
     braze: {
       configured: isReal(cfg.BRAZE_API_KEY) && isReal(cfg.BRAZE_SDK_ENDPOINT),
       ready: false,
+      failed: false,
+      queue: [],
     },
-    queue: [],
   };
 
   /* ======================================================================
@@ -81,10 +97,65 @@
     return entry;
   }
 
-  const notSent = (sink) =>
-    sink === 'amplitude'
-      ? 'NOT SENT — AMPLITUDE_API_KEY is still a placeholder'
-      : 'NOT SENT — BRAZE_API_KEY / BRAZE_SDK_ENDPOINT are still placeholders';
+  function notSent(sink) {
+    if (state[sink].failed)
+      return 'NOT SENT: the ' + (sink === 'amplitude' ? 'Amplitude' : 'Braze') + ' SDK failed to load';
+    return sink === 'amplitude'
+      ? 'NOT SENT: AMPLITUDE_API_KEY is still a placeholder'
+      : 'NOT SENT: BRAZE_API_KEY / BRAZE_SDK_ENDPOINT are still placeholders';
+  }
+
+  /* ======================================================================
+     Delivery
+
+     Both SDKs load asynchronously, and the page fires its view events
+     (Product Viewed, Collection Viewed, Cart Viewed) the moment it boots,
+     before either has arrived. Calls made in that window are queued and
+     replayed in order once the SDK is ready. Before this queue existed they
+     were silently dropped, so no page-load event ever reached either tool.
+     ====================================================================== */
+
+  // Runs fn against the SDK now, or queues it until the SDK finishes loading.
+  // Returns false only when it will never run (placeholder key, failed load),
+  // which is when the event stream should say NOT SENT.
+  function send(sink, fn) {
+    const s = state[sink];
+    if (s.ready) {
+      fn();
+      return true;
+    }
+    if (s.configured && !s.failed) {
+      s.queue.push(fn);
+      return true;
+    }
+    return false;
+  }
+
+  const outcome = (sink, ok) => (ok ? null : notSent(sink));
+
+  function flush(sink) {
+    const queued = state[sink].queue.splice(0);
+    queued.forEach(function (fn) {
+      try {
+        fn();
+      } catch (e) {
+        console.error('[laneway] queued ' + sink + ' call failed', e);
+      }
+    });
+    if (queued.length)
+      record(sink, 'Sent ' + queued.length + ' call(s) queued while the SDK loaded', null);
+  }
+
+  function fail(sink, err) {
+    state[sink].failed = true;
+    const dropped = state[sink].queue.splice(0).length;
+    record(
+      sink,
+      'SDK failed to load',
+      { error: String(err), dropped_calls: dropped },
+      String(err)
+    );
+  }
 
   /* ======================================================================
      SDK loading
@@ -138,8 +209,9 @@
         serverZone: zone,
         deviceId: store.anonId(),
       });
+      flush('amplitude');
     } catch (err) {
-      record('amplitude', 'SDK failed to load', { error: String(err) }, String(err));
+      fail('amplitude', err);
     }
   }
 
@@ -197,9 +269,12 @@
 
       state.braze.ready = true;
       record('braze', 'SDK initialised', { baseUrl: cfg.BRAZE_SDK_ENDPOINT });
+      // Identify before replaying the queue, so queued events land on the
+      // right Braze profile rather than an anonymous one.
       applyIdentityToBraze();
+      flush('braze');
     } catch (err) {
-      record('braze', 'SDK failed to load', { error: String(err) }, String(err));
+      fail('braze', err);
     }
   }
 
@@ -225,7 +300,7 @@
     if (!customer) return;
     const attrs = customerAttributes(customer);
 
-    if (state.braze.ready) {
+    const ok = send('braze', function () {
       const braze = window.braze;
       braze.changeUser(customer.id);
       const user = braze.getUser();
@@ -243,9 +318,9 @@
       });
       // Identity bridge: find this Braze profile from Amplitude and back.
       user.setCustomUserAttribute('amplitude_device_id', store.anonId());
-      user.setCustomUserAttribute('amplitude_user_id', customer.email);
+      user.setCustomUserAttribute('amplitude_user_id', userIdFor(customer));
       braze.requestImmediateDataFlush();
-    }
+    });
 
     record(
       'braze',
@@ -253,16 +328,17 @@
       Object.assign({ external_id: customer.id }, attrs, {
         amplitude_device_id: store.anonId(),
       }),
-      state.braze.ready ? null : notSent('braze')
+      outcome('braze', ok)
     );
   }
 
   function identify(customer) {
     const attrs = customerAttributes(customer);
+    const userId = userIdFor(customer);
 
-    if (state.amplitude.ready) {
+    const ok = send('amplitude', function () {
       const amp = window.amplitude;
-      amp.setUserId(customer.email);
+      if (userId) amp.setUserId(userId);
       const id = new amp.Identify();
       Object.entries(attrs).forEach(function (pair) {
         if (pair[1] !== null && pair[1] !== undefined) id.set(pair[0], pair[1]);
@@ -270,37 +346,32 @@
       // Identity bridge in the other direction.
       id.set('braze_external_id', customer.id);
       amp.identify(id);
-    }
+    });
     record(
       'amplitude',
-      'setUserId + identify',
-      Object.assign({ user_id: customer.email }, attrs, {
+      userId ? 'setUserId + identify' : 'identify (no user id: email too short)',
+      Object.assign({ user_id: userId }, attrs, {
         braze_external_id: customer.id,
       }),
-      state.amplitude.ready ? null : notSent('amplitude')
+      outcome('amplitude', ok)
     );
 
     applyIdentityToBraze();
   }
 
   function resetIdentity() {
-    if (state.amplitude.ready) {
+    const ampOk = send('amplitude', function () {
       window.amplitude.reset();
       window.amplitude.setDeviceId(store.anonId());
-    }
-    record(
-      'amplitude',
-      'reset',
-      { deviceId: store.anonId() },
-      state.amplitude.ready ? null : notSent('amplitude')
-    );
+    });
+    record('amplitude', 'reset', { deviceId: store.anonId() }, outcome('amplitude', ampOk));
 
-    if (state.braze.ready) window.braze.changeUser(store.anonId());
+    const brazeOk = send('braze', () => window.braze.changeUser(store.anonId()));
     record(
       'braze',
       'changeUser (anonymous)',
       { external_id: store.anonId() },
-      state.braze.ready ? null : notSent('braze')
+      outcome('braze', brazeOk)
     );
   }
 
@@ -309,34 +380,24 @@
      ====================================================================== */
 
   function setUserProperties(props) {
-    if (state.amplitude.ready) {
+    const ampOk = send('amplitude', function () {
       const amp = window.amplitude;
       const id = new amp.Identify();
       Object.entries(props).forEach(function (pair) {
         if (pair[1] !== null && pair[1] !== undefined) id.set(pair[0], pair[1]);
       });
       amp.identify(id);
-    }
-    record(
-      'amplitude',
-      'identify',
-      props,
-      state.amplitude.ready ? null : notSent('amplitude')
-    );
+    });
+    record('amplitude', 'identify', props, outcome('amplitude', ampOk));
 
-    if (state.braze.ready) {
+    const brazeOk = send('braze', function () {
       const user = window.braze.getUser();
       Object.entries(props).forEach(function (pair) {
         if (pair[1] !== null && pair[1] !== undefined)
           user.setCustomUserAttribute(pair[0], pair[1]);
       });
-    }
-    record(
-      'braze',
-      'setCustomUserAttribute',
-      props,
-      state.braze.ready ? null : notSent('braze')
-    );
+    });
+    record('braze', 'setCustomUserAttribute', props, outcome('braze', brazeOk));
   }
 
   /* ======================================================================
@@ -410,41 +471,31 @@
   const cartProducts = (lines) =>
     (lines || store.getCart().lines).map((l) => productItem(l));
 
+  // Amplitude call with the time it happened, so an event queued while the
+  // SDK loads keeps its real timestamp rather than the moment it was replayed.
+  function ampTrack(name, payload) {
+    const time = Date.now();
+    return send('amplitude', () => window.amplitude.track(name, payload, { time }));
+  }
+
   function track(name, props) {
     const payload = Object.assign({}, context(), props || {});
 
-    if (state.amplitude.ready) window.amplitude.track(name, payload);
-    record(
-      'amplitude',
-      name,
-      payload,
-      state.amplitude.ready ? null : notSent('amplitude')
-    );
+    record('amplitude', name, payload, outcome('amplitude', ampTrack(name, payload)));
 
     // Braze custom event names conventionally use snake_case.
     const brazeName = name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-    if (state.braze.ready) window.braze.logCustomEvent(brazeName, payload);
-    record(
-      'braze',
-      'logCustomEvent(' + brazeName + ')',
-      payload,
-      state.braze.ready ? null : notSent('braze')
-    );
+    const brazeOk = send('braze', () => window.braze.logCustomEvent(brazeName, payload));
+    record('braze', 'logCustomEvent(' + brazeName + ')', payload, outcome('braze', brazeOk));
 
     return payload;
   }
 
-  // Amplitude-only. For events that would be noise in Braze — high-frequency
+  // Amplitude-only. For events that would be noise in Braze: high-frequency
   // UI interactions that no campaign would ever trigger on.
   function trackAnalyticsOnly(name, props) {
     const payload = Object.assign({}, context(), props || {});
-    if (state.amplitude.ready) window.amplitude.track(name, payload);
-    record(
-      'amplitude',
-      name,
-      payload,
-      state.amplitude.ready ? null : notSent('amplitude')
-    );
+    record('amplitude', name, payload, outcome('amplitude', ampTrack(name, payload)));
     return payload;
   }
 
@@ -454,14 +505,14 @@
     // Amplitude: one Revenue for the order total, so native revenue metrics
     // and LTV work. Product-level revenue comes from Cart Analysis on
     // `products.revenue` in Order Completed, not from per-line Revenue calls.
-    if (state.amplitude.ready) {
+    const revOk = send('amplitude', function () {
       const rev = new window.amplitude.Revenue()
         .setPrice(order.total)
         .setQuantity(1)
         .setRevenueType('purchase')
         .setEventProperties({ order_id: order.id });
       window.amplitude.revenue(rev);
-    }
+    });
     record(
       'amplitude',
       'revenue',
@@ -471,13 +522,13 @@
         revenueType: 'purchase',
         order_id: order.id,
       },
-      state.amplitude.ready ? null : notSent('amplitude')
+      outcome('amplitude', revOk)
     );
 
     // Braze: logPurchase per line drives revenue-based segmentation and
     // triggers post-purchase campaigns.
     order.lines.forEach(function (line) {
-      if (state.braze.ready) {
+      const ok = send('braze', function () {
         window.braze.logPurchase(
           line.handle,
           line.price,
@@ -491,7 +542,7 @@
             category: line.category,
           }
         );
-      }
+      });
       record(
         'braze',
         'logPurchase(' + line.handle + ')',
@@ -502,7 +553,7 @@
           quantity: line.quantity,
           order_id: order.id,
         },
-        state.braze.ready ? null : notSent('braze')
+        outcome('braze', ok)
       );
     });
 
@@ -518,7 +569,7 @@
       payment_method: order.paymentMethod || null,
     });
 
-    if (state.braze.ready) window.braze.requestImmediateDataFlush();
+    send('braze', () => window.braze.requestImmediateDataFlush());
   }
 
   /* --- Braze surface interactions ---------------------------------------- */
@@ -529,16 +580,10 @@
   }
 
   function logContentCardClick(card) {
-    if (state.braze.ready && card && card.brazeCard) {
-      window.braze.logContentCardClick(card.brazeCard);
-      record('braze', 'logContentCardClick', { id: card.id });
-    } else {
-      record(
-        'braze',
-        'logContentCardClick',
-        { id: card && card.id },
-        state.braze.ready ? null : notSent('braze')
-      );
+    // Only real Braze cards can be reported back to Braze.
+    if (card && card.brazeCard) {
+      const ok = send('braze', () => window.braze.logContentCardClick(card.brazeCard));
+      record('braze', 'logContentCardClick', { id: card.id }, outcome('braze', ok));
     }
     trackAnalyticsOnly('Content Card Clicked', {
       card_id: card && card.id,
@@ -552,12 +597,12 @@
   function logContentCardImpressions(cards) {
     const brazeCards = cards.map((c) => c.brazeCard).filter(Boolean);
     if (brazeCards.length) {
-      if (state.braze.ready) window.braze.logContentCardImpressions(brazeCards);
+      const ok = send('braze', () => window.braze.logContentCardImpressions(brazeCards));
       record(
         'braze',
         'logContentCardImpressions',
         { card_ids: brazeCards.map((c) => c.id) },
-        state.braze.ready ? null : notSent('braze')
+        outcome('braze', ok)
       );
     }
     trackAnalyticsOnly('Content Cards Opened', {
@@ -591,10 +636,14 @@
       storage: store.storageAvailable() ? 'localStorage' : 'in-memory fallback',
     });
 
-    initAmplitude().then(function () {
-      const customer = store.getCustomer();
-      if (customer && state.amplitude.ready) identify(customer);
-    });
+    // Queued ahead of anything the page fires, so page-load events replay
+    // with the user id attached. No event is sent for this; the full
+    // identify happens when someone signs in. Braze does the same inside
+    // initBraze.
+    const userId = userIdFor(store.getCustomer());
+    if (userId) send('amplitude', () => window.amplitude.setUserId(userId));
+
+    initAmplitude();
     initBraze();
   }
 
