@@ -735,7 +735,7 @@ function checkoutPage() {
 
     <section class="checkout__step" data-step hidden>
       <h1 style="font-size:24px;margin-bottom:18px">Review</h1>
-      <p class="muted">Placing the order writes it to localStorage, sends Amplitude revenue events and a Braze <code>logPurchase</code> per line item.</p>
+      <p class="muted">Placing the order writes it to localStorage and sends Amplitude an <code>Order Completed</code> event with a <code>products</code> array, plus one revenue event for the order total. Braze gets the same event and a <code>logPurchase</code> per line item.</p>
       <button class="btn btn--outline" type="button" data-step-back>Back</button>
       <button class="btn" type="button" data-place-order>Place order</button>
     </section>
@@ -983,6 +983,14 @@ function indexScript() {
       p.variants[0] && p.variants[0].title !== 'Default Title'
         ? p.variants[0].title
         : null,
+    // { Color: 'Gray', Size: 'XL' }: the same shape the product page stores
+    // on a cart line, so seeded lines carry colour and size too.
+    firstVariantOptions:
+      p.options.length && p.variants[0]
+        ? Object.fromEntries(
+            p.options.map((o, i) => [o.name, p.variants[0].options[i]])
+          )
+        : null,
   }));
   const slimCollections = collections.map((c) => ({
     handle: c.handle,
@@ -1001,6 +1009,22 @@ function indexScript() {
 }
 
 /* --- build ---------------------------------------------------------------- */
+
+// docs/ is regenerated from scratch, so a key pasted straight into
+// docs/assets/js/config.js would be silently lost. Refuse instead.
+const builtConfig = join(OUT, 'assets/js/config.js');
+if (existsSync(builtConfig) && !process.argv.includes('--force')) {
+  const built = readFileSync(builtConfig, 'utf8');
+  const source = readFileSync('src/assets/js/config.js', 'utf8');
+  if (built !== source) {
+    console.error(
+      'docs/assets/js/config.js differs from src/assets/js/config.js.\n' +
+        'Copy your changes into src/ (the build overwrites docs/), then rebuild.\n' +
+        'Run with --force to discard the docs/ version.'
+    );
+    process.exit(1);
+  }
+}
 
 if (existsSync(OUT)) rmSync(OUT, { recursive: true });
 mkdirSync(OUT, { recursive: true });

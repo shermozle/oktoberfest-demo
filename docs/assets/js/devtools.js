@@ -330,10 +330,11 @@
 
     $('[data-dev-seed-cart]', drawer).addEventListener('click', function () {
       const pool = (window.LANEWAY_INDEX || { products: [] }).products;
+      const added = [];
       for (let i = 0; i < 3; i++) {
         const p = pool[Math.floor(Math.random() * pool.length)];
         if (!p) break;
-        store.addToCart({
+        const line = {
           handle: p.handle,
           variantId: p.firstVariantId,
           variantTitle: p.firstVariantTitle,
@@ -344,9 +345,15 @@
           brand: p.brand,
           category: p.category,
           tier: p.tier,
-        });
+          selectedOptions: p.firstVariantOptions,
+        };
+        store.addToCart(line);
+        added.push(line);
       }
-      track.track('Cart Seeded', { source: 'demo_control', items: 3 });
+      track.track('Cart Seeded', {
+        source: 'demo_control',
+        products: track.cartProducts(added),
+      });
       renderState();
       if (window.LanewayApp) window.LanewayApp.reboot();
       if (document.body.dataset.page === 'cart') location.reload();

@@ -1,78 +1,126 @@
 # Tracking plan
 
-Everything fires from `src/assets/js/tracking.js`. Three call shapes:
+Everything fires from `src/assets/js/tracking.js`. There are three call shapes:
 
-- `track(name, props)` — goes to **both** Amplitude (`logEvent`) and Braze
-  (`logCustomEvent`, name lower-snake-cased).
-- `trackAnalyticsOnly(name, props)` — Amplitude only. Used for high-frequency
-  UI interactions no campaign would ever trigger on.
-- `trackPurchase(order)` — Amplitude `Revenue` objects plus Braze `logPurchase`,
-  one per line item, then a single `Order Completed` event to both.
+- `track(name, props)` sends to **both** Amplitude (`track`) and Braze
+  (`logCustomEvent`, with the name lower-snake-cased).
+- `trackAnalyticsOnly(name, props)` sends to Amplitude only. It's used for
+  high-frequency UI interactions no campaign would trigger on.
+- `trackPurchase(order)` sends one Amplitude `Revenue` for the order total, a
+  Braze `logPurchase` per line item, then `Order Completed` to both.
+
+## The `products` array
+
+Every event that carries product detail carries it in a `products` object
+array, the shape Amplitude's Cart Analysis chart reads. There are no flat
+`product`, `brand` or `price` properties on events; the array is the single
+place product detail lives. One helper, `productItem()`, builds every element,
+so the shape is identical wherever an event comes from.
+
+| Child property | Present on | |
+|---|---|---|
+| `product_id` | every element | The product handle, e.g. `heavyweight-studio-jacket`. Matches the Braze `logPurchase` product id. |
+| `product_name` | every element | |
+| `brand` | every element | `Laneway`, `Southbank` or `RMIT` |
+| `category` | every element | `Apparel`, `Drinkware`, `Accessories` |
+| `price` | every element | Unit price for the selected variant |
+| `tier` | when known | `entry`, `mid` or `premium`, from the product tags |
+| `variant_id`, `variant` | when a variant is chosen | e.g. `Black / XL` |
+| `color`, `size` | products with those options | Split out of the variant so each can be grouped on |
+| `quantity` | cart and order lines | |
+| `revenue` | cart and order lines | `price × quantity`. **This is the Cart Analysis revenue metric.** |
+| `position` | lists the visitor was shown | 1-based: collection grids, search results, recommendations, clicked cards |
+
+Views and impressions carry `price` without `quantity` or `revenue`, so only
+real cart and order lines contribute to Cart Analysis revenue.
+
+**To enable Cart Analysis:** in Amplitude Data, open the `products` event
+property, set **Property Is Array** to true and turn on property splitting.
+Each child property then counts toward the project's 2,000 event property
+limit. If that's tight, keep `product_id`, `product_name`, `category`,
+`price`, `quantity` and `revenue`.
+
+**Braze** receives the same array as a nested event property on the events
+sent to both tools. Braze segmentation works on the scalar custom attributes
+listed below, while the array is there for Liquid templating, for example
+listing cart contents in an abandoned-cart message.
 
 ## Context on every event
 
-Added automatically, so anything can be broken down by it later.
+Added automatically, so any event can be broken down by it.
 
 | Property | |
 |---|---|
 | `session_id` | From the mock's own session cookie |
 | `signed_in` | Boolean |
-| `cart_size` | Units in cart at the moment of the event |
+| `cart_size` | Units in the cart at the moment of the event |
 | `cart_value` | Cart subtotal |
 | `page_path` | |
 | `currency` | `AUD` |
 
 ## Events sent to both tools
 
-| Event | Braze name | Key properties |
-|---|---|---|
-| `Page Viewed` | `page_viewed` | `page_type`, `page_name`, `path`, `referrer` |
-| `Collection Viewed` | `collection_viewed` | `collection`, `collection_type` (brand/category), `product_count`, `brands` |
-| `Product Viewed` | `product_viewed` | `product`, `product_handle`, `brand`, `category`, `tier`, `price`, `variant_count` |
-| `Product Detail Read` | `product_detail_read` | Fires past 70% scroll depth. Browse-abandonment trigger. |
-| `Product Added to Cart` | `product_added_to_cart` | `product`, `variant`, `brand`, `category`, `tier`, `price`, `quantity`, `line_value`, `add_source` |
-| `Product Removed from Cart` | `product_removed_from_cart` | `product`, `variant`, `quantity`, `line_value` |
-| `Cart Quantity Changed` | `cart_quantity_changed` | `from_quantity`, `to_quantity` |
-| `Cart Viewed` | `cart_viewed` | `cart_value`, `cart_size`, `product_handles`, `free_shipping_gap` |
-| `Checkout Started` | `checkout_started` | `cart_value`, `cart_size`, `product_handles`, `brands` |
-| `Checkout Step Completed` | `checkout_step_completed` | `step` (1–4), `step_name` |
-| `Order Completed` | `order_completed` | `order_id`, `revenue`, `subtotal`, `shipping`, `tax_included`, `item_count`, `product_handles`, `brands`, `shipping_method`, `payment_method` |
-| `Search Performed` | `search_performed` | `query`, `results_count`, `top_result` |
-| `Newsletter Subscribed` | `newsletter_subscribed` | `email`, `source` |
-| `Account Created` | `account_created` | `email`, `method` |
-| `Signed In` | `signed_in` | `email`, `method` |
-| `Signed Out` | `signed_out` | `email` |
-| `Email Subscription Started` / `Stopped` | `email_subscription_started` / `_stopped` | `source` |
-| `Enquiry Submitted` | `enquiry_submitted` | `service`, `company`, `budget`, `message_length` |
-| `Service Interest` | `service_interest` | `service` |
-| `Storefront Unlocked` | `storefront_unlocked` | `method` |
-| `Content Cards Updated` | `content_cards_updated` | `card_count`, `unviewed` |
-| `In-App Message Shown` | `in_app_message_shown` | `message_id`, `campaign` — fired from Braze's own subscription |
+| Event | Braze name | `products` holds | Other properties |
+|---|---|---|---|
+| `Page Viewed` | `page_viewed` | n/a | `page_type`, `page_name`, `path`, `referrer` |
+| `Collection Viewed` | `collection_viewed` | the grid, with `position` | `collection`, `collection_handle`, `collection_type` (brand/category), `product_count` |
+| `Product Viewed` | `product_viewed` | the product and its default variant | |
+| `Product Detail Read` | `product_detail_read` | the product as configured | Fires past 70% scroll depth. A browse-abandonment trigger. |
+| `Product Added to Cart` | `product_added_to_cart` | the added line | `add_source` (`product_page` or `sticky_bar`) |
+| `Product Removed from Cart` | `product_removed_from_cart` | the line, at the quantity removed | |
+| `Cart Quantity Changed` | `cart_quantity_changed` | the line, at its new quantity | `from_quantity`, `to_quantity` |
+| `Cart Viewed` | `cart_viewed` | the whole cart | `free_shipping_gap` |
+| `Checkout Started` | `checkout_started` | the whole cart | |
+| `Checkout Step Completed` | `checkout_step_completed` | the whole cart | `step` (1–3; the review step ends in `Order Completed`), `step_name` |
+| `Order Completed` | `order_completed` | the order lines | `order_id`, `revenue`, `subtotal`, `shipping`, `tax_included`, `item_count`, `shipping_method`, `payment_method` |
+| `Search Performed` | `search_performed` | the results, with `position` | `query`, `results_count` |
+| `Cart Seeded` | `cart_seeded` | the seeded lines | `source`. Demo control only. |
+| `Newsletter Subscribed` | `newsletter_subscribed` | n/a | `email`, `source` |
+| `Account Created` | `account_created` | n/a | `email`, `method` |
+| `Signed In` | `signed_in` | n/a | `email`, `method` |
+| `Signed Out` | `signed_out` | n/a | `email` |
+| `Email Subscription Started` / `Stopped` | `email_subscription_started` / `_stopped` | n/a | `source` |
+| `Enquiry Submitted` | `enquiry_submitted` | n/a | `service`, `company`, `budget`, `message_length` |
+| `Service Interest` | `service_interest` | n/a | `service` |
+| `Storefront Unlocked` | `storefront_unlocked` | n/a | `method` |
+| `Content Cards Updated` | `content_cards_updated` | n/a | `card_count`, `unviewed` |
+| `In-App Message Shown` | `in_app_message_shown` | n/a | `message_id`, `campaign`. Fired from Braze's own subscription. |
 
 ## Amplitude-only events
 
-Useful for funnels and session replay, noise in an engagement tool.
+These are useful for funnels and session replay but would be noise in an
+engagement tool.
 
-`Product Variant Selected` · `Product Card Clicked` · `Recommendations Shown` ·
-`Collection Sorted` · `Collection Filtered` · `Search Opened` ·
-`Search Result Clicked` · `Navigation Clicked` · `Checkout Viewed` ·
-`Checkout Step Failed Validation` · `Shipping Method Selected` ·
-`Payment Method Selected` · `Order Confirmation Viewed` ·
-`Account Page Viewed` · `Content Cards Opened` · `Content Card Clicked` ·
-`In-App Message Shown` / `Clicked` / `Dismissed`
+| Event | `products` holds | Other properties |
+|---|---|---|
+| `Product Variant Selected` | the product at its new variant | `option_name`, `option_value`, `available` |
+| `Product Card Clicked` | the clicked product, with `position` | `placement` |
+| `Recommendations Shown` | the recommended list, with `position` | `seed_product_id`, `placement` |
+| `Collection Sorted` | the re-sorted grid, with `position` | `collection`, `sort_by`, `results_count` |
+| `Collection Filtered` | the filtered grid, with `position` | `collection`, `availability`, `price_min`, `price_max`, `results_count` |
+| `Search Result Clicked` | the clicked result, with `position` | `query` |
+| `Checkout Viewed` | the whole cart | |
+| `Checkout Step Failed Validation` | the whole cart | `step`, `step_name` |
+| `Shipping Method Selected` | the whole cart | `method`, `shipping` |
+| `Payment Method Selected` | the whole cart | `method` |
+| `Order Confirmation Viewed` | the order lines | `order_id`, `revenue` |
 
-## User properties / Braze custom attributes
+Also sent with no product detail: `Search Opened`, `Navigation Clicked`,
+`Account Page Viewed`, `Content Cards Opened`, `Content Card Clicked`, and
+`In-App Message Shown` / `Clicked` / `Dismissed`.
 
-Set on both sides together, so a cohort built in one tool can be found in the
-other.
+## User properties and Braze custom attributes
+
+These are set on both sides together, so a cohort built in one tool can be
+found in the other. They stay scalar because that's what Braze segments on.
 
 | Property | Set when |
 |---|---|
 | `email`, `first_name`, `last_name` | Sign-in, registration, checkout step 1, newsletter, enquiry |
-| `marketing_opt_in` | Sign-up checkbox, account toggle. Also drives Braze's email subscription state. |
+| `marketing_opt_in` | Sign-up checkbox or account toggle. Also drives Braze's email subscription state. |
 | `persona` | Demo persona switch |
 | `lifetime_orders`, `lifetime_value` | Order placed |
-| `favourite_brand` | Order placed — most-purchased brand on the order |
+| `favourite_brand` | Order placed: the most-purchased brand on the order |
 | `last_brand_viewed`, `last_category_viewed`, `last_product_viewed` | Product page view |
 | `last_product_added` | Add to cart |
 | `cart_value`, `cart_size` | Any cart change. Zeroed on order. |
@@ -83,35 +131,41 @@ other.
 
 | Tool | Identifier | Cross-reference it carries |
 |---|---|---|
-| Amplitude | `user_id` = email; `device_id` = the mock's anon id | `braze_external_id` user property |
-| Braze | `external_id` = generated customer id | `amplitude_device_id` and `amplitude_user_id` custom attributes |
+| Amplitude | `user_id` is the email; `device_id` is the mock's anonymous id | `braze_external_id` user property |
+| Braze | `external_id` is a generated customer id | `amplitude_device_id` and `amplitude_user_id` custom attributes |
 
 Before sign-in both tools share the same anonymous device id, so the
 pre-identification session stitches correctly.
 
 ## Revenue
 
-Amplitude gets one `Revenue` object per line item — `productId`, `price`,
-`quantity`, `revenueType: 'purchase'`, plus `order_id`, `variant`, `brand` and
-`category` as event properties — so product-level revenue reporting works.
+Amplitude gets **one** `Revenue` per order, for the order total, with
+`order_id` as an event property. That drives Amplitude's native revenue
+metrics and LTV. Product-level revenue comes from Cart Analysis over
+`products.revenue` on `Order Completed`, which is why there are no per-line
+Revenue calls: those would put product detail outside the array.
 
 Braze gets one `logPurchase(product_id, price, currency, quantity, properties)`
-per line item, which is what drives revenue-based segmentation and
-post-purchase campaigns, followed by an immediate data flush.
+per line item, since Braze's purchase model is per product and that's what
+drives revenue-based segmentation and post-purchase campaigns. An immediate
+data flush follows.
 
 ## Suggested things to show
 
-1. **Add to cart** → one click produces an Amplitude event, a Braze custom
-   event, and Braze attribute writes for `cart_value` and `last_brand_viewed`.
-   The point: behaviour Amplitude measures is immediately segmentable in Braze.
-2. **Switch persona** (Controls tab) → watch `changeUser`, `setEmail`, the
-   subscription state and every custom attribute go across, then check the
-   State tab for both ids.
-3. **Under $100 add-to-cart** → the free-shipping in-app message appears and
-   logs `In-App Message Shown` to Amplitude. The point: campaign exposure is an
-   analytics event, so lift is measurable.
-4. **Complete a checkout** → four `Checkout Step Completed` events, then
-   per-line Amplitude revenue and Braze `logPurchase`, then lifetime stats
-   rolling forward on the profile.
-5. **Sign out, then back in** → identity reset on both sides and the anonymous
-   device id staying put.
+1. **Add to cart.** One click produces an Amplitude event carrying the line
+   in `products`, a Braze custom event with the same array, and Braze
+   attribute writes for `cart_value` and `last_brand_viewed`. Behaviour
+   Amplitude measures becomes segmentable in Braze straight away.
+2. **Switch persona** from the Controls tab. Watch `changeUser`, `setEmail`,
+   the subscription state and every custom attribute go across, then check
+   the State tab for both ids.
+3. **Add something under $100.** The free-shipping in-app message appears and
+   logs `In-App Message Shown` to Amplitude, so campaign exposure is an
+   analytics event and its lift is measurable.
+4. **Complete a checkout.** Three `Checkout Step Completed` events each carry
+   the cart, then `Order Completed` carries the lines with `revenue` per line,
+   Braze logs a purchase per line, and lifetime stats roll forward.
+5. **Open Cart Analysis** on `Order Completed` and group by `products.brand`
+   or `products.size` to show which brand or size drives revenue.
+6. **Sign out, then back in.** Identity resets on both sides while the
+   anonymous device id stays put.
