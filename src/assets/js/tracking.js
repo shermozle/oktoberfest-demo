@@ -473,15 +473,26 @@
 
   // Amplitude call with the time it happened, so an event queued while the
   // SDK loads keeps its real timestamp rather than the moment it was replayed.
-  function ampTrack(name, payload) {
+  // `fields` are Amplitude event-level fields such as revenue, sent beside
+  // the event properties rather than inside them.
+  function ampTrack(name, payload, fields) {
     const time = Date.now();
-    return send('amplitude', () => window.amplitude.track(name, payload, { time }));
+    return send('amplitude', () =>
+      window.amplitude.track(name, payload, Object.assign({ time }, fields))
+    );
   }
 
-  function track(name, props) {
+  function track(name, props, ampFields) {
     const payload = Object.assign({}, context(), props || {});
 
-    record('amplitude', name, payload, outcome('amplitude', ampTrack(name, payload)));
+    // The stream shows event-level fields alongside the properties so the
+    // revenue on Order Completed is visible; they aren't sent as properties.
+    record(
+      'amplitude',
+      name,
+      ampFields ? Object.assign({}, payload, { '(event fields)': ampFields }) : payload,
+      outcome('amplitude', ampTrack(name, payload, ampFields))
+    );
 
     // Braze custom event names conventionally use snake_case.
     const brazeName = name.toLowerCase().replace(/[^a-z0-9]+/g, '_');
@@ -502,29 +513,6 @@
   /* --- revenue ----------------------------------------------------------- */
 
   function trackPurchase(order) {
-    // Amplitude: one Revenue for the order total, so native revenue metrics
-    // and LTV work. Product-level revenue comes from Cart Analysis on
-    // `products.revenue` in Order Completed, not from per-line Revenue calls.
-    const revOk = send('amplitude', function () {
-      const rev = new window.amplitude.Revenue()
-        .setPrice(order.total)
-        .setQuantity(1)
-        .setRevenueType('purchase')
-        .setEventProperties({ order_id: order.id });
-      window.amplitude.revenue(rev);
-    });
-    record(
-      'amplitude',
-      'revenue',
-      {
-        price: order.total,
-        quantity: 1,
-        revenueType: 'purchase',
-        order_id: order.id,
-      },
-      outcome('amplitude', revOk)
-    );
-
     // Braze: logPurchase per line drives revenue-based segmentation and
     // triggers post-purchase campaigns.
     order.lines.forEach(function (line) {
@@ -567,6 +555,13 @@
       products: cartProducts(order.lines),
       shipping_method: order.shippingMethod || null,
       payment_method: order.paymentMethod || null,
+    }, {
+      // Revenue carried by Order Completed itself, so Amplitude's revenue
+      // metrics and LTV count it without a separate revenue() call. That call
+      // created a second event, shown as "Revenue (Unverified)", repeating the
+      // same total. Product-level revenue is `products.revenue` in the array.
+      revenue: order.total,
+      revenueType: 'purchase',
     });
 
     send('braze', () => window.braze.requestImmediateDataFlush());

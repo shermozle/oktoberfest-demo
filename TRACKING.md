@@ -6,8 +6,8 @@ Everything fires from `src/assets/js/tracking.js`. There are three call shapes:
   (`logCustomEvent`, with the name lower-snake-cased).
 - `trackAnalyticsOnly(name, props)` sends to Amplitude only. It's used for
   high-frequency UI interactions no campaign would trigger on.
-- `trackPurchase(order)` sends one Amplitude `Revenue` for the order total, a
-  Braze `logPurchase` per line item, then `Order Completed` to both.
+- `trackPurchase(order)` sends a Braze `logPurchase` per line item, then
+  `Order Completed` to both, with the order total as Amplitude revenue.
 
 ## The `products` array
 
@@ -85,6 +85,9 @@ Added automatically, so any event can be broken down by it.
 | `Cart Quantity Changed` | `cart_quantity_changed` | the line, at its new quantity | `from_quantity`, `to_quantity` |
 | `Cart Viewed` | `cart_viewed` | the whole cart | `free_shipping_gap` |
 | `Checkout Started` | `checkout_started` | the whole cart | |
+| `Contact Entered` | `contact_entered` | n/a | `email_provided`, `marketing_opt_in`. Fires on leaving the contact step, after the email identifies the visitor. |
+| `Shipping Entered` | `shipping_entered` | n/a | `shipping_method`, `shipping`, `country`. No address details. |
+| `Payment Entered` | `payment_entered` | n/a | `payment_method` |
 | `Order Completed` | `order_completed` | the order lines | `order_id`, `revenue`, `subtotal`, `shipping`, `tax_included`, `item_count`, `shipping_method`, `payment_method` |
 | `Search Performed` | `search_performed` | the results, with `position` | `query`, `results_count` |
 | `Cart Seeded` | `cart_seeded` | the seeded lines | `source`. Demo control only. |
@@ -112,8 +115,6 @@ engagement tool.
 | `Collection Filtered` | the filtered grid, with `position` | `collection`, `availability`, `price_min`, `price_max`, `results_count` |
 | `Search Result Clicked` | the clicked result, with `position` | `query` |
 | `Checkout Viewed` | the whole cart | |
-| `Shipping Method Selected` | the whole cart | `method`, `shipping` |
-| `Payment Method Selected` | the whole cart | `method` |
 | `Order Confirmation Viewed` | the order lines | `order_id`, `revenue` |
 
 Also sent with no product detail: `Search Opened`, `Navigation Clicked`, and
@@ -166,11 +167,13 @@ pre-identification session stitches correctly.
 
 ## Revenue
 
-Amplitude gets **one** `Revenue` per order, for the order total, with
-`order_id` as an event property. That drives Amplitude's native revenue
-metrics and LTV. Product-level revenue comes from Cart Analysis over
-`products.revenue` on `Order Completed`, which is why there are no per-line
-Revenue calls: those would put product detail outside the array.
+`Order Completed` carries the order total as Amplitude's event-level
+`revenue` field, with `revenueType: purchase`, so Amplitude's revenue metrics
+and LTV count it directly. There's no separate `revenue()` call; that created
+a second event, shown in Amplitude as "Revenue (Unverified)", repeating the
+same total. ("Unverified" only means no App Store or Play Store receipt,
+which never applies on the web.) Product-level revenue comes from Cart
+Analysis over `products.revenue` on the same event.
 
 Braze gets one `logPurchase(product_id, price, currency, quantity, properties)`
 per line item, since Braze's purchase model is per product and that's what
@@ -191,9 +194,11 @@ data flush follows.
    event and its lift is measurable. With no campaigns built yet, set
    `SIMULATE_IAM: true` and add something under $100 to see a simulated one.
 4. **Complete a checkout.** No field is required, so you can click straight
-   through. `Checkout Started` carries the cart, then `Order Completed`
-   carries the lines with `revenue` per line, Braze logs a purchase per line,
-   and lifetime stats roll forward.
+   through. `Checkout Started` carries the cart, then `Contact Entered`,
+   `Shipping Entered` and `Payment Entered` mark each stage (a funnel of
+   those shows where checkouts stall), then `Order Completed` carries the
+   lines with `revenue` per line, Braze logs a purchase per line, and
+   lifetime stats roll forward.
 5. **Open Cart Analysis** on `Order Completed` and group by `products.brand`
    or `products.size` to show which brand or size drives revenue.
 6. **Sign out, then back in.** Identity resets on both sides while the

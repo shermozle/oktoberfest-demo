@@ -984,33 +984,47 @@
           });
           track.identify(person);
         }
+        // After identify, so Contact Entered lands on the identified user.
+        logStageEntered(current);
         renderSide();
         showStep(Math.min(current + 1, steps.length - 1));
       });
     });
 
+    // One event per completed checkout stage, sent to both tools so Braze can
+    // run abandoned-checkout campaigns off how far someone got. Deliberately
+    // lean: the cart is on Checkout Started and Order Completed, so it isn't
+    // repeated here, and no address details are sent.
+    function logStageEntered(stage) {
+      const f = formEl.elements;
+      const checked = (name) => {
+        const el = formEl.querySelector('[name="' + name + '"]:checked');
+        return el ? el.value : null;
+      };
+      if (stage === 0) {
+        track.track('Contact Entered', {
+          email_provided: !!f.email.value.trim(),
+          marketing_opt_in: f.marketingOptIn ? f.marketingOptIn.checked : false,
+        });
+      } else if (stage === 1) {
+        track.track('Shipping Entered', {
+          shipping_method: checked('shippingMethod'),
+          shipping: totals().shipping,
+          country: f.country ? f.country.value : null,
+        });
+      } else if (stage === 2) {
+        track.track('Payment Entered', { payment_method: checked('paymentMethod') });
+      }
+    }
+
     $$('[data-step-back]').forEach(function (btn) {
       btn.addEventListener('click', () => showStep(Math.max(0, current - 1)));
     });
 
+    // The chosen methods are reported by Shipping Entered and Payment
+    // Entered, so a radio change only needs to update the totals.
     $$('[name="shippingMethod"]').forEach(function (radio) {
-      radio.addEventListener('change', function () {
-        renderSide();
-        track.trackAnalyticsOnly('Shipping Method Selected', {
-          method: radio.value,
-          shipping: totals().shipping,
-          products: track.cartProducts(),
-        });
-      });
-    });
-
-    $$('[name="paymentMethod"]').forEach(function (radio) {
-      radio.addEventListener('change', function () {
-        track.trackAnalyticsOnly('Payment Method Selected', {
-          method: radio.value,
-          products: track.cartProducts(),
-        });
-      });
+      radio.addEventListener('change', renderSide);
     });
 
     const placeBtn = $('[data-place-order]');
