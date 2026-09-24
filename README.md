@@ -72,8 +72,7 @@ Bottom right, or press `` ` ``. Three tabs:
   colour-coded by destination, filterable. Calls held back by a placeholder key
   say so.
 - **Controls** — switch between three personas (first-time visitor, repeat
-  buyer, high-value customer), fire simulated Braze campaigns, seed or empty
-  the cart, wipe all local state.
+  buyer, high-value customer), seed or empty the cart, wipe all local state.
 - **State** — the current identity on both sides, including the ids that bridge
   them.
 
@@ -105,20 +104,21 @@ the mock's own device id, so the anonymous visitor lines up before sign-in.
 
 See [TRACKING.md](TRACKING.md) for the full event and property list.
 
-## Simulated Braze campaigns
+## Simulated Braze campaigns (off)
 
-Three in-app messages fire locally so the campaign half of the demo works
-before anything exists in Braze:
+The site can fake Braze in-app messages and content cards locally, so the
+campaign half of a demo works before anything exists in Braze. It's switched
+off (`SIMULATE_IAM: false`), so only real Braze campaigns appear. Set it to
+`true` to bring back:
 
-- **Free shipping nudge** — on add-to-cart when the cart is under $100.
-- **Cart abandonment** — on a later page view when the cart has sat for two
-  minutes (hours, in a real campaign).
-- **Win-back** and **back in stock** — from the Controls tab.
+- a free-shipping nudge on add-to-cart when the cart is under $100
+- a cart-abandonment message on a later page view once the cart has sat for
+  two minutes (hours, in a real campaign)
+- win-back and back-in-stock messages from buttons in the Controls tab
+- two content cards behind the bell icon
 
-Each logs `In-App Message Shown` / `Clicked` / `Dismissed` to Amplitude, which
-is how you'd measure them for real. Two simulated content cards sit behind the
-bell icon. Set `SIMULATE_IAM: false` once real Braze campaigns are live, and
-Braze's own messages take over.
+Each fake logs `In-App Message Shown`, `Clicked` or `Dismissed` to Amplitude,
+the same events real Braze messages produce.
 
 ## Rebuilding
 

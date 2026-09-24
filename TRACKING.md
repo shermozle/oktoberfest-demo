@@ -159,9 +159,10 @@ data flush follows.
 2. **Switch persona** from the Controls tab. Watch `changeUser`, `setEmail`,
    the subscription state and every custom attribute go across, then check
    the State tab for both ids.
-3. **Add something under $100.** The free-shipping in-app message appears and
-   logs `In-App Message Shown` to Amplitude, so campaign exposure is an
-   analytics event and its lift is measurable.
+3. **Show a Braze in-app message.** Any real Braze campaign that fires logs
+   `In-App Message Shown` to Amplitude, so campaign exposure is an analytics
+   event and its lift is measurable. With no campaigns built yet, set
+   `SIMULATE_IAM: true` and add something under $100 to see a simulated one.
 4. **Complete a checkout.** Three `Checkout Step Completed` events each carry
    the cart, then `Order Completed` carries the lines with `revenue` per line,
    Braze logs a purchase per line, and lifetime stats roll forward.

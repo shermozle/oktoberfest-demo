@@ -100,12 +100,15 @@
       '<div data-dev-personas></div>' +
       '<button class="dev-btn" data-dev-signout>sign out + reset identity</button>' +
       '</div>' +
-      '<div class="dev-section"><h4>Braze campaigns (simulated)</h4>' +
-      '<button class="dev-btn" data-dev-iam="abandoned">cart abandonment</button>' +
-      '<button class="dev-btn" data-dev-iam="winback">win-back offer</button>' +
-      '<button class="dev-btn" data-dev-iam="restock">back in stock</button>' +
-      '<p class="dev-note">These fire locally so the campaign half of the demo works before anything is built in Braze. Each one logs <code>In-App Message Shown</code> to Amplitude, which is how you measure campaign lift. Set <code>SIMULATE_IAM: false</code> once real Braze campaigns are live.</p>' +
-      '</div>' +
+      // Only offered while simulation is on; with it off they'd do nothing.
+      (cfg.SIMULATE_IAM
+        ? '<div class="dev-section"><h4>Braze campaigns (simulated)</h4>' +
+          '<button class="dev-btn" data-dev-iam="abandoned">cart abandonment</button>' +
+          '<button class="dev-btn" data-dev-iam="winback">win-back offer</button>' +
+          '<button class="dev-btn" data-dev-iam="restock">back in stock</button>' +
+          '<p class="dev-note">These fire locally so the campaign half of the demo works before anything is built in Braze. Each one logs <code>In-App Message Shown</code> to Amplitude, which is how you measure campaign lift. Set <code>SIMULATE_IAM: false</code> once real Braze campaigns are live.</p>' +
+          '</div>'
+        : '') +
       '<div class="dev-section"><h4>Cart</h4>' +
       '<button class="dev-btn" data-dev-seed-cart>add 3 random items</button>' +
       '<button class="dev-btn" data-dev-clear-cart>empty cart</button>' +

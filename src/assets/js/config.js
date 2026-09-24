@@ -35,8 +35,8 @@
 window.LANEWAY_CONFIG = {
   /* --- Amplitude ---------------------------------------------------------- */
 
-  // TODO: replace with your Amplitude project API key.
-  AMPLITUDE_API_KEY: 'YOUR_AMPLITUDE_API_KEY',
+  // Amplitude project API key (client-side, safe to publish).
+  AMPLITUDE_API_KEY: '7453580b0e27875713bdddd50fc2da46',
 
   // Data residency. Use 'EU' for an EU project, otherwise 'US'.
   AMPLITUDE_SERVER_ZONE: 'US',
@@ -56,10 +56,10 @@ window.LANEWAY_CONFIG = {
 
   /* --- Braze -------------------------------------------------------------- */
 
-  // TODO: replace with your Braze Web SDK API key.
-  BRAZE_API_KEY: 'YOUR_BRAZE_API_KEY',
+  // Braze Web SDK API key (client-side, safe to publish).
+  BRAZE_API_KEY: '9c3bf326-fa90-468c-bde4-f2d6c2f07ab3',
 
-  // TODO: replace with the SDK endpoint for your Braze instance (no https://).
+  // Braze SDK endpoint for this workspace's cluster (US-01), no https://.
   BRAZE_SDK_ENDPOINT: 'sdk.iad-01.braze.com',
 
   // Braze SDK options.
@@ -89,9 +89,9 @@ window.LANEWAY_CONFIG = {
   // Keyboard shortcut that toggles the drawer.
   DEV_DRAWER_KEY: '`',
 
-  // Simulated Braze in-app messages. These fire locally so the campaign side
-  // of the demo works before anything is built in Braze. Once you have real
-  // campaigns running, set SIMULATE_IAM to false and Braze's own in-app
-  // messages take over.
-  SIMULATE_IAM: true,
+  // Simulated Braze in-app messages and content cards, faked locally so the
+  // campaign side of a demo works before anything is built in Braze. Off:
+  // only real Braze campaigns appear. Set to true to bring the fakes back,
+  // along with their buttons in the event stream's Controls tab.
+  SIMULATE_IAM: false,
 };
