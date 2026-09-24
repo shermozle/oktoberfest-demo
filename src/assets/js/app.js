@@ -1488,7 +1488,7 @@
       adoptBrazeCards(e.detail)
     );
 
-    const live = track.requestContentCards();
+    const live = track.cachedContentCards();
     if (live.length) adoptBrazeCards(live);
     else if (cfg.SIMULATE_IAM) {
       cards = SIMULATED_CARDS.slice();
@@ -1501,10 +1501,8 @@
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         panel.hidden = !panel.hidden;
-        if (!panel.hidden)
-          track.trackAnalyticsOnly('Content Cards Opened', {
-            card_count: cards.length,
-          });
+        // Opening the panel is when the cards are actually seen.
+        if (!panel.hidden) track.logContentCardImpressions(cards);
       });
     });
 

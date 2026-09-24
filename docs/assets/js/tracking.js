@@ -175,14 +175,18 @@
         braze.showInAppMessage(message);
       });
 
+      // A card sync is SDK housekeeping, not something the visitor did, so it
+      // goes in the event stream only. Sending it as an event put several
+      // per page load into Amplitude and cost Braze a data point each time.
+      // What the visitor saw and clicked is logged by logContentCardImpressions
+      // and logContentCardClick.
       braze.subscribeToContentCardsUpdates(function (updates) {
-        api.track('Content Cards Updated', {
-          card_count: updates.cards.length,
-          unviewed: updates.getUnviewedCardCount
-            ? updates.getUnviewedCardCount()
-            : null,
-          source: 'braze',
-        });
+        record(
+          'braze',
+          'content cards synced',
+          { card_count: updates.cards.length },
+          'Stream only: SDK housekeeping, not sent as an event'
+        );
         document.dispatchEvent(
           new CustomEvent('laneway:contentcards', { detail: updates.cards })
         );
@@ -543,14 +547,32 @@
     });
   }
 
-  function requestContentCards() {
-    if (state.braze.ready) {
-      window.braze.requestContentCardsRefresh();
-      record('braze', 'requestContentCardsRefresh', null);
-      return window.braze.getCachedContentCards().cards || [];
+  // Impressions are what Braze's content card reporting counts, and the
+  // Amplitude event puts card exposure in the same funnels as everything else.
+  function logContentCardImpressions(cards) {
+    const brazeCards = cards.map((c) => c.brazeCard).filter(Boolean);
+    if (brazeCards.length) {
+      if (state.braze.ready) window.braze.logContentCardImpressions(brazeCards);
+      record(
+        'braze',
+        'logContentCardImpressions',
+        { card_ids: brazeCards.map((c) => c.id) },
+        state.braze.ready ? null : notSent('braze')
+      );
     }
-    record('braze', 'requestContentCardsRefresh', null, notSent('braze'));
-    return [];
+    trackAnalyticsOnly('Content Cards Opened', {
+      card_count: cards.length,
+      card_ids: cards.map((c) => c.id),
+      source: 'braze',
+    });
+  }
+
+  // Whatever the SDK already holds. initBraze asks for a refresh once per
+  // page; asking again here was the second of three syncs per page load.
+  function cachedContentCards() {
+    return state.braze.ready
+      ? window.braze.getCachedContentCards().cards || []
+      : [];
   }
 
   /* ======================================================================
@@ -589,7 +611,8 @@
     setUserProperties,
     logInAppMessageInteraction,
     logContentCardClick,
-    requestContentCards,
+    logContentCardImpressions,
+    cachedContentCards,
     state,
     stream,
     onRecord: function (fn) {

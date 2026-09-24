@@ -83,7 +83,6 @@ Added automatically, so any event can be broken down by it.
 | `Enquiry Submitted` | `enquiry_submitted` | n/a | `service`, `company`, `budget`, `message_length` |
 | `Service Interest` | `service_interest` | n/a | `service` |
 | `Storefront Unlocked` | `storefront_unlocked` | n/a | `method` |
-| `Content Cards Updated` | `content_cards_updated` | n/a | `card_count`, `unviewed` |
 | `In-App Message Shown` | `in_app_message_shown` | n/a | `message_id`, `campaign`. Fired from Braze's own subscription. |
 
 ## Amplitude-only events
@@ -106,8 +105,20 @@ engagement tool.
 | `Order Confirmation Viewed` | the order lines | `order_id`, `revenue` |
 
 Also sent with no product detail: `Search Opened`, `Navigation Clicked`,
-`Account Page Viewed`, `Content Cards Opened`, `Content Card Clicked`, and
-`In-App Message Shown` / `Clicked` / `Dismissed`.
+`Account Page Viewed`, and `In-App Message Shown` / `Clicked` / `Dismissed`.
+
+## Content cards
+
+Only what the visitor does with cards is tracked:
+
+| Amplitude event | Braze call | When |
+|---|---|---|
+| `Content Cards Opened` (`card_count`, `card_ids`) | `logContentCardImpressions` | The bell panel opens. That's when the cards are seen, and Braze's content card reporting counts impressions from this call. |
+| `Content Card Clicked` (`card_id`, `card_title`) | `logContentCardClick` | A card is clicked |
+
+Card syncs from Braze aren't events. The SDK fetches cards once per page and
+the event stream shows each sync, marked as not sent. Sending them as events
+put three per page load into Amplitude and cost a Braze data point each.
 
 ## User properties and Braze custom attributes
 
