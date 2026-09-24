@@ -104,6 +104,17 @@ the mock's own device id, so the anonymous visitor lines up before sign-in.
 
 See [TRACKING.md](TRACKING.md) for the full event and property list.
 
+## Web push
+
+Submitting the storefront password asks for notification permission
+(`WEB_PUSH_ON_UNLOCK` in config). Braze needs web push enabled for the app,
+which it is for this one. `build.mjs` writes `service-worker.js` next to
+`index.html`, loading Braze's worker for the same SDK version as
+`tracking.js`, and the SDK is pointed at it, so it works under a GitHub Pages
+repo path. The permission is granted to the whole `github.io` origin. iPhone
+only gets web push for sites added to the home screen, which would also need
+a web app manifest; this site doesn't have one.
+
 ## Simulated Braze campaigns (off)
 
 The site can fake Braze in-app messages and content cards locally, so the

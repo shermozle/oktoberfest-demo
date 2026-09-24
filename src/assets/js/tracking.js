@@ -232,7 +232,18 @@
 
       braze.initialize(
         cfg.BRAZE_API_KEY,
-        Object.assign({ baseUrl: cfg.BRAZE_SDK_ENDPOINT }, cfg.BRAZE_OPTIONS)
+        Object.assign(
+          {
+            baseUrl: cfg.BRAZE_SDK_ENDPOINT,
+            // Braze looks for /service-worker.js at the domain root by
+            // default. On a GitHub Pages project site the root belongs to
+            // the account, not this repo, so point it at the copy build.mjs
+            // writes beside index.html. Its scope is that directory, which
+            // is the whole site.
+            serviceWorkerLocation: serviceWorkerPath(),
+          },
+          cfg.BRAZE_OPTIONS
+        )
       );
 
       // Braze → Amplitude. Campaign exposure becomes analytics events, which
@@ -278,6 +289,70 @@
     } catch (err) {
       fail('braze', err);
     }
+  }
+
+  /* ======================================================================
+     Web push
+     ====================================================================== */
+
+  // Absolute path of the service worker, e.g. /oktoberfest-demo/service-worker.js,
+  // worked out from this page's relative path to the site root.
+  const serviceWorkerPath = () =>
+    new URL((window.LANEWAY_BASE || '') + 'service-worker.js', location.href).pathname;
+
+  function onPushGranted(source) {
+    trackAnalyticsOnly('Push Permission Granted', { source: source });
+  }
+
+  function onPushDenied(source, permission) {
+    trackAnalyticsOnly('Push Permission Denied', {
+      source: source,
+      // 'denied' is a block; 'default' means the prompt was dismissed.
+      permission: permission,
+    });
+  }
+
+  // Only called once permission is already granted, so Braze subscribes
+  // without prompting. The Granted event is logged by requestWebPush when the
+  // visitor actually grants it, not here.
+  function brazeSubscribe(source) {
+    window.braze.requestPushPermission();
+    record('braze', 'requestPushPermission (subscribe)', { source: source });
+  }
+
+  // MUST be called synchronously inside a click or submit handler. Safari and
+  // Firefox only show the permission prompt from a user gesture, and a
+  // prompt started after an await or a queued callback no longer counts.
+  //
+  // The browser's own prompt is used rather than Braze's: Braze won't prompt
+  // until its server config (with the VAPID key) has loaded, which on a first
+  // visit can land after the gesture has expired. Once permission is granted,
+  // Braze subscribes on its own schedule, and that part needs no gesture.
+  function requestWebPush(source) {
+    const supported =
+      'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window;
+    if (!supported || !state.braze.configured || state.braze.failed) return;
+
+    const permission = Notification.permission;
+    // Blocked: the browser won't prompt again, so there's nothing to ask.
+    if (permission === 'denied') return;
+
+    // Already allowed (e.g. a returning visitor): no prompt, just make sure
+    // Braze holds a subscription.
+    if (permission === 'granted') {
+      send('braze', () => brazeSubscribe(source));
+      return;
+    }
+
+    trackAnalyticsOnly('Push Permission Requested', { source: source });
+    Notification.requestPermission().then(function (result) {
+      if (result === 'granted') {
+        onPushGranted(source);
+        send('braze', () => brazeSubscribe(source));
+      } else {
+        onPushDenied(source, result);
+      }
+    });
   }
 
   /* ======================================================================
@@ -659,6 +734,7 @@
     logContentCardClick,
     logContentCardImpressions,
     cachedContentCards,
+    requestWebPush,
     state,
     stream,
     onRecord: function (fn) {

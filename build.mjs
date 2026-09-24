@@ -1036,6 +1036,19 @@ writeFileSync(join(OUT, 'assets/data/index.js'), indexScript());
 // Tells GitHub Pages not to run the output through Jekyll.
 writeFileSync(join(OUT, '.nojekyll'), '');
 
+// Braze web push service worker. It sits beside index.html so its scope is
+// the whole site (a worker only controls its own directory and below). Its
+// Braze version is read from tracking.js, since the worker and the SDK must
+// match.
+const brazeVersion = /web-sdk\/([\d.]+)\/braze\.min\.js/.exec(
+  readFileSync('src/assets/js/tracking.js', 'utf8')
+);
+if (!brazeVersion) throw new Error('Braze SDK version not found in tracking.js');
+writeFileSync(
+  join(OUT, 'service-worker.js'),
+  `self.importScripts('https://js.appboycdn.com/web-sdk/${brazeVersion[1]}/service-worker.js');\n`
+);
+
 emit('index.html', homePage());
 emit('collections/index.html', collectionsIndexPage());
 collections.forEach((c) =>

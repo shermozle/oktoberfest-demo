@@ -74,10 +74,12 @@
       e.preventDefault();
       const value = input.value.trim().toLowerCase();
       if (value === String(cfg.PASSWORD).toLowerCase()) {
+        // First, while this still counts as the visitor's own action: the
+        // browser only shows the push prompt from a user gesture.
+        if (cfg.WEB_PUSH_ON_UNLOCK) track.requestWebPush('password_gate');
         store.setCookie(store.NS + '_gate', 'open', 30);
         gate.hidden = true;
         document.documentElement.style.overflow = '';
-        track.init();
         track.track('Storefront Unlocked', { method: 'password' });
         boot();
       } else {
@@ -1619,13 +1621,16 @@
   }
 
   function start() {
+    // SDKs start loading straight away, gate or not, so Braze is usually
+    // ready by the time the password is submitted and can show the push
+    // prompt itself.
+    track.init();
     const open = initGate();
     if (open) {
-      track.init();
       boot();
     } else if (window.LanewayDevtools) {
-      // Let the drawer work behind the gate — it is how you show what a
-      // storefront password does to tracking.
+      // Let the drawer work behind the gate: it shows what a storefront
+      // password does to tracking.
       window.LanewayDevtools.mount();
     }
   }
