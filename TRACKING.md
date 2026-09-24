@@ -99,7 +99,6 @@ Added automatically, so any event can be broken down by it.
 | `Enquiry Submitted` | `enquiry_submitted` | n/a | `service`, `company`, `budget`, `message_length` |
 | `Service Interest` | `service_interest` | n/a | `service` |
 | `Storefront Unlocked` | `storefront_unlocked` | n/a | `method` |
-| `In-App Message Shown` | `in_app_message_shown` | n/a | `message_id`, `campaign`. Fired from Braze's own subscription. |
 
 ## Amplitude-only events
 
@@ -114,11 +113,14 @@ engagement tool.
 | `Collection Sorted` | the re-sorted grid, with `position` | `collection`, `sort_by`, `results_count` |
 | `Collection Filtered` | the filtered grid, with `position` | `collection`, `availability`, `price_min`, `price_max`, `results_count` |
 | `Search Result Clicked` | the clicked result, with `position` | `query` |
-| `Checkout Viewed` | the whole cart | |
-| `Order Confirmation Viewed` | the order lines | `order_id`, `revenue` |
 
 Also sent with no product detail: `Search Opened`, `Navigation Clicked`, and
-`In-App Message Shown` / `Clicked` / `Dismissed`.
+`In-App Message Shown` / `Clicked` / `Dismissed`. `In-App Message Shown` goes
+to Amplitude only, because Braze records its own impressions.
+
+Arriving on the checkout or order confirmation page sends nothing extra:
+`Checkout Started` and `Order Completed` already carry the cart and order, and
+the page view is autocaptured.
 
 ## Content cards
 
