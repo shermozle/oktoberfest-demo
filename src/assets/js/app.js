@@ -23,6 +23,17 @@
   const url = (path) => BASE + path;
   const query = new URLSearchParams(location.search);
 
+  // UTM parameters from a paid campaign. The landing page passes them on to
+  // its apply links, so the application can say which campaign produced it.
+  const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+  function campaignFrom(params) {
+    const out = {};
+    UTM_KEYS.forEach((k) => {
+      if (params.get(k)) out[k] = params.get(k);
+    });
+    return out;
+  }
+
   const productByHandle = (handle) =>
     INDEX.products.find((p) => p.handle === handle);
   const homeLoans = () => INDEX.products.filter((p) => p.category === 'home-loans');
@@ -173,10 +184,12 @@
 
     // Every "Apply" button carries where it was clicked, so Application
     // Started can say which part of the site produced the application.
+    const campaign = campaignFrom(query);
     $$('[data-apply-link]').forEach(function (a) {
       if (!a.dataset.applySource) return;
       const target = new URL(a.getAttribute('href'), location.href);
       target.searchParams.set('source', a.dataset.applySource);
+      Object.entries(campaign).forEach((pair) => target.searchParams.set(pair[0], pair[1]));
       a.href = target.href;
     });
   }
@@ -472,12 +485,43 @@
      Rate cards + recommendations
      ====================================================================== */
 
+  // Mirrors photo() in build.mjs.
+  function photoHtml(img, sizes, cls) {
+    const src = (n) => url('assets/img/homes/' + img.name + '-' + n + '.webp');
+    return (
+      '<img class="' +
+      (cls || 'photo') +
+      '" src="' +
+      src(1600) +
+      '" srcset="' +
+      src(800) +
+      ' 800w, ' +
+      src(1600) +
+      ' 1600w" sizes="' +
+      (sizes || '100vw') +
+      '" alt="' +
+      escapeHtml(img.alt) +
+      '" loading="lazy" decoding="async" style="object-position:' +
+      (img.position || '50% 50%') +
+      '">'
+    );
+  }
+
   // Mirrors productCard() in build.mjs.
   function cardHtml(p) {
     return (
-      '<article class="rate-card" data-product-card="' +
+      '<article class="rate-card' +
+      (p.image ? ' rate-card--photo' : '') +
+      '" data-product-card="' +
       escapeHtml(p.handle) +
       '">' +
+      (p.image
+        ? '<a class="rate-card__media" href="' +
+          url(p.path) +
+          '" tabindex="-1" aria-hidden="true">' +
+          photoHtml(p.image, '(max-width: 760px) 100vw, 33vw') +
+          '</a>'
+        : '') +
       '<p class="rate-card__kicker">' +
       escapeHtml(p.kicker) +
       '</p>' +
@@ -921,11 +965,19 @@
         fields.firstName = customer.firstName || '';
         fields.lastName = customer.lastName || '';
       }
-      draft = store.startDraft({ source: query.get('source') || 'direct', fields: fields });
+      draft = store.startDraft({
+        source: query.get('source') || 'direct',
+        campaign: campaignFrom(query),
+        fields: fields,
+      });
       fillForm(form, draft.fields);
       track.track(
         'Application Started',
-        Object.assign({ application_id: draft.id, source: draft.source }, track.productProps(wanted))
+        Object.assign(
+          { application_id: draft.id, source: draft.source },
+          draft.campaign,
+          track.productProps(wanted)
+        )
       );
       track.setUserProperties({
         application_status: 'started',
@@ -1197,6 +1249,7 @@
         id: draft.id,
         startedAt: draft.startedAt,
         source: draft.source,
+        campaign: draft.campaign || {},
         fields: f,
         product: fig.product ? fig.product.handle : null,
         productTitle: fig.product ? fig.product.title : null,
@@ -1237,6 +1290,7 @@
               (Date.now() - new Date(record.startedAt).getTime()) / 60000
             ),
           },
+          record.campaign,
           track.productProps(fig.product),
           { interest_rate: fig.rate }
         )
@@ -1287,7 +1341,13 @@
       const docs = requiredDocuments(app);
       const approved = app.decision === 'conditionally_approved';
       const outstanding = docs.filter((d) => !app.documents.includes(d[0])).length;
+      const pic = approved
+        ? { name: 'home-sweet-home', alt: 'A couple holding a Home Sweet Home sign outside their front door', position: '50% 40%' }
+        : { name: 'brick-kitchen', alt: 'Friends talking in a kitchen with an exposed brick wall', position: '50% 45%' };
       root.innerHTML =
+        '<div class="outcome-photo">' +
+        photoHtml(pic, '(max-width: 820px) 100vw, 820px') +
+        '</div>' +
         '<p class="eyebrow">Application ' +
         escapeHtml(app.id) +
         '</p>' +
@@ -1829,6 +1889,152 @@
   }
 
   /* ======================================================================
+     Package Home Loan landing page
+     ====================================================================== */
+
+  function initLanding() {
+    const product = PAGE.product;
+    if (!product) return;
+    const props = track.productProps(product);
+    const campaign = campaignFrom(query);
+
+    store.recordView(product.handle);
+    track.track('Product Viewed', Object.assign({ page_type: 'landing' }, campaign, props));
+    track.setUserProperties({
+      last_product_viewed: product.title,
+      last_category_viewed: product.categoryTitle,
+    });
+
+    // The sticky apply bar appears once the hero's buttons scroll away.
+    const sticky = $('.lp-sticky');
+    const heroActions = $('.lp-hero__actions');
+    if (sticky && heroActions) {
+      new IntersectionObserver(
+        (entries) => sticky.classList.toggle('lp-sticky--visible', !entries[0].isIntersecting),
+        { rootMargin: '-60px 0px 0px 0px' }
+      ).observe(heroActions);
+    }
+
+    $$('[data-lp-cta]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        track.trackAnalyticsOnly('Landing CTA Clicked', Object.assign({ cta: a.dataset.lpCta }, campaign));
+      });
+    });
+
+    $$('[data-faq]').forEach(function (d) {
+      d.addEventListener('toggle', function () {
+        if (!d.open) return;
+        track.trackAnalyticsOnly('FAQ Opened', {
+          question: $('summary', d).textContent.trim(),
+          position: Number(d.dataset.faq),
+          page_type: 'landing',
+        });
+      });
+    });
+
+    let deepSeen = false;
+    window.addEventListener(
+      'scroll',
+      function () {
+        if (deepSeen) return;
+        if ((window.scrollY + window.innerHeight) / document.body.scrollHeight > 0.7) {
+          deepSeen = true;
+          track.track('Product Detail Read', Object.assign({ page_type: 'landing' }, props));
+        }
+      },
+      { passive: true }
+    );
+
+    initOffsetCalc(product, campaign);
+  }
+
+  function initOffsetCalc(product, campaign) {
+    const form = $('[data-offset-calc]');
+    if (!form) return;
+    const out = (k) => $('[data-out="' + k + '"]');
+    const years = cfg.LOAN_TERM_YEARS || 30;
+
+    const duration = (months) => {
+      const y = Math.floor(months / 12);
+      const m = months % 12;
+      if (!y && !m) return 'on schedule';
+      return (
+        [y ? y + (y === 1 ? ' year' : ' years') : '', m ? m + (m === 1 ? ' month' : ' months') : '']
+          .filter(Boolean)
+          .join(' ') + ' sooner'
+      );
+    };
+
+    function compute() {
+      const loan = num(form.elements.loan.value);
+      const offset = num(form.elements.offset.value);
+      const s = finance.offsetSavings(loan, offset, product.rate, years);
+      // What the Package costs each year over the no-fee Variable Home Loan.
+      const extraCost = (loan * (product.rate - PAGE.variableRate)) / 100 + PAGE.annualFee;
+      const breakeven = extraCost / (product.rate / 100);
+      return { loan, offset, s, extraCost, breakeven, net: s.firstYear - extraCost };
+    }
+
+    function render() {
+      const r = compute();
+      out('loan').textContent = store.money0(r.loan);
+      out('offset').textContent = store.money0(r.offset);
+      out('total').textContent = store.money0(r.s.interestSaved);
+      out('year').textContent = store.money0(r.s.firstYear);
+      out('sooner').textContent = duration(r.s.monthsSooner);
+      const share = r.s.interestWithout
+        ? (r.s.interestWithout - r.s.interestSaved) / r.s.interestWithout
+        : 1;
+      $('[data-bar="with"]').style.width = Math.max(2, Math.round(share * 100)) + '%';
+      out('verdict').textContent =
+        r.net >= 0
+          ? 'After the ' +
+            store.money0(PAGE.annualFee) +
+            ' fee and the rate difference, that works out about ' +
+            store.money0(r.net) +
+            ' a year ahead of our no-fee Variable Home Loan, before counting the free Rewards Card.'
+          : 'With less than about ' +
+            store.money0(Math.ceil(r.breakeven / 100) * 100) +
+            ' in offset on this loan, our no-fee Variable Home Loan would cost less. The Package pays off as your savings grow.';
+      return r;
+    }
+
+    // One event per settled calculation, not one per slider tick.
+    const log = debounce(function () {
+      const r = compute();
+      track.track(
+        'Offset Savings Calculated',
+        Object.assign(
+          {
+            loan_amount: r.loan,
+            loan_amount_band: finance.loanBand(r.loan),
+            offset_balance: r.offset,
+            interest_saved_first_year: Math.round(r.s.firstYear),
+            interest_saved_total: Math.round(r.s.interestSaved),
+            months_sooner: r.s.monthsSooner,
+            package_beats_variable: r.net >= 0,
+            page_type: 'landing',
+          },
+          campaign,
+          track.productProps(product)
+        )
+      );
+      // A campaign can quote this straight back: "your $40,000 would save
+      // you $2,376 this year".
+      track.setUserProperties({
+        estimated_offset_saving: Math.round(r.s.firstYear),
+        offset_balance: r.offset,
+      });
+    }, 1200);
+
+    form.addEventListener('input', function () {
+      render();
+      log();
+    });
+    render();
+  }
+
+  /* ======================================================================
      Boot
      ====================================================================== */
 
@@ -1852,6 +2058,7 @@
     if (page === 'apply') initApply();
     if (page === 'submitted') initSubmitted();
     if (page === 'account') initAccount();
+    if (page === 'landing') initLanding();
 
     // Page views come from Amplitude autocapture (AMPLITUDE_AUTOCAPTURE).
     setTimeout(maybeShowReturningNudge, 2500);
