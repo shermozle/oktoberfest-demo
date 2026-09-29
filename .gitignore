@@ -1,3 +1,5 @@
 /raw/jar
 .DS_Store
 node_modules/
+# Full-size source photos; scripts/optimise-photos.py makes the web copies
+/photos/

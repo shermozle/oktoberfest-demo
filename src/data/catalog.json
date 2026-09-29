@@ -9,7 +9,8 @@
     "footerNote2": "No accounts are opened, no credit checks are run and no money moves. Rates, products and decisions are invented.",
     "comparisonNote": "*Comparison rates are calculated on a secured loan of $150,000 over 25 years. WARNING: this comparison rate is true only for the examples given and may not include all fees and charges. Different terms, fees or other loan amounts might result in a different comparison rate.",
     "newsletterHeading": "Rate updates",
-    "newsletterBody": "Hear from us when our home loan rates move."
+    "newsletterBody": "Hear from us when our home loan rates move.",
+    "photoCredit": "Photos from Pexels: Artbovich, cottonbro studio, Expect Best, Ivan S, Mart Production, RDNE Stock project, Samet Korkmaz and Anthony Shkraba."
   },
   "pages": {
     "home": {
@@ -65,7 +66,12 @@
       "handle": "home-loans",
       "title": "Home loans",
       "subtitle": "Variable, fixed, first home and investment loans. Compare them side by side, then apply for the one that fits.",
-      "kind": "home_loan"
+      "kind": "home_loan",
+      "image": {
+        "name": "house-lawn",
+        "alt": "A modern two-storey house with a timber entry and a green lawn",
+        "position": "50% 45%"
+      }
     },
     {
       "handle": "everyday",
@@ -97,18 +103,29 @@
       "comparisonRate": 5.87,
       "rateType": "variable",
       "purpose": "owner_occupier",
-      "repaymentTypes": ["principal_and_interest"],
+      "repaymentTypes": [
+        "principal_and_interest"
+      ],
       "maxLvr": 90,
       "offset": false,
       "redraw": true,
-      "fees": { "application": 0, "annual": 0, "monthly": 0 },
+      "fees": {
+        "application": 0,
+        "annual": 0,
+        "monthly": 0
+      },
       "description": "A straightforward variable rate loan for the home you live in. Make extra repayments whenever you like and draw them back out if you need them, with no fee either way.",
       "features": [
         "No application, annual or monthly fees",
         "Unlimited extra repayments and free redraw",
         "Borrow up to 90% of the property value (lenders mortgage insurance applies above 80%)",
         "Split part of the loan into a fixed rate at any time"
-      ]
+      ],
+      "image": {
+        "name": "fireplace",
+        "alt": "A couple talking by an open fire on a leather sofa",
+        "position": "50% 60%"
+      }
     },
     {
       "handle": "package-home-loan",
@@ -120,18 +137,30 @@
       "comparisonRate": 6.14,
       "rateType": "variable",
       "purpose": "owner_occupier",
-      "repaymentTypes": ["principal_and_interest", "interest_only"],
+      "repaymentTypes": [
+        "principal_and_interest",
+        "interest_only"
+      ],
       "maxLvr": 95,
       "offset": true,
       "redraw": true,
-      "fees": { "application": 0, "annual": 395, "monthly": 0 },
+      "fees": {
+        "application": 0,
+        "annual": 395,
+        "monthly": 0
+      },
       "description": "Every dollar in your offset account comes off the balance we charge interest on. On a big loan with savings behind it, the offset is usually worth far more than the annual fee.",
       "features": [
         "Up to 10 offset accounts, each offsetting 100% of its balance",
         "Annual fee waived on the Laneway Rewards Card",
         "Borrow up to 95% of the property value",
         "Interest-only repayments available for up to 5 years"
-      ]
+      ],
+      "image": {
+        "name": "neon-lounge",
+        "alt": "Two friends laughing on a chesterfield under pink light",
+        "position": "50% 55%"
+      }
     },
     {
       "handle": "fixed-2-year-home-loan",
@@ -144,18 +173,29 @@
       "rateType": "fixed",
       "fixedYears": 2,
       "purpose": "owner_occupier",
-      "repaymentTypes": ["principal_and_interest"],
+      "repaymentTypes": [
+        "principal_and_interest"
+      ],
       "maxLvr": 90,
       "offset": false,
       "redraw": false,
-      "fees": { "application": 0, "annual": 0, "monthly": 0 },
+      "fees": {
+        "application": 0,
+        "annual": 0,
+        "monthly": 0
+      },
       "description": "Lock your rate for two years, then roll onto the Variable Home Loan rate unless you choose to fix again. Lock the rate when you apply for $0.",
       "features": [
         "Rate locked for 2 years from settlement",
         "Extra repayments up to $10,000 a year without break costs",
         "Free rate lock when you apply",
         "Reverts to the Variable Home Loan rate at the end of the fixed term"
-      ]
+      ],
+      "image": {
+        "name": "facade-apartments",
+        "alt": "Modern apartments with glass balconies and palm trees",
+        "position": "50% 50%"
+      }
     },
     {
       "handle": "fixed-3-year-home-loan",
@@ -164,22 +204,33 @@
       "tagline": "Three years of certainty for the household budget.",
       "featured": false,
       "rate": 5.59,
-      "comparisonRate": 5.80,
+      "comparisonRate": 5.8,
       "rateType": "fixed",
       "fixedYears": 3,
       "purpose": "owner_occupier",
-      "repaymentTypes": ["principal_and_interest"],
+      "repaymentTypes": [
+        "principal_and_interest"
+      ],
       "maxLvr": 90,
       "offset": false,
       "redraw": false,
-      "fees": { "application": 0, "annual": 0, "monthly": 0 },
+      "fees": {
+        "application": 0,
+        "annual": 0,
+        "monthly": 0
+      },
       "description": "The same loan as the two-year fix, held for longer. Useful if you'd rather know your repayments than bet on where rates go.",
       "features": [
         "Rate locked for 3 years from settlement",
         "Extra repayments up to $10,000 a year without break costs",
         "Free rate lock when you apply",
         "Reverts to the Variable Home Loan rate at the end of the fixed term"
-      ]
+      ],
+      "image": {
+        "name": "facade-glass",
+        "alt": "A timber and glass house against a deep blue sky",
+        "position": "50% 40%"
+      }
     },
     {
       "handle": "first-home-loan",
@@ -192,18 +243,29 @@
       "rateType": "variable",
       "purpose": "owner_occupier",
       "firstHomeBuyer": true,
-      "repaymentTypes": ["principal_and_interest"],
+      "repaymentTypes": [
+        "principal_and_interest"
+      ],
       "maxLvr": 95,
       "offset": false,
       "redraw": true,
-      "fees": { "application": 0, "annual": 0, "monthly": 0 },
+      "fees": {
+        "application": 0,
+        "annual": 0,
+        "monthly": 0
+      },
       "description": "For eligible first home buyers under the Home Guarantee Scheme. The government guarantees part of the loan, so you can buy sooner without paying lenders mortgage insurance.",
       "features": [
         "Deposits from 5% with no lenders mortgage insurance",
         "A dedicated first home lender from application to settlement",
         "No application, annual or monthly fees",
         "Unlimited extra repayments and free redraw"
-      ]
+      ],
+      "image": {
+        "name": "home-sweet-home",
+        "alt": "A couple holding a Home Sweet Home sign outside their front door",
+        "position": "50% 30%"
+      }
     },
     {
       "handle": "green-home-loan",
@@ -215,18 +277,29 @@
       "comparisonRate": 5.62,
       "rateType": "variable",
       "purpose": "owner_occupier",
-      "repaymentTypes": ["principal_and_interest"],
+      "repaymentTypes": [
+        "principal_and_interest"
+      ],
       "maxLvr": 80,
       "offset": false,
       "redraw": true,
-      "fees": { "application": 0, "annual": 0, "monthly": 0 },
+      "fees": {
+        "application": 0,
+        "annual": 0,
+        "monthly": 0
+      },
       "description": "A discounted variable rate for new or renovated homes with a NatHERS rating of 7 stars or higher. Energy-efficient homes cost less to run, which leaves more room for repayments.",
       "features": [
         "0.25% p.a. below the Variable Home Loan rate",
         "Available on homes with a NatHERS rating of 7 stars or higher",
         "Unlimited extra repayments and free redraw",
         "Borrow up to 80% of the property value"
-      ]
+      ],
+      "image": {
+        "name": "dome-view",
+        "alt": "A man at a table inside a glass dome, looking out over the valley",
+        "position": "50% 55%"
+      }
     },
     {
       "handle": "investor-variable-home-loan",
@@ -239,18 +312,30 @@
       "interestOnlyRate": 6.39,
       "rateType": "variable",
       "purpose": "investor",
-      "repaymentTypes": ["principal_and_interest", "interest_only"],
+      "repaymentTypes": [
+        "principal_and_interest",
+        "interest_only"
+      ],
       "maxLvr": 90,
       "offset": true,
       "redraw": true,
-      "fees": { "application": 0, "annual": 0, "monthly": 0 },
+      "fees": {
+        "application": 0,
+        "annual": 0,
+        "monthly": 0
+      },
       "description": "A variable rate loan for investment property, with an offset account included and the choice of interest-only repayments for the first five years.",
       "features": [
         "Interest-only repayments for up to 5 years (6.39% p.a.)",
         "One 100% offset account included",
         "No application, annual or monthly fees",
         "Borrow up to 90% of the property value (lenders mortgage insurance applies above 80%)"
-      ]
+      ],
+      "image": {
+        "name": "share-house-lounge",
+        "alt": "Housemates hanging out in a bright, cluttered lounge room",
+        "position": "50% 35%"
+      }
     },
     {
       "handle": "everyday-account",
@@ -258,8 +343,13 @@
       "title": "Everyday Account",
       "tagline": "The account your pay goes into. No monthly fees, ever.",
       "featured": false,
-      "headline": { "value": "$0", "label": "monthly account fee" },
-      "fees": { "monthly": 0 },
+      "headline": {
+        "value": "$0",
+        "label": "monthly account fee"
+      },
+      "fees": {
+        "monthly": 0
+      },
       "description": "A transaction account with a debit card, instant payments and no monthly account fee.",
       "features": [
         "No monthly account fees",
@@ -274,8 +364,13 @@
       "title": "Offset Account",
       "tagline": "An everyday account that brings down your home loan interest.",
       "featured": false,
-      "headline": { "value": "100%", "label": "of your balance offset" },
-      "fees": { "monthly": 0 },
+      "headline": {
+        "value": "100%",
+        "label": "of your balance offset"
+      },
+      "fees": {
+        "monthly": 0
+      },
       "description": "Available with the Package Home Loan and the Investor Variable Home Loan. Your balance comes off the loan balance we charge interest on, and you can still spend it like any everyday account.",
       "features": [
         "Offsets 100% of its balance against your home loan",
@@ -306,7 +401,7 @@
       "title": "12 Month Term Deposit",
       "tagline": "A fixed rate for a year. Interest paid at maturity.",
       "featured": false,
-      "rate": 4.40,
+      "rate": 4.4,
       "rateLabel": "fixed rate, 12 months",
       "description": "Lock a lump sum away for 12 months at a fixed rate. Deposits from $5,000.",
       "features": [
@@ -324,7 +419,9 @@
       "featured": false,
       "rate": 12.99,
       "rateLabel": "purchase rate",
-      "fees": { "annual": 59 },
+      "fees": {
+        "annual": 59
+      },
       "description": "A credit card for people who sometimes carry a balance, with up to 55 days interest free on purchases.",
       "features": [
         "12.99% p.a. purchase rate",
@@ -341,7 +438,9 @@
       "featured": false,
       "rate": 20.99,
       "rateLabel": "purchase rate",
-      "fees": { "annual": 149 },
+      "fees": {
+        "annual": 149
+      },
       "description": "Earn 1.5 points per dollar on everyday spending. The $149 annual fee is waived for Package Home Loan customers.",
       "features": [
         "1.5 points per dollar spent, uncapped",

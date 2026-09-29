@@ -92,6 +92,40 @@
     return Math.floor(pv / 1000) * 1000;
   }
 
+  /**
+   * What an offset balance saves on a principal and interest loan. The
+   * repayment stays at what the loan alone would need, so every dollar of
+   * interest the offset saves comes off the principal instead, and the loan
+   * finishes early. The offset balance is held flat, which understates the
+   * saving for anyone who adds to it.
+   */
+  function offsetSavings(loan, offset, ratePct, years) {
+    const r = ratePct / 100 / 12;
+    const payment = repayment(loan, ratePct, years, 'monthly');
+    function run(held) {
+      let balance = loan;
+      let interest = 0;
+      let months = 0;
+      while (balance > 0.005 && months < years * 12 + 1) {
+        const charged = Math.max(0, balance - held) * r;
+        interest += charged;
+        balance = balance + charged - payment;
+        months += 1;
+      }
+      return { interest, months };
+    }
+    const without = run(0);
+    const withOffset = run(Math.min(Math.max(0, offset), loan));
+    return {
+      payment,
+      firstYear: Math.min(Math.max(0, offset), loan) * (ratePct / 100),
+      interestWithout: without.interest,
+      interestSaved: without.interest - withOffset.interest,
+      monthsSooner: without.months - withOffset.months,
+      monthsWith: withOffset.months,
+    };
+  }
+
   const lvr = (loan, value) =>
     value > 0 ? Math.round((loan / value) * 1000) / 10 : null;
 
@@ -125,6 +159,7 @@
     expenseFloor,
     assessmentRate,
     borrowingPower,
+    offsetSavings,
     lvr,
     incomeBand,
     loanBand,

@@ -75,13 +75,13 @@ Every event carries `application_id`.
 
 | Event | Braze name | Properties |
 |---|---|---|
-| `Application Started` | `application_started` | `source` (the button that started it: `product_page`, `borrowing_power_calculator`, `header`, `in_app_message`…), plus product properties if a loan was pre-chosen. Fires once, when a new draft is created. |
+| `Application Started` | `application_started` | `source` (the button that started it: `product_page`, `borrowing_power_calculator`, `header`, `landing_hero`, `in_app_message`…), any `utm_*` parameters it arrived with, plus product properties if a loan was pre-chosen. Fires once, when a new draft is created. |
 | `Application Resumed` | `application_resumed` | `step`, `step_number`, `minutes_since_saved`. A returning visitor reopening a saved draft; the signal to stop an abandonment campaign. |
 | `Applicant Details Entered` | `applicant_details_entered` | `applicant_count`, `first_home_buyer`, `email_provided` (always true now email is required), `marketing_opt_in`. Fires after the email identifies the visitor. |
 | `Property Details Entered` | `property_details_entered` | `loan_purpose` (`buy_home`, `buy_investment`, `refinance`), `property_stage`, `property_value_band`, `loan_amount`, `lvr`, `state` |
 | `Financials Entered` | `financials_entered` | `employment_type`, `income_band`, `dependants`, `borrowing_power`, `within_borrowing_power` |
 | `Loan Selected` | `loan_selected` | product properties, `repayment_type`, `loan_term_years`, `repayment_frequency`, `estimated_repayment` |
-| `Application Submitted` | `application_submitted` | everything above, plus `decision` (`conditionally_approved` or `referred_to_lender`), `decision_reasons`, `minutes_to_submit` |
+| `Application Submitted` | `application_submitted` | everything above, the `utm_*` parameters the application started with, plus `decision` (`conditionally_approved` or `referred_to_lender`), `decision_reasons`, `minutes_to_submit` |
 | `Document Uploaded` | `document_uploaded` | `document_type`, `documents_outstanding` |
 
 The decision is arithmetic: within borrowing power and within the loan's
@@ -90,6 +90,44 @@ a step sends nothing, and typing only saves the draft.
 
 The draft is saved in localStorage after every step and every keystroke, so
 reloading or leaving and coming back resumes where the visitor stopped.
+
+## The Package Home Loan landing page
+
+`/landing/` is for paid traffic. Its header and footer are stripped of
+navigation, so the ways off the page are applying or talking to a lender.
+Send campaign traffic with UTM parameters, for example:
+
+```
+/landing/?utm_source=google&utm_medium=cpc&utm_campaign=package_offset
+```
+
+Those parameters go on every event the page sends and on every apply link,
+so `Application Started` and `Application Submitted` carry them too. A funnel
+from `Product Viewed` (where `page_type = landing`) to `Application
+Submitted`, grouped by `utm_campaign`, gives cost-per-application by
+campaign. Amplitude's attribution autocapture records the same UTMs as user
+properties.
+
+Each apply button has its own `source`: `landing_header`, `landing_hero`,
+`landing_calculator`, `landing_footer` and `landing_sticky`, so you can see
+which placement converts.
+
+| Event | Sent to | Properties |
+|---|---|---|
+| `Product Viewed` | both | product properties, `page_type: landing`, `utm_*` |
+| `Offset Savings Calculated` | both | `loan_amount`, `loan_amount_band`, `offset_balance`, `interest_saved_first_year`, `interest_saved_total`, `months_sooner`, `package_beats_variable`, `utm_*`, product properties. Sent 1.2s after the sliders stop moving. |
+| `Product Detail Read` | both | product properties, `page_type: landing`. Past 70% scroll depth. |
+| `Landing CTA Clicked` | Amplitude | `cta` (`hero_savings`, `header_talk`, `footer_talk`), `utm_*`. Apply buttons don't send this; `Application Started` records them. |
+| `FAQ Opened` | Amplitude | `question`, `position`, `page_type` |
+
+The offset calculator also sets `estimated_offset_saving` (first-year
+saving) and `offset_balance` as user properties, so a Braze follow-up can
+say "your $40,000 would save you $2,376 this year". The offset balance is
+the visitor's slider setting, not a real balance, so it goes across exactly.
+
+The page is honest about the fee. Below the offset balance where the Package
+beats the no-fee Variable Home Loan (about $16,800 on a $600,000 loan), the
+calculator says so, and `package_beats_variable` is false on the event.
 
 ## Other events sent to both tools
 
@@ -184,6 +222,7 @@ found in the other. They stay scalar because that's what Braze segments on.
 | `documents_outstanding` | Submit, then each upload |
 | `last_product_viewed`, `last_category_viewed` | Product page view |
 | `interested_product` | Register interest on a non-loan product |
+| `estimated_offset_saving`, `offset_balance` | Offset calculator on the landing page |
 | `lead_type`, `enquiry_topic` | Lender callback request |
 
 Email is required, and must look like an address (`name@example.com`), on

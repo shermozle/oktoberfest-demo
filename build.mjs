@@ -52,6 +52,32 @@ function monthlyRepayment(principal, ratePct, years) {
 
 const productPath = (p) => p.category + '/' + p.handle + '/';
 
+// A photo from src/assets/img/homes, at 800px or 1600px on its long edge
+// depending on how wide it's shown. `sizes` says how wide that is; the
+// container sets the shape and object-position the crop.
+function photo(base, img, opts) {
+  const o = opts || {};
+  const src = (n) => `${base}assets/img/homes/${img.name}-${n}.webp`;
+  return `<img class="${o.cls || 'photo'}" src="${src(1600)}" srcset="${src(800)} 800w, ${src(1600)} 1600w" sizes="${
+    o.sizes || '100vw'
+  }" alt="${esc(img.alt)}"${o.eager ? ' fetchpriority="high"' : ' loading="lazy"'} decoding="async" style="object-position:${
+    img.position || '50% 50%'
+  }">`;
+}
+
+// Photos used outside the catalogue.
+const PHOTO = {
+  hero: { name: 'record-player', alt: 'A woman with red hair dancing beside a record player, surrounded by plants', position: '55% 50%' },
+  movingIn: { name: 'moving-in-boxes', alt: 'A couple carrying boxes into a timber A-frame house', position: '50% 40%' },
+  movingInDoor: { name: 'moving-in-door', alt: 'A couple with moving boxes unlocking the door of a timber house', position: '50% 22%' },
+  hallway: { name: 'boxes-hallway', alt: 'A couple carrying moving boxes through their new front door', position: '50% 28%' },
+  kitchen: { name: 'brick-kitchen', alt: 'Four friends talking in a kitchen with an exposed brick wall', position: '50% 38%' },
+  fireplace: { name: 'fireplace', alt: 'A couple talking by an open fire on a leather sofa', position: '50% 60%' },
+  dome: { name: 'dome-view', alt: 'A man at a table inside a glass dome, looking out over the valley', position: '50% 55%' },
+  recordPlayer: { name: 'record-player', alt: 'A woman with red hair dancing beside a record player, surrounded by plants', position: '40% 50%' },
+  neon: { name: 'neon-lounge', alt: 'Two friends laughing on a chesterfield under pink light', position: '50% 55%' },
+};
+
 function emit(path, html) {
   const full = join(OUT, path);
   mkdirSync(dirname(full), { recursive: true });
@@ -120,6 +146,7 @@ function slim(p) {
     annualFee: p.fees ? p.fees.annual ?? 0 : 0,
     kicker: kicker(p),
     figures: figures(p),
+    image: p.image || null,
   };
 }
 
@@ -299,12 +326,12 @@ function layout(opts) {
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="${base}assets/css/site.css">
 </head>
-<body data-page="${esc(opts.page)}">
-${header(base)}
+<body data-page="${esc(opts.page)}"${opts.chrome === 'landing' ? ' class="lp"' : ''}>
+${opts.chrome === 'landing' ? landingHeader(base) : header(base)}
 <main>
 ${opts.content}
 </main>
-${footer(base)}
+${opts.chrome === 'landing' ? landingFooter(base) : footer(base)}
 <script>
   window.LANEWAY_BASE = ${JSON.stringify(base)};
   window.LANEWAY_PAGE = ${JSON.stringify(opts.pageData || {})};
@@ -325,9 +352,17 @@ ${footer(base)}
 
 // Mirrored by cardHtml() in app.js, which renders the same card on the
 // client after a filter, sort or recommendation.
-function productCard(p, base) {
-  const s = slimByHandle.get(p.handle) || p;
-  return `<article class="rate-card" data-product-card="${esc(s.handle)}">
+function productCard(p, base, opts) {
+  const found = slimByHandle.get(p.handle) || p;
+  const s = opts && opts.noPhoto ? Object.assign({}, found, { image: null }) : found;
+  return `<article class="rate-card${s.image ? ' rate-card--photo' : ''}" data-product-card="${esc(s.handle)}">
+  ${
+    s.image
+      ? `<a class="rate-card__media" href="${base}${s.path}" tabindex="-1" aria-hidden="true">${photo(base, s.image, {
+          sizes: '(max-width: 760px) 100vw, 33vw',
+        })}</a>`
+      : ''
+  }
   <p class="rate-card__kicker">${esc(s.kicker)}</p>
   <a class="rate-card__title" href="${base}${s.path}">${esc(s.title)}</a>
   <p class="rate-card__tagline">${esc(s.tagline)}</p>
@@ -391,8 +426,11 @@ function homePage() {
       <a class="btn btn--outline" href="${base}calculators/borrowing-power/">What can I borrow?</a>
     </div>
   </div>
-  <div class="hero__card" data-placement="home-hero">
-    ${productCard(lead, base)}
+  <div class="hero__visual">
+    <div class="hero__photo">${photo(base, PHOTO.hero, { sizes: '(max-width: 1000px) 100vw, 45vw', eager: true })}</div>
+    <div class="hero__card" data-placement="home-hero">
+      ${productCard(lead, base, { noPhoto: true })}
+    </div>
   </div>
 </section>
 
@@ -431,20 +469,24 @@ function homePage() {
 </section>
 
 <section class="section page">
-  <div class="section-head section-head--center">
-    <h2>HOW APPLYING WORKS</h2>
+  <div class="feature">
+    <div class="feature__photo">${photo(base, PHOTO.movingIn, { sizes: '(max-width: 1000px) 100vw, 50vw' })}</div>
+    <div class="feature__copy">
+      <p class="eyebrow">How applying works</p>
+      <h2>MORE TIME MOVING IN. LESS TIME ON PAPERWORK.</h2>
+      <ol class="how-steps how-steps--stacked">
+        ${steps()
+          .map(
+            (s, i) =>
+              `<li><span class="how-steps__n">${i + 1}</span><span><strong>${esc(s[0])}</strong><span class="muted">${esc(
+                s[1]
+              )}</span></span></li>`
+          )
+          .join('')}
+      </ol>
+      <p style="margin-top:28px"><a class="btn" href="${base}apply/" data-apply-link data-apply-source="home_how_it_works">Start an application</a></p>
+    </div>
   </div>
-  <ol class="how-steps">
-    ${steps()
-      .map(
-        (s, i) =>
-          `<li><span class="how-steps__n">${i + 1}</span><strong>${esc(s[0])}</strong><span class="muted">${esc(
-            s[1]
-          )}</span></li>`
-      )
-      .join('')}
-  </ol>
-  <p style="text-align:center;margin-top:28px"><a class="btn" href="${base}apply/" data-apply-link data-apply-source="home_how_it_works">Start an application</a></p>
 </section>
 
 <section class="section--tight page">
@@ -478,6 +520,18 @@ ${recentlyViewedSection()}
 }
 
 /* --- category ------------------------------------------------------------- */
+
+// A full-width photo with the page title set over it.
+function photoBanner(base, img, eyebrow, title, sub) {
+  return `<div class="photo-banner">
+  ${photo(base, img, { cls: 'photo-banner__img', eager: true })}
+  <div class="photo-banner__copy page">
+    <p class="eyebrow">${esc(eyebrow)}</p>
+    <h1>${esc(title)}</h1>
+    <p>${esc(sub)}</p>
+  </div>
+</div>`;
+}
 
 function categoryPage(c) {
   const base = '../';
@@ -517,11 +571,15 @@ function categoryPage(c) {
     : '';
 
   const content = `
-<div class="collection-banner page">
-  <p class="eyebrow">${isLoans ? 'Compare' : 'Banking'}</p>
+${
+  c.image
+    ? photoBanner(base, c.image, isLoans ? 'Compare' : 'Banking', c.title, c.subtitle)
+    : `<div class="collection-banner page">
+  <p class="eyebrow">Banking</p>
   <h1>${esc(c.title)}</h1>
   <p class="muted">${esc(c.subtitle)}</p>
-</div>
+</div>`
+}
 <div class="toolbar">
   ${filters}
   <span class="toolbar__count" data-collection-count>${items.length} products</span>
@@ -635,6 +693,8 @@ function productPage(p) {
     <h1 class="product__title">${esc(p.title)}</h1>
     <p class="product__lede">${esc(p.tagline)}</p>
 
+    ${p.image ? `<div class="product__photo">${photo(base, p.image, { sizes: '(max-width: 1000px) 100vw, 60vw', eager: true })}</div>` : ''}
+
     <div class="product__figures">
       ${s.figures
         .map(
@@ -731,11 +791,13 @@ const moneyField = (name, label, value, hint) =>
 function borrowingPowerPage() {
   const base = '../../';
   const content = `
-<div class="collection-banner page">
-  <p class="eyebrow">Calculator</p>
-  <h1>How much could I borrow?</h1>
-  <p class="muted">An estimate from your income and outgoings, tested the way we&rsquo;d test a real application: at the loan&rsquo;s rate plus a 3% buffer.</p>
-</div>
+${photoBanner(
+  base,
+  PHOTO.movingInDoor,
+  'Calculator',
+  'How much could I borrow?',
+  'An estimate from your income and outgoings, tested the way we’d test a real application: at the loan’s rate plus a 3% buffer.'
+)}
 <div class="calc page">
   <form class="calc__form" data-calc="borrowing_power" novalidate>
     <fieldset class="field">
@@ -781,11 +843,7 @@ function borrowingPowerPage() {
 function repaymentsPage() {
   const base = '../../';
   const content = `
-<div class="collection-banner page">
-  <p class="eyebrow">Calculator</p>
-  <h1>What would my repayments be?</h1>
-  <p class="muted">Pick a loan, an amount and how often you&rsquo;d pay.</p>
-</div>
+${photoBanner(base, PHOTO.hallway, 'Calculator', 'What would my repayments be?', 'Pick a loan, an amount and how often you’d pay.')}
 <div class="calc page">
   <form class="calc__form" data-calc="repayments" novalidate>
     ${moneyField('amount', 'Loan amount', 600000)}
@@ -958,6 +1016,7 @@ function applyPage() {
   </form>
 
   <aside class="summary apply-summary" aria-live="polite">
+    <div class="apply-summary__photo">${photo(base, PHOTO.movingInDoor, { sizes: '400px' })}</div>
     <p class="mega__title" style="margin-bottom:12px">Your application</p>
     <div data-apply-summary></div>
     <p class="muted" style="font-size:12px;margin:14px 0 0">Saved in this browser after every step.</p>
@@ -1027,6 +1086,7 @@ function aboutPage() {
   <hr style="border:0;border-top:1px solid var(--line);margin:40px 0">
   <h2 style="font-size:20px;margin-bottom:12px">About this mock</h2>
   <p class="muted">This is a static site with no server. The application in progress, submitted applications, the customer and browsing history all live in your browser's localStorage, and the session id is a cookie. Open the event stream at the bottom right to watch every Amplitude and Braze call as you click.</p>
+  <p class="muted">${esc(site.photoCredit)}</p>
 </div>
 `;
   return layout({
@@ -1045,13 +1105,7 @@ function talkPage() {
   const base = '../';
   const t = pages.talk;
   const content = `
-<section class="section page">
-  <div class="section-head">
-    <p class="eyebrow">Talk to us</p>
-    <h1 style="margin-bottom:14px">${esc(t.title)}</h1>
-    <p style="font-size:17px">${esc(t.lede)}</p>
-  </div>
-</section>
+${photoBanner(base, PHOTO.kitchen, 'Talk to us', t.title, t.lede)}
 
 <section class="section--tight page">
   <div class="section-head"><h2 style="font-size:20px">${esc(t.optionsHeading)}</h2></div>
@@ -1113,6 +1167,290 @@ function talkPage() {
     description: t.lede,
     content,
     pageData: { name: 'Talk to a lender' },
+  });
+}
+
+/* --- Package Home Loan landing page -------------------------------------- */
+
+// For paid traffic. The header and footer are stripped down so the only
+// ways off the page are applying or talking to a lender, and every apply
+// button carries its placement so Application Started says which one worked.
+
+function landingHeader(base) {
+  return `
+<header class="lp-header">
+  <a href="${base}index.html" aria-label="Laneway Bank home">${wordmark(base)}</a>
+  <div class="lp-header__actions">
+    <a class="lp-header__link" href="${base}talk-to-us/" data-lp-cta="header_talk">Talk to a lender</a>
+    <a class="btn btn--sm" href="${base}apply/?product=package-home-loan" data-apply-link data-apply-source="landing_header">Apply now</a>
+  </div>
+</header>`;
+}
+
+function landingFooter(base) {
+  return `
+<footer class="lp-footer">
+  <div class="lp-footer__top">
+    ${wordmark(base)}
+    <nav class="lp-footer__links">
+      <a href="${base}home-loans/">All home loans</a>
+      <a href="${base}pages/about/">About this site</a>
+    </nav>
+  </div>
+  <p>${esc(site.footerNote)} ${esc(site.footerNote2)}</p>
+  <p>${esc(site.comparisonNote)}</p>
+  <p>Savings figures are estimates for a principal and interest loan with the offset balance held steady, at the current Package Home Loan rate. They are not a quote or an offer of credit.</p>
+  <p>${esc(site.photoCredit)}</p>
+</footer>`;
+}
+
+const lpIcon = {
+  offset:
+    '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22h20M6 22V12l10-6 10 6v10"/><path d="M12 22v-6h8v6"/><path d="M4 26h24"/></svg>',
+  buckets:
+    '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="7" height="16" rx="2"/><rect x="12.5" y="12" width="7" height="12" rx="2"/><rect x="21" y="5" width="7" height="19" rx="2"/></svg>',
+  card:
+    '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="24" height="16" rx="3"/><path d="M4 13h24M8 19h6"/></svg>',
+  deposit:
+    '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="11"/><path d="M16 5v11l7 4"/></svg>',
+  split:
+    '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4v8M16 12l-9 8v8M16 12l9 8v8"/></svg>',
+  redraw:
+    '<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M26 10a11 11 0 1 0 1 9"/><path d="M26 4v6h-6"/></svg>',
+};
+
+function landingPage() {
+  const base = '../';
+  const p = products.find((x) => x.handle === 'package-home-loan');
+  const variable = products.find((x) => x.handle === 'variable-home-loan');
+  const rewards = products.find((x) => x.handle === 'rewards-card');
+  const exampleLoan = 600000;
+  const exampleOffset = 40000;
+  const exampleYear = exampleOffset * (p.rate / 100);
+  // How much has to sit in the offset before the Package beats the
+  // Variable Home Loan: the rate gap on the loan plus the annual fee, over
+  // what each offset dollar saves.
+  const breakeven =
+    (exampleLoan * ((p.rate - variable.rate) / 100) + p.fees.annual) / (p.rate / 100);
+  const apply = (placement, label, cls) =>
+    `<a class="btn ${cls || ''}" href="${base}apply/?product=${p.handle}" data-apply-link data-apply-source="landing_${placement}">${label}</a>`;
+
+  const benefits = [
+    ['offset', '100% offset, every dollar', 'Your savings sit in an everyday account with a debit card, and the whole balance comes off the amount we charge interest on. You keep full access to it.'],
+    ['buckets', 'Up to 10 offset accounts', 'One for bills, one for the holiday, one for the tax bill. Every one of them offsets, so organising your money never costs you interest.'],
+    ['card', `Rewards Card, $0 annual fee`, `The Laneway Rewards Card normally costs ${money0(rewards.fees.annual)} a year. On the Package it's included, with 1.5 points per dollar and travel insurance.`],
+    ['deposit', `Borrow up to ${p.maxLvr}%`, 'Buy sooner with a 5% deposit. Lenders mortgage insurance applies above 80%, and we show you what it costs before you apply.'],
+    ['split', 'Split fixed and variable', 'Fix part of the loan for certainty and keep the rest variable, with the offset working against the variable part.'],
+    ['redraw', 'Interest-only for 5 years', 'Principal and interest by default, or interest-only for up to five years while you renovate, invest or build.'],
+  ];
+
+  const faq = [
+    ['What is an offset account?', 'An everyday account linked to your home loan. Each day, we subtract its balance from your loan balance before working out interest. $40,000 in offset on a $600,000 loan means you pay interest on $560,000, and your money stays yours to spend.'],
+    [`Is the ${money0(p.fees.annual)} annual fee worth it?`, `It depends on what you keep in offset. On a ${money0(exampleLoan)} loan, the Package costs about ${money0(exampleLoan * ((p.rate - variable.rate) / 100) + p.fees.annual)} a year more than our Variable Home Loan, rate difference and fee together. Keep more than about ${money0(Math.ceil(breakeven / 100) * 100)} in offset and the Package comes out ahead, before counting the free Rewards Card.`],
+    ['Can I switch from another bank?', 'Yes. Choose "Refinancing" in the application. We arrange the discharge with your current lender and a lender stays with you until settlement.'],
+    ['What is the comparison rate?', `A rate that folds in the fees, so loans can be compared fairly. The Package Home Loan's is ${pct(p.comparisonRate)} because it includes the annual fee.`],
+    ['How long does applying take?', 'About 20 minutes online, saved as you go. You see a conditional decision as soon as you submit.'],
+  ];
+
+  const content = `
+<section class="lp-hero">
+  <div class="lp-hero__copy">
+    <p class="lp-eyebrow">Package Home Loan</p>
+    <h1>Put your savings to work against your home loan.</h1>
+    <p class="lp-hero__sub">A 100% offset account, up to 10 of them, and a fee-free Rewards Card. One annual fee covers the lot.</p>
+    <div class="lp-hero__rates">
+      <div class="figure figure--lg"><span class="figure__value">${p.rate.toFixed(2)}<small>% p.a.</small></span><span class="figure__label">variable rate</span></div>
+      <div class="figure figure--lg"><span class="figure__value">${p.comparisonRate.toFixed(2)}<small>% p.a.</small></span><span class="figure__label">comparison rate*</span></div>
+    </div>
+    <div class="lp-hero__actions">
+      ${apply('hero', 'Apply in about 20 minutes', 'btn--light')}
+      <a class="btn btn--ghost-dark" href="#savings" data-lp-cta="hero_savings">See what you&rsquo;d save</a>
+    </div>
+    <p class="lp-hero__note">Conditional decision on screen. No application fee.</p>
+  </div>
+  <div class="lp-hero__visual">
+    <div class="lp-hero__photo">${photo(base, PHOTO.neon, { sizes: '(max-width: 1000px) 100vw, 45vw', eager: true })}</div>
+    <div class="lp-ticket" aria-hidden="true">
+      <p class="lp-ticket__label">Offset account</p>
+      <p class="lp-ticket__balance">${money0(exampleOffset)}</p>
+      <div class="lp-ticket__bar"><span style="width:${Math.round((exampleOffset / exampleLoan) * 100 * 4)}%"></span></div>
+      <p class="lp-ticket__meta">Against a ${money0(exampleLoan)} loan</p>
+      <div class="lp-ticket__save">
+        <span>Interest saved, first year</span>
+        <strong>${money0(exampleYear)}</strong>
+      </div>
+    </div>
+    <div class="lp-chip lp-chip--a" aria-hidden="true">${lpIcon.card}<span>Rewards Card<br><strong>$0 annual fee</strong></span></div>
+    <div class="lp-chip lp-chip--b" aria-hidden="true">${lpIcon.buckets}<span>Up to<br><strong>10 offsets</strong></span></div>
+  </div>
+</section>
+
+<section class="lp-proof">
+  <div><strong>100%</strong><span>of every offset balance</span></div>
+  <div><strong>10</strong><span>offset accounts per loan</span></div>
+  <div><strong>$0</strong><span>application and monthly fees</span></div>
+  <div><strong>${p.maxLvr}%</strong><span>maximum LVR</span></div>
+</section>
+
+<section class="lp-section page">
+  <div class="lp-section__head">
+    <p class="lp-eyebrow lp-eyebrow--dark">Why the Package</p>
+    <h2>Everything a bigger loan needs, for one fee.</h2>
+  </div>
+  <div class="lp-benefits">
+    ${benefits
+      .map(
+        (b) => `<article class="lp-benefit">
+      <span class="lp-benefit__icon">${lpIcon[b[0]]}</span>
+      <h3>${esc(b[1])}</h3>
+      <p>${esc(b[2])}</p>
+    </article>`
+      )
+      .join('')}
+  </div>
+</section>
+
+<section class="lp-section lp-section--tight page">
+  <div class="lp-section__head">
+    <p class="lp-eyebrow lp-eyebrow--dark">Ten offset accounts</p>
+    <h2>Give every plan its own account. They all cut your interest.</h2>
+  </div>
+  <div class="lp-stories">
+    ${[
+      [PHOTO.dome, 'Offset 2', 'The trip', 'Saving for three weeks away? It sits in its own account and still offsets your loan until the day you book.'],
+      [PHOTO.fireplace, 'Offset 3', 'The rainy day', 'Three months of expenses, untouched and working. The emergency fund you never have to think about.'],
+      [PHOTO.recordPlayer, 'Offset 4', 'The fun money', 'Records, plants, whatever it is this month. Spend it with the debit card; until then, it offsets.'],
+    ]
+      .map(
+        (st) => `<figure class="lp-story">
+      <div class="lp-story__photo">${photo(base, st[0], { sizes: '(max-width: 760px) 100vw, 33vw' })}<span class="lp-story__tag">${esc(st[1])}</span></div>
+      <figcaption><strong>${esc(st[2])}</strong><span>${esc(st[3])}</span></figcaption>
+    </figure>`
+      )
+      .join('')}
+  </div>
+</section>
+
+<section class="lp-savings" id="savings">
+  <div class="lp-savings__inner page">
+    <div class="lp-section__head">
+      <p class="lp-eyebrow lp-eyebrow--dark">Offset calculator</p>
+      <h2>See what your savings would save you.</h2>
+      <p>Move the sliders. The saving comes straight off the interest, so your repayments stay the same and the loan finishes early.</p>
+    </div>
+    <div class="lp-calc">
+      <form class="lp-calc__form" data-offset-calc novalidate>
+        <label class="lp-slider">
+          <span class="lp-slider__top"><span>Loan amount</span><output data-out="loan">${money0(exampleLoan)}</output></span>
+          <input type="range" name="loan" min="200000" max="2000000" step="10000" value="${exampleLoan}">
+        </label>
+        <label class="lp-slider">
+          <span class="lp-slider__top"><span>Kept in offset</span><output data-out="offset">${money0(exampleOffset)}</output></span>
+          <input type="range" name="offset" min="0" max="300000" step="1000" value="${exampleOffset}">
+        </label>
+        <p class="muted" style="font-size:12px;margin:0">At ${pct(p.rate)} over 30 years, principal and interest.</p>
+      </form>
+      <div class="lp-calc__result" aria-live="polite">
+        <div class="lp-calc__hero">
+          <span>Interest saved over the loan</span>
+          <strong data-out="total">&mdash;</strong>
+        </div>
+        <div class="lp-calc__grid">
+          <div><span>First year</span><strong data-out="year">&mdash;</strong></div>
+          <div><span>Loan paid off</span><strong data-out="sooner">&mdash;</strong></div>
+        </div>
+        <div class="lp-bars" aria-hidden="true">
+          <div class="lp-bars__row"><span>Interest without offset</span><div class="lp-bars__track"><i data-bar="without" style="width:100%"></i></div></div>
+          <div class="lp-bars__row"><span>Interest with offset</span><div class="lp-bars__track"><i data-bar="with" class="is-good"></i></div></div>
+        </div>
+        <p class="lp-calc__verdict" data-out="verdict"></p>
+        ${apply('calculator', 'Apply for the Package Home Loan', 'btn--block')}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lp-section page">
+  <div class="lp-fee">
+    <div class="lp-fee__copy">
+      <p class="lp-eyebrow lp-eyebrow--dark">One fee</p>
+      <h2>${money0(p.fees.annual)} a year. That&rsquo;s the whole bill.</h2>
+      <p>No application fee, no monthly fees, no charge for extra offset accounts, and the Rewards Card&rsquo;s ${money0(rewards.fees.annual)} fee is waived. If you keep more than about ${money0(Math.ceil(breakeven / 100) * 100)} in offset on a ${money0(exampleLoan)} loan, the Package costs less than our no-fee Variable Home Loan.</p>
+    </div>
+    <dl class="lp-fee__table">
+      <div><dt>Annual package fee</dt><dd>${money0(p.fees.annual)}</dd></div>
+      <div><dt>Application fee</dt><dd>$0</dd></div>
+      <div><dt>Monthly fees</dt><dd>$0</dd></div>
+      <div><dt>Offset accounts, up to 10</dt><dd>$0</dd></div>
+      <div><dt>Rewards Card annual fee</dt><dd><s>${money0(rewards.fees.annual)}</s> $0</dd></div>
+      <div><dt>Extra repayments and redraw</dt><dd>$0</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section class="lp-section lp-section--paper">
+  <div class="page">
+    <div class="lp-section__head lp-section__head--center">
+      <p class="lp-eyebrow lp-eyebrow--dark">How it works</p>
+      <h2>From application to keys.</h2>
+    </div>
+    <ol class="how-steps">
+      ${steps()
+        .map(
+          (st, i) =>
+            `<li><span class="how-steps__n">${i + 1}</span><strong>${esc(st[0])}</strong><span class="muted">${esc(st[1])}</span></li>`
+        )
+        .join('')}
+    </ol>
+  </div>
+</section>
+
+<section class="lp-section page page--narrow">
+  <div class="lp-section__head lp-section__head--center">
+    <p class="lp-eyebrow lp-eyebrow--dark">Questions</p>
+    <h2>Before you apply.</h2>
+  </div>
+  <div class="lp-faq">
+    ${faq
+      .map(
+        (q, i) => `<details class="lp-faq__item" data-faq="${i + 1}">
+      <summary>${esc(q[0])}</summary>
+      <p>${esc(q[1])}</p>
+    </details>`
+      )
+      .join('')}
+  </div>
+</section>
+
+<section class="lp-final">
+  ${photo(base, PHOTO.movingInDoor, { cls: 'lp-final__img' })}
+  <h2>Your savings could be paying off your home.</h2>
+  <p>Apply online in about 20 minutes and see a conditional decision straight away.</p>
+  <div class="lp-hero__actions" style="justify-content:center">
+    ${apply('footer', 'Start my application', 'btn--light')}
+    <a class="btn btn--ghost-dark" href="${base}talk-to-us/" data-lp-cta="footer_talk">Talk to a lender</a>
+  </div>
+</section>
+
+<div class="lp-sticky">
+  <span><strong>${p.rate.toFixed(2)}% p.a.</strong> ${p.comparisonRate.toFixed(2)}% comparison*</span>
+  ${apply('sticky', 'Apply now', 'btn--sm')}
+</div>
+`;
+
+  return layout({
+    base,
+    chrome: 'landing',
+    page: 'landing',
+    title: 'Package Home Loan with 100% offset',
+    description: p.tagline,
+    content,
+    pageData: {
+      name: 'Package Home Loan landing page',
+      product: slimByHandle.get(p.handle),
+      variableRate: variable.rate,
+      annualFee: p.fees.annual,
+    },
   });
 }
 
@@ -1228,6 +1566,7 @@ const built = [
   ['apply/submitted/index.html', submittedPage()],
   ['account/index.html', accountPage()],
   ['talk-to-us/index.html', talkPage()],
+  ['landing/index.html', landingPage()],
   ['pages/about/index.html', aboutPage()],
   ['404.html', notFoundPage()],
 ];

@@ -26,6 +26,7 @@ bank.
 | Products | 13: seven home loans, two everyday accounts, two savings products, two credit cards |
 | Pages | Home, 4 category pages, 13 product pages, borrowing power and repayments calculators, the application, the application outcome, internet banking, talk to a lender, about, 404 |
 | Working | Filter and sort home loans, both calculators, the application with save and resume, instant decision, document checklist, internet banking sign-in with persona accounts, live search, recommendations, recently viewed, rate update sign-up, lender callback form |
+| Landing page | `/landing/`: a Package Home Loan page for paid traffic, with an offset savings calculator. Pass UTM parameters and they follow the visitor into the application. |
 | Instrumented | Amplitude Browser SDK 2 + Session Replay, Braze Web SDK, and an on-page event stream showing every call. See [TRACKING.md](TRACKING.md). |
 
 ## Run it locally
@@ -164,12 +165,25 @@ node build.mjs
 | `src/assets/js/app.js` | Site behaviour |
 | `src/assets/js/devtools.js` | Event stream drawer |
 | `src/assets/img/site/` | The Laneway wordmark and the favicon |
+| `src/assets/img/homes/` | Web-sized photos (WebP, 800px and 1600px) |
+| `scripts/optimise-photos.py` | Makes those from the full-size originals in `photos/` |
 | `scripts/check-links.mjs` | Fails if any generated link or asset doesn't resolve |
 
 To change a rate, edit it in `src/data/catalog.json` and rebuild. Cards,
 product pages, calculators and the application all read from there. The
 announcement bar and the simulated messages quote rates in plain text, so
 update those too.
+
+## Photos
+
+The photos are from Pexels, free to use without attribution; the about page
+and the landing page footer credit the photographers anyway. The full-size
+originals live in `photos/`, which is git-ignored because they're 35MB, and
+`scripts/optimise-photos.py` (needs Pillow) turns them into the WebP files
+the site serves. To add one, drop it in `photos/`, give it a name in the
+script's `PHOTOS` list, run it, then use it: a home loan's photo is its
+`image` in `src/data/catalog.json`, and the other pages pick theirs from
+`PHOTO` in `build.mjs`.
 
 ## What is and isn't real
 
