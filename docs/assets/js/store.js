@@ -1,8 +1,9 @@
 /* ==========================================================================
-   Laneway demo — client-side state
-   Everything a real Shopify backend would own lives here instead: cart,
-   customer, orders, browsing history. localStorage for data, cookies for the
-   two things a server would normally set (storefront gate, session id).
+   Laneway Bank demo — client-side state
+   Everything a real banking backend would own lives here instead: the
+   application in progress, submitted applications, the customer and their
+   browsing history. localStorage for data, and a cookie for the one thing a
+   server would normally set (the session id).
    ========================================================================== */
 
 (function () {
@@ -10,9 +11,9 @@
 
   const NS = 'laneway';
   const KEY = {
-    cart: NS + '.cart',
+    draft: NS + '.applicationDraft',
+    applications: NS + '.applications',
     customer: NS + '.customer',
-    orders: NS + '.orders',
     viewed: NS + '.recentlyViewed',
     events: NS + '.eventLog',
     prefs: NS + '.prefs',
@@ -138,92 +139,43 @@
     });
   }
 
-  /* --- cart -------------------------------------------------------------- */
+  /* --- application in progress ---------------------------------------- */
 
-  const emptyCart = { lines: [], updatedAt: null, createdAt: null };
+  // One draft at a time, saved after every step, so a visitor who leaves
+  // halfway can pick up where they stopped. The draft is what an abandoned
+  // application campaign keys off, the way a cart is on a shop.
 
-  function getCart() {
-    const cart = read(KEY.cart, emptyCart);
-    cart.lines = Array.isArray(cart.lines) ? cart.lines : [];
-    return cart;
+  function getDraft() {
+    return read(KEY.draft, null);
   }
 
-  function saveCart(cart) {
-    cart.updatedAt = new Date().toISOString();
-    if (!cart.createdAt) cart.createdAt = cart.updatedAt;
-    write(KEY.cart, cart);
-    emit('cart:changed', cart);
-    return cart;
+  // `keepTime` leaves updatedAt alone, for the demo control that seeds an
+  // application which already looks abandoned.
+  function saveDraft(draft, keepTime) {
+    if (!keepTime || !draft.updatedAt) draft.updatedAt = new Date().toISOString();
+    write(KEY.draft, draft);
+    emit('application:changed', draft);
+    return draft;
   }
 
-  const lineKey = (l) => l.handle + '::' + l.variantId;
-
-  function cartCount(cart) {
-    return (cart || getCart()).lines.reduce((n, l) => n + l.quantity, 0);
-  }
-
-  function cartSubtotal(cart) {
-    return (cart || getCart()).lines.reduce(
-      (sum, l) => sum + l.price * l.quantity,
-      0
+  function startDraft(seed) {
+    const now = new Date().toISOString();
+    return saveDraft(
+      Object.assign(
+        {
+          id: 'LB' + String(Math.floor(100000 + Math.random() * 900000)),
+          startedAt: now,
+          step: 0,
+          fields: {},
+        },
+        seed
+      )
     );
   }
 
-  function cartTotals(cart) {
-    const c = cart || getCart();
-    const cfg = window.LANEWAY_CONFIG || {};
-    const subtotal = cartSubtotal(c);
-    const empty = c.lines.length === 0;
-    const freeOver = cfg.SHIPPING_FREE_OVER ?? 100;
-    const shipping =
-      empty || subtotal >= freeOver ? 0 : cfg.SHIPPING_FLAT ?? 9.95;
-    const rate = cfg.TAX_RATE ?? 0.1;
-    // Displayed prices include GST, so tax is shown as the included portion.
-    const taxIncluded = (subtotal + shipping) - (subtotal + shipping) / (1 + rate);
-    return {
-      subtotal,
-      shipping,
-      taxIncluded,
-      total: subtotal + shipping,
-      count: cartCount(c),
-      freeShippingGap: Math.max(0, freeOver - subtotal),
-    };
-  }
-
-  function addToCart(line) {
-    const cart = getCart();
-    const existing = cart.lines.find((l) => lineKey(l) === lineKey(line));
-    if (existing) existing.quantity += line.quantity;
-    else cart.lines.push(Object.assign({ addedAt: new Date().toISOString() }, line));
-    saveCart(cart);
-    emit('cart:added', { line, cart });
-    return cart;
-  }
-
-  function setLineQuantity(handle, variantId, quantity) {
-    const cart = getCart();
-    const idx = cart.lines.findIndex(
-      (l) => l.handle === handle && l.variantId === variantId
-    );
-    if (idx === -1) return cart;
-    const line = cart.lines[idx];
-    const previous = line.quantity;
-    if (quantity <= 0) {
-      cart.lines.splice(idx, 1);
-      saveCart(cart);
-      emit('cart:removed', { line, cart });
-    } else {
-      line.quantity = quantity;
-      saveCart(cart);
-      emit('cart:quantity', { line, previous, cart });
-    }
-    return cart;
-  }
-
-  function clearCart() {
-    const cart = saveCart(structuredClone(emptyCart));
-    emit('cart:cleared', cart);
-    return cart;
+  function clearDraft() {
+    write(KEY.draft, null);
+    emit('application:changed', null);
   }
 
   /* --- customer ---------------------------------------------------------- */
@@ -259,37 +211,32 @@
     emit('customer:signedout', null);
   }
 
-  /* --- orders ------------------------------------------------------------ */
+  /* --- submitted applications ------------------------------------------ */
 
-  function getOrders() {
-    return read(KEY.orders, []);
+  function getApplications() {
+    return read(KEY.applications, []);
   }
 
-  function placeOrder(order) {
-    const orders = getOrders();
+  function submitApplication(application) {
+    const list = getApplications();
     const record = Object.assign(
-      {
-        id: 'LW' + String(1000 + orders.length + 1),
-        placedAt: new Date().toISOString(),
-      },
-      order
+      { submittedAt: new Date().toISOString(), documents: [] },
+      application
     );
-    orders.unshift(record);
-    write(KEY.orders, orders);
-
-    // Roll the customer's lifetime stats forward so segmentation in Amplitude
-    // and Braze has something to work with.
-    const customer = getCustomer();
-    if (customer) {
-      customer.lifetimeOrders = (customer.lifetimeOrders || 0) + 1;
-      customer.lifetimeValue =
-        Math.round(((customer.lifetimeValue || 0) + record.total) * 100) / 100;
-      customer.lastOrderAt = record.placedAt;
-      saveCustomer(customer);
-    }
-
-    emit('order:placed', record);
+    list.unshift(record);
+    write(KEY.applications, list);
+    clearDraft();
+    emit('application:submitted', record);
     return record;
+  }
+
+  function updateApplication(id, patch) {
+    const list = getApplications();
+    const found = list.find((a) => a.id === id);
+    if (!found) return null;
+    Object.assign(found, patch);
+    write(KEY.applications, list);
+    return found;
   }
 
   /* --- browsing history -------------------------------------------------- */
@@ -332,12 +279,8 @@
 
   /* --- reset ------------------------------------------------------------- */
 
-  function resetAll(options) {
-    const opts = options || {};
-    const keys = Object.values(KEY).filter(
-      (k) => opts.keepGate !== true || k !== KEY.prefs
-    );
-    keys.forEach((k) => {
+  function resetAll() {
+    Object.values(KEY).forEach((k) => {
       try {
         if (canUseLocalStorage()) localStorage.removeItem(k);
       } catch (e) {
@@ -346,11 +289,10 @@
       memory.delete(k);
     });
     deleteCookie(NS + '_session');
-    if (!opts.keepGate) deleteCookie(NS + '_gate');
     emit('store:reset', null);
   }
 
-  /* --- money ------------------------------------------------------------- */
+  /* --- formatting ------------------------------------------------------- */
 
   const formatter = new Intl.NumberFormat('en-AU', {
     style: 'currency',
@@ -358,7 +300,16 @@
     currencyDisplay: 'narrowSymbol',
   });
 
+  const wholeDollars = new Intl.NumberFormat('en-AU', {
+    style: 'currency',
+    currency: 'AUD',
+    currencyDisplay: 'narrowSymbol',
+    maximumFractionDigits: 0,
+  });
+
   const money = (n) => formatter.format(Number(n) || 0);
+  const money0 = (n) => wholeDollars.format(Math.round(Number(n) || 0));
+  const pct = (n) => Number(n).toFixed(2) + '% p.a.';
 
   window.LanewayStore = {
     KEY,
@@ -371,20 +322,17 @@
     setCookie,
     getCookie,
     deleteCookie,
-    getCart,
-    addToCart,
-    setLineQuantity,
-    clearCart,
-    cartCount,
-    cartSubtotal,
-    cartTotals,
-    lineKey,
+    getDraft,
+    saveDraft,
+    startDraft,
+    clearDraft,
     getCustomer,
     saveCustomer,
     signIn,
     signOut,
-    getOrders,
-    placeOrder,
+    getApplications,
+    submitApplication,
+    updateApplication,
     recordView,
     recentlyViewed,
     getPrefs,
@@ -394,6 +342,8 @@
     logClear,
     resetAll,
     money,
+    money0,
+    pct,
     storageAvailable: canUseLocalStorage,
   };
 })();

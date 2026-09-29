@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Laneway demo — event stream drawer
+   Laneway Bank demo — event stream drawer
 
    The narration device. Shows every Amplitude and Braze call as it happens,
    which sink it went to, and whether it was actually sent or held back
@@ -27,45 +27,52 @@
   // Amplitude cohorts, so you can show the same page behaving differently.
   const PERSONAS = [
     {
-      key: 'new',
-      label: 'Priya — first visit',
+      key: 'first-home',
+      label: 'Priya — first home buyer',
       customer: {
         email: 'priya.raman@example.com',
         firstName: 'Priya',
         lastName: 'Raman',
-        persona: 'first_visit',
+        persona: 'first_home_buyer',
         marketingOptIn: false,
-        lifetimeOrders: 0,
-        lifetimeValue: 0,
-        favouriteBrand: null,
+        existingCustomer: false,
+        hasHomeLoan: false,
+        accounts: [],
       },
     },
     {
-      key: 'repeat',
-      label: 'Dan — repeat buyer',
+      key: 'refinancer',
+      label: 'Dan — refinancing from another bank',
       customer: {
         email: 'dan.whitfield@example.com',
         firstName: 'Dan',
         lastName: 'Whitfield',
-        persona: 'repeat_buyer',
+        persona: 'refinancer',
         marketingOptIn: true,
-        lifetimeOrders: 4,
-        lifetimeValue: 412.8,
-        favouriteBrand: 'Southbank',
+        existingCustomer: true,
+        hasHomeLoan: false,
+        accounts: [
+          { name: 'Everyday Account', number: 'BSB 063-114 · 1042 7789', balance: 4210.55 },
+          { name: 'Bonus Saver', number: 'BSB 063-114 · 1042 7790', balance: 18350.0 },
+        ],
       },
     },
     {
-      key: 'vip',
-      label: 'Mei — high value',
+      key: 'investor',
+      label: 'Mei — investor, existing home loan',
       customer: {
         email: 'mei.tanaka@example.com',
         firstName: 'Mei',
         lastName: 'Tanaka',
-        persona: 'high_value',
+        persona: 'investor',
         marketingOptIn: true,
-        lifetimeOrders: 11,
-        lifetimeValue: 1864.5,
-        favouriteBrand: 'Laneway',
+        existingCustomer: true,
+        hasHomeLoan: true,
+        accounts: [
+          { name: 'Package Home Loan', number: 'Loan 7710 2284', balance: -612400.0 },
+          { name: 'Offset Account', number: 'BSB 063-114 · 2281 0045', balance: 48912.3 },
+          { name: 'Rewards Card', number: 'Card ending 4417', balance: -1284.6 },
+        ],
       },
     },
   ];
@@ -103,19 +110,20 @@
       // Only offered while simulation is on; with it off they'd do nothing.
       (cfg.SIMULATE_IAM
         ? '<div class="dev-section"><h4>Braze campaigns (simulated)</h4>' +
-          '<button class="dev-btn" data-dev-iam="abandoned">cart abandonment</button>' +
-          '<button class="dev-btn" data-dev-iam="winback">win-back offer</button>' +
-          '<button class="dev-btn" data-dev-iam="restock">back in stock</button>' +
+          '<button class="dev-btn" data-dev-iam="abandoned">abandoned application</button>' +
+          '<button class="dev-btn" data-dev-iam="ratecut">rate cut</button>' +
+          '<button class="dev-btn" data-dev-iam="refinance">refinance offer</button>' +
           '<p class="dev-note">These fire locally so the campaign half of the demo works before anything is built in Braze. Each one logs <code>In-App Message Shown</code> to Amplitude, which is how you measure campaign lift. Set <code>SIMULATE_IAM: false</code> once real Braze campaigns are live.</p>' +
           '</div>'
         : '') +
-      '<div class="dev-section"><h4>Cart</h4>' +
-      '<button class="dev-btn" data-dev-seed-cart>add 3 random items</button>' +
-      '<button class="dev-btn" data-dev-clear-cart>empty cart</button>' +
+      '<div class="dev-section"><h4>Application</h4>' +
+      '<button class="dev-btn" data-dev-seed-application>start one, stopped at step 3</button>' +
+      '<button class="dev-btn" data-dev-clear-application>discard the application in progress</button>' +
+      '<p class="dev-note">A seeded application counts as abandoned straight away, so the simulated nudge (if on) shows on the next page.</p>' +
       '</div>' +
       '<div class="dev-section"><h4>Reset</h4>' +
       '<button class="dev-btn" data-dev-reset>wipe all local state</button>' +
-      '<p class="dev-note">Clears cart, customer, orders, history and the storefront password cookie, then reloads.</p>' +
+      '<p class="dev-note">Clears the application, customer, submitted applications, history and the session cookie, then reloads.</p>' +
       '</div>' +
       '</div>' +
       '<div class="dev-pane" data-dev-pane="state" hidden>' +
@@ -186,7 +194,7 @@
       .reverse();
     list.innerHTML = entries.length
       ? entries.map(eventHtml).join('')
-      : '<p class="dev-note">Nothing yet. Click around the store.</p>';
+      : '<p class="dev-note">Nothing yet. Click around the site.</p>';
   }
 
   function renderStatus() {
@@ -224,8 +232,8 @@
     const el = $('[data-dev-state]', drawer);
     if (!el) return;
     const customer = store.getCustomer();
-    const cart = store.getCart();
-    const totals = store.cartTotals(cart);
+    const draft = store.getDraft();
+    const apps = store.getApplications();
     const id = track.ids();
     const show = (v, loaded) => (loaded ? v || '(none: anonymous)' : '(SDK not loaded)');
     const same = (a, b) =>
@@ -239,12 +247,12 @@
       ['device ids match', same(id.amplitudeDeviceId, id.brazeDeviceId)],
       ['session_id', store.sessionId()],
       ['persona', (customer && customer.persona) || '—'],
-      ['lifetime_orders', customer ? customer.lifetimeOrders || 0 : 0],
-      ['lifetime_value', customer ? store.money(customer.lifetimeValue || 0) : '—'],
+      ['existing_customer', customer ? String(!!customer.existingCustomer) : '—'],
+      ['has_home_loan', customer ? String(!!customer.hasHomeLoan) : '—'],
       ['marketing_opt_in', customer ? String(!!customer.marketingOptIn) : '—'],
-      ['cart_size', totals.count],
-      ['cart_value', store.money(totals.subtotal)],
-      ['orders_placed', store.getOrders().length],
+      ['application_in_progress', draft ? draft.id + ' (step ' + (draft.step + 1) + ' of 5)' : '—'],
+      ['applications_submitted', apps.length],
+      ['last_decision', apps[0] ? apps[0].status : '—'],
       ['recently_viewed', store.recentlyViewed().slice(0, 4).join(', ') || '—'],
       ['storage', store.storageAvailable() ? 'localStorage' : 'in-memory'],
     ];
@@ -257,7 +265,7 @@
         )
         .join('') +
       '</dl>' +
-      '<p class="dev-note" style="margin-top:16px">Braze Currents sends Braze events to Amplitude with the Braze external id as <code>user_id</code>, and matches anonymous visitors by device id. Both pairs have to match for content card and push interactions to land on the right Amplitude user. Signing out on the storefront keeps the Braze user, as Braze recommends; <em>reset identity</em> starts both tools afresh.</p>';
+      '<p class="dev-note" style="margin-top:16px">Braze Currents sends Braze events to Amplitude with the Braze external id as <code>user_id</code>, and matches anonymous visitors by device id. Both pairs have to match for content card and push interactions to land on the right Amplitude user. Signing out of internet banking keeps the Braze user, as Braze recommends; <em>reset identity</em> starts both tools afresh.</p>';
   }
 
   function updateFabCount() {
@@ -271,30 +279,30 @@
   const SIM_CAMPAIGNS = {
     abandoned: {
       id: 'demo-abandoned',
-      campaign: 'Cart abandonment',
+      campaign: 'Abandoned application',
       trigger: 'manual (demo control)',
-      title: 'Your cart is waiting',
-      body: 'Come back and finish up — we held everything for you.',
-      cta: 'View cart',
-      link: 'cart/',
+      title: 'Your application is saved',
+      body: 'Pick up where you left off. It takes about ten more minutes.',
+      cta: 'Continue application',
+      link: 'apply/',
     },
-    winback: {
-      id: 'demo-winback',
-      campaign: 'Win-back — 60 days inactive',
+    ratecut: {
+      id: 'demo-ratecut',
+      campaign: 'Rate cut announcement',
       trigger: 'manual (demo control)',
-      title: "It's been a while",
-      body: 'The Signature Range dropped since you were last here.',
-      cta: 'See what&rsquo;s new',
-      link: 'collections/signature/',
+      title: 'Variable rates are down 0.25%',
+      body: 'The Variable Home Loan is now 5.84% p.a. (5.87% p.a. comparison rate*).',
+      cta: 'See the new rates',
+      link: 'home-loans/',
     },
-    restock: {
-      id: 'demo-restock',
-      campaign: 'Back in stock',
+    refinance: {
+      id: 'demo-refinance',
+      campaign: 'Refinance: existing customers without a home loan',
       trigger: 'manual (demo control)',
-      title: 'The Studio Jacket is back',
-      body: 'Limited run, restocked this morning.',
-      cta: 'Shop the jacket',
-      link: 'products/heavyweight-studio-jacket/',
+      title: 'Paying too much on your home loan?',
+      body: 'Switch to Laneway Bank in about 20 minutes. We handle the paperwork with your old bank.',
+      cta: 'Compare home loans',
+      link: 'home-loans/',
     },
   };
 
@@ -338,43 +346,52 @@
       });
     });
 
-    $('[data-dev-seed-cart]', drawer).addEventListener('click', function () {
-      const pool = (window.LANEWAY_INDEX || { products: [] }).products;
-      const added = [];
-      for (let i = 0; i < 3; i++) {
-        const p = pool[Math.floor(Math.random() * pool.length)];
-        if (!p) break;
-        const line = {
-          handle: p.handle,
-          variantId: p.firstVariantId,
-          variantTitle: p.firstVariantTitle,
-          title: p.title,
-          price: p.priceMin,
-          quantity: 1,
-          image: p.image,
-          brand: p.brand,
-          category: p.category,
-          tier: p.tier,
-          selectedOptions: p.firstVariantOptions,
-        };
-        store.addToCart(line);
-        added.push(line);
-      }
-      track.track('Cart Seeded', {
+    $('[data-dev-seed-application]', drawer).addEventListener('click', function () {
+      const customer = store.getCustomer();
+      // Updated three minutes ago, so it already reads as abandoned.
+      const draft = store.startDraft({
         source: 'demo_control',
-        products: track.cartProducts(added),
+        step: 2,
+        fields: {
+          email: customer ? customer.email : '',
+          firstName: customer ? customer.firstName : '',
+          lastName: customer ? customer.lastName : '',
+          applicants: '2',
+          firstHomeBuyer: 'no',
+          marketingOptIn: true,
+          loanPurpose: 'buy_home',
+          propertyStage: 'found',
+          propertyValue: '820000',
+          deposit: '164000',
+          state: 'VIC',
+          postcode: '3068',
+          product: 'package-home-loan',
+        },
+      });
+      draft.updatedAt = new Date(Date.now() - 180000).toISOString();
+      store.saveDraft(draft, true);
+      track.track('Application Seeded', {
+        source: 'demo_control',
+        application_id: draft.id,
+        step: 'finances',
+        loan_amount: 656000,
+      });
+      track.setUserProperties({
+        application_status: 'started',
+        application_step: 'finances',
+        loan_amount: 656000,
       });
       renderState();
       if (window.LanewayApp) window.LanewayApp.reboot();
-      if (document.body.dataset.page === 'cart') location.reload();
+      if (document.body.dataset.page === 'apply') location.reload();
     });
 
-    $('[data-dev-clear-cart]', drawer).addEventListener('click', function () {
-      store.clearCart();
-      track.setUserProperties({ cart_value: 0, cart_size: 0 });
+    $('[data-dev-clear-application]', drawer).addEventListener('click', function () {
+      store.clearDraft();
+      track.setUserProperties({ application_status: 'none', application_step: 'none' });
       renderState();
       if (window.LanewayApp) window.LanewayApp.reboot();
-      if (document.body.dataset.page === 'cart') location.reload();
+      if (document.body.dataset.page === 'apply') location.reload();
     });
 
     $('[data-dev-reset]', drawer).addEventListener('click', function () {
@@ -467,7 +484,7 @@
       updateFabCount();
     });
 
-    store.on('cart:changed', function () {
+    store.on('application:changed', function () {
       if (drawer.classList.contains('dev-drawer--open')) renderState();
     });
 

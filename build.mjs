@@ -1,5 +1,5 @@
 /**
- * Laneway demo — static site generator.
+ * Laneway Bank demo — static site generator.
  *
  *   node build.mjs
  *
@@ -7,7 +7,7 @@
  * site to docs/ that GitHub Pages can serve with no build step of its own.
  *
  * Every link is relative, so the same output works at a repo subpath
- * (/laneway-demo/), at a domain root, and from the local filesystem.
+ * (/oktoberfest-demo/), at a domain root, and from the local filesystem.
  */
 import {
   readFileSync,
@@ -21,9 +21,11 @@ import { dirname, join } from 'node:path';
 
 const OUT = 'docs';
 const catalog = JSON.parse(readFileSync('src/data/catalog.json', 'utf8'));
-const { site, pages, collections, products } = catalog;
+const { site, pages, categories, products } = catalog;
 
-const byHandle = new Map(products.map((p) => [p.handle, p]));
+const categoryByHandle = new Map(categories.map((c) => [c.handle, c]));
+const homeLoans = products.filter((p) => p.category === 'home-loans');
+const bankingCategories = categories.filter((c) => c.handle !== 'home-loans');
 
 /* --- helpers -------------------------------------------------------------- */
 
@@ -36,21 +38,93 @@ const esc = (s) =>
       ])
   );
 
-const money = (n) =>
-  '$' +
-  Number(n).toLocaleString('en-AU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+const money0 = (n) =>
+  '$' + Math.round(Number(n)).toLocaleString('en-AU', { maximumFractionDigits: 0 });
 
-const priceLabel = (p) =>
-  p.priceMin === p.priceMax ? money(p.priceMin) : 'From ' + money(p.priceMin);
+const pct = (n) => Number(n).toFixed(2) + '% p.a.';
+
+// The same formula as LanewayFinance.repayment, for the static estimate on
+// each loan page.
+function monthlyRepayment(principal, ratePct, years) {
+  const r = ratePct / 100 / 12;
+  return (principal * r) / (1 - Math.pow(1 + r, -years * 12));
+}
+
+const productPath = (p) => p.category + '/' + p.handle + '/';
 
 function emit(path, html) {
   const full = join(OUT, path);
   mkdirSync(dirname(full), { recursive: true });
   writeFileSync(full, html);
 }
+
+/* --- derived product fields ---------------------------------------------- */
+
+const PURPOSE_LABEL = { owner_occupier: 'Owner occupier', investor: 'Investor' };
+const RATE_TYPE_LABEL = { variable: 'Variable', fixed: 'Fixed' };
+
+// The one or two headline numbers a card and a product page lead with.
+function figures(p) {
+  if (p.category === 'home-loans') {
+    return [
+      {
+        value: p.rate.toFixed(2),
+        unit: '% p.a.',
+        label:
+          p.rateType === 'fixed'
+            ? 'fixed rate, ' + p.fixedYears + ' years'
+            : 'variable rate',
+      },
+      { value: p.comparisonRate.toFixed(2), unit: '% p.a.', label: 'comparison rate*' },
+    ];
+  }
+  if (p.rate != null)
+    return [{ value: p.rate.toFixed(2), unit: '% p.a.', label: p.rateLabel }];
+  return [{ value: p.headline.value, unit: '', label: p.headline.label }];
+}
+
+function kicker(p) {
+  if (p.category !== 'home-loans') return categoryByHandle.get(p.category).title;
+  return [
+    RATE_TYPE_LABEL[p.rateType],
+    PURPOSE_LABEL[p.purpose],
+    p.offset ? 'Offset' : null,
+    p.firstHomeBuyer ? 'First home buyers' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+// Slim product record: what search, filters, recommendations, the
+// calculators and the application need on the client, and what every card
+// is rendered from.
+function slim(p) {
+  return {
+    handle: p.handle,
+    title: p.title,
+    category: p.category,
+    categoryTitle: categoryByHandle.get(p.category).title,
+    tagline: p.tagline,
+    path: productPath(p),
+    featured: !!p.featured,
+    rate: p.rate ?? null,
+    comparisonRate: p.comparisonRate ?? null,
+    interestOnlyRate: p.interestOnlyRate ?? null,
+    rateType: p.rateType || null,
+    fixedYears: p.fixedYears || null,
+    purpose: p.purpose || null,
+    firstHomeBuyer: !!p.firstHomeBuyer,
+    repaymentTypes: p.repaymentTypes || null,
+    maxLvr: p.maxLvr || null,
+    offset: !!p.offset,
+    annualFee: p.fees ? p.fees.annual ?? 0 : 0,
+    kicker: kicker(p),
+    figures: figures(p),
+  };
+}
+
+const slimProducts = products.map(slim);
+const slimByHandle = new Map(slimProducts.map((p) => [p.handle, p]));
 
 /* --- icons ---------------------------------------------------------------- */
 
@@ -59,83 +133,84 @@ const icon = {
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>',
   user:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>',
-  bag:
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+  doc:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
   bell:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M18 16V11a6 6 0 1 0-12 0v5l-1.5 3h15L18 16Z"/><path d="M10 21h4"/></svg>',
   menu:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
   close:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
-  cart:
-    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
   arrow:
     '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  check:
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg>',
 };
 
 /* --- chrome --------------------------------------------------------------- */
 
-// Order the brand collections the way the original site lists them, rather
-// than the order they happen to come back from the Shopify API in.
-const BRAND_ORDER = ['rmit', 'southbank-coffee-co', 'laneway'];
-const brandCollections = collections
-  .filter((c) => c.isBrand)
-  .sort((a, b) => BRAND_ORDER.indexOf(a.handle) - BRAND_ORDER.indexOf(b.handle));
-const categoryCollections = collections.filter(
-  (c) => !c.isBrand && c.handle !== 'new-season'
-);
+function wordmark(base, cls) {
+  return `<span class="wordmark ${cls || ''}"><img src="${base}${site.wordmark}" alt="Laneway" width="334" height="92"><span class="wordmark__bank">Bank</span></span>`;
+}
 
 function header(base) {
-  const megaList = (items) =>
-    '<ul class="mega__list">' +
-    items
-      .map(
-        (c) =>
-          '<li><a href="' +
-          base +
-          'collections/' +
-          c.handle +
-          '/" data-nav-link="mega">' +
-          esc(c.title) +
-          '</a></li>'
-      )
-      .join('') +
-    '</ul>';
+  const link = (href, text) =>
+    `<li><a href="${base}${href}" data-nav-link="mega">${esc(text)}</a></li>`;
 
   return `
 <div class="announcement">${esc(site.announcement)}</div>
 <header class="site-header">
   <button class="icon-btn nav-toggle" type="button" data-nav-toggle aria-expanded="false" aria-controls="site-nav" aria-label="Menu">${icon.menu}</button>
-  <a class="site-header__logo" href="${base}index.html" aria-label="Laneway home">
-    <img src="${base}${site.logo}" alt="Laneway" width="96" height="18">
-  </a>
+  <a class="site-header__logo" href="${base}index.html" aria-label="Laneway Bank home">${wordmark(base)}</a>
   <nav class="site-nav" id="site-nav" aria-label="Main">
-    <div class="site-nav__item"><a href="${base}index.html" data-nav-link="header">Home</a></div>
-    <div class="site-nav__item"><a href="${base}pages/about/" data-nav-link="header">About</a></div>
-    <div class="site-nav__item"><a href="${base}pages/services/" data-nav-link="header">Services</a></div>
     <div class="site-nav__item">
-      <a href="${base}collections/" data-nav-link="header" aria-haspopup="true">Shop</a>
+      <a href="${base}home-loans/" data-nav-link="header" aria-haspopup="true">Home loans</a>
       <div class="mega">
         <div>
-          <p class="mega__title"><a href="${base}collections/">By Collaboration</a></p>
-          ${megaList(brandCollections.concat(collections.filter((c) => c.handle === 'signature')))}
+          <p class="mega__title"><a href="${base}home-loans/">Home loans</a></p>
+          <ul class="mega__list">${homeLoans.map((p) => link(productPath(p), p.title)).join('')}</ul>
         </div>
         <div>
-          <p class="mega__title"><a href="${base}collections/">By Category</a></p>
-          ${megaList(categoryCollections.filter((c) => c.handle !== 'signature'))}
+          <p class="mega__title">Tools</p>
+          <ul class="mega__list">
+            ${link('calculators/borrowing-power/', 'Borrowing power calculator')}
+            ${link('calculators/repayments/', 'Repayments calculator')}
+            ${link('apply/', 'Apply online')}
+            ${link('talk-to-us/', 'Talk to a lender')}
+          </ul>
         </div>
       </div>
     </div>
+    <div class="site-nav__item">
+      <a href="${base}everyday/" data-nav-link="header" aria-haspopup="true">Banking</a>
+      <div class="mega">
+        ${bankingCategories
+          .map(
+            (c) => `<div>
+          <p class="mega__title"><a href="${base}${c.handle}/">${esc(c.title)}</a></p>
+          <ul class="mega__list">${products
+            .filter((p) => p.category === c.handle)
+            .map((p) => link(productPath(p), p.title))
+            .join('')}</ul>
+        </div>`
+          )
+          .join('')}
+      </div>
+    </div>
+    <div class="site-nav__item"><a href="${base}calculators/borrowing-power/" data-nav-link="header">Calculators</a></div>
+    <div class="site-nav__item"><a href="${base}talk-to-us/" data-nav-link="header">Talk to us</a></div>
+    <div class="site-nav__item"><a href="${base}pages/about/" data-nav-link="header">About</a></div>
   </nav>
   <div class="site-header__actions">
     <button class="icon-btn" type="button" data-search-open aria-label="Search">${icon.search}</button>
     <button class="icon-btn" type="button" data-cards-toggle aria-label="Messages">
       ${icon.bell}<span class="badge" data-cards-count hidden>0</span>
     </button>
-    <a class="icon-btn" href="${base}account/" aria-label="Account">${icon.user}</a>
-    <a class="icon-btn" href="${base}cart/" aria-label="Cart">
-      ${icon.bag}<span class="badge" data-cart-count hidden>0</span>
+    <a class="icon-btn" href="${base}apply/" aria-label="Your application" data-draft-link hidden>
+      ${icon.doc}<span class="badge badge--dot" data-draft-badge>1</span>
     </a>
+    <a class="icon-btn" href="${base}account/" aria-label="Internet banking">${icon.user}</a>
+    <a class="btn btn--sm site-header__cta" href="${base}apply/" data-apply-link data-apply-source="header">Apply now</a>
   </div>
 </header>
 
@@ -149,18 +224,23 @@ function header(base) {
     <button class="icon-btn" type="button" data-search-close aria-label="Close search">${icon.close}</button>
   </div>
   <div class="search-overlay__bar">
-    <label class="visually-hidden" for="search-input">Search products</label>
-    <input id="search-input" type="search" placeholder="Search products&hellip;" autocomplete="off">
+    <label class="visually-hidden" for="search-input">Search</label>
+    <input id="search-input" type="search" placeholder="Search home loans, accounts and cards&hellip;" autocomplete="off">
   </div>
   <div class="search-results"></div>
 </div>`;
 }
 
 function footer(base) {
+  const list = (items) =>
+    '<ul class="mega__list">' +
+    items.map((i) => `<li><a href="${base}${i[0]}">${esc(i[1])}</a></li>`).join('') +
+    '</ul>';
   return `
 <footer class="footer">
   <div class="footer__top">
     <div>
+      ${wordmark(base, 'wordmark--footer')}
       <p class="footer__note">${esc(site.footerNote)}</p>
       <p class="footer__note">${esc(site.footerNote2)}</p>
       <p><a class="link-underline" href="${base}pages/about/">[Why this exists &rarr;]</a></p>
@@ -170,64 +250,39 @@ function footer(base) {
       <p class="muted">${esc(site.newsletterBody)}</p>
       <form data-newsletter="footer" novalidate>
         <label class="visually-hidden" for="footer-email">Email address</label>
-        <input id="footer-email" type="email" placeholder="Email address" autocomplete="email">
+        <input id="footer-email" type="email" placeholder="Email address" autocomplete="email" required aria-required="true">
         <button type="submit" aria-label="Subscribe">${icon.arrow}</button>
       </form>
       <p class="newsletter__msg" role="status"></p>
     </div>
     <div>
-      <p class="mega__title">Shop</p>
-      <ul class="mega__list">
-        ${collections
-          .slice(0, 6)
-          .map(
-            (c) =>
-              '<li><a href="' +
-              base +
-              'collections/' +
-              c.handle +
-              '/">' +
-              esc(c.title) +
-              '</a></li>'
-          )
-          .join('')}
-      </ul>
+      <p class="mega__title">Home loans</p>
+      ${list([
+        ['home-loans/', 'Compare home loans'],
+        ['calculators/borrowing-power/', 'Borrowing power'],
+        ['calculators/repayments/', 'Repayments'],
+        ['apply/', 'Apply online'],
+      ])}
+    </div>
+    <div>
+      <p class="mega__title">Banking</p>
+      ${list(bankingCategories.map((c) => [c.handle + '/', c.title]).concat([['talk-to-us/', 'Talk to us']]))}
     </div>
   </div>
+  <p class="footer__legal">${esc(site.comparisonNote)}</p>
   <div class="footer__bottom">
-    <span>&copy; 2026 Laneway &mdash; mocked for demonstration</span>
-    <a href="${base}pages/about/">About this store</a>
-    <a href="${base}account/">Account</a>
+    <span>&copy; 2026 Laneway Bank &middot; a simulation, not a real bank</span>
+    <a href="${base}pages/about/">About this site</a>
+    <a href="${base}account/">Internet banking</a>
   </div>
 </footer>`;
-}
-
-function gate(base) {
-  return `
-<div class="gate" id="gate" hidden>
-  <div class="gate__inner">
-    <img class="gate__logo" src="${base}${site.logo}" alt="Laneway" width="96" height="16">
-    <h1>Demo Site</h1>
-    <p>This site is exclusively used for education within RMIT's Marketing Technology courses. Enter below with the password from your teacher.</p>
-    <p class="muted">Welcome to Laneway. Before you come in, one thing worth knowing: Laneway isn't a real business. It's a working teaching store built by RMIT University's Marketing Technology Lab, where students learn how modern marketing technology actually behaves in the wild. Everything inside is simulated. The brands, the products, the customers have all been created for teaching. Nothing is for sale, nothing ships, and no payment are ever taken. What is real is the technology running underneath &mdash; and once you're in, you'll be able to see exactly how it works.</p>
-    <p><strong>Password: MTL</strong></p>
-    <form novalidate>
-      <label class="visually-hidden" for="gate-password">Password</label>
-      <input id="gate-password" type="password" placeholder="Password" autocomplete="off">
-      <button class="btn" type="submit">Enter</button>
-    </form>
-    <p class="gate__error" role="alert" style="color:#c0392b;min-height:20px;margin-top:10px"></p>
-  </div>
-</div>`;
 }
 
 /* --- layout --------------------------------------------------------------- */
 
 function layout(opts) {
   const base = opts.base;
-  const title = opts.title
-    ? opts.title + ' – ' + site.name
-    : site.name;
+  const title = opts.title ? opts.title + ' – ' + site.name : site.name;
   return `<!doctype html>
 <html lang="en-AU">
 <head>
@@ -238,7 +293,7 @@ function layout(opts) {
 <meta name="robots" content="noindex, nofollow">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(opts.description || site.footerNote)}">
-<link rel="icon" href="${base}${site.logo}">
+<link rel="icon" href="${base}${site.favicon}" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
@@ -250,7 +305,6 @@ ${header(base)}
 ${opts.content}
 </main>
 ${footer(base)}
-${gate(base)}
 <script>
   window.LANEWAY_BASE = ${JSON.stringify(base)};
   window.LANEWAY_PAGE = ${JSON.stringify(opts.pageData || {})};
@@ -258,6 +312,7 @@ ${gate(base)}
 <script src="${base}assets/js/config.js"></script>
 <script src="${base}assets/data/index.js"></script>
 <script src="${base}assets/js/store.js"></script>
+<script src="${base}assets/js/finance.js"></script>
 <script src="${base}assets/js/tracking.js"></script>
 <script src="${base}assets/js/devtools.js"></script>
 <script src="${base}assets/js/app.js"></script>
@@ -268,20 +323,25 @@ ${gate(base)}
 
 /* --- shared blocks -------------------------------------------------------- */
 
+// Mirrored by cardHtml() in app.js, which renders the same card on the
+// client after a filter, sort or recommendation.
 function productCard(p, base) {
-  const second = p.images[1]
-    ? `<img src="${base}${p.images[1].src}" alt="" loading="lazy">`
-    : '';
-  return `<article class="card" data-product-card="${esc(p.handle)}">
-  <a class="card__media" href="${base}products/${p.handle}/">
-    <img src="${base}${p.images[0].src}" alt="${esc(p.images[0].alt)}" loading="lazy">
-    ${second}
-  </a>
-  <div class="card__body">
-    <span class="card__brand">${esc(p.brand)}</span>
-    <a class="card__title" href="${base}products/${p.handle}/">${esc(p.title)}</a>
-    <div class="card__price">${priceLabel(p)}</div>
+  const s = slimByHandle.get(p.handle) || p;
+  return `<article class="rate-card" data-product-card="${esc(s.handle)}">
+  <p class="rate-card__kicker">${esc(s.kicker)}</p>
+  <a class="rate-card__title" href="${base}${s.path}">${esc(s.title)}</a>
+  <p class="rate-card__tagline">${esc(s.tagline)}</p>
+  <div class="rate-card__figures">
+    ${s.figures
+      .map(
+        (f) =>
+          `<div class="figure"><span class="figure__value">${esc(f.value)}<small>${esc(
+            f.unit
+          )}</small></span><span class="figure__label">${esc(f.label)}</span></div>`
+      )
+      .join('')}
   </div>
+  <a class="btn btn--sm btn--outline rate-card__cta" href="${base}${s.path}">View details</a>
 </article>`;
 }
 
@@ -289,10 +349,25 @@ function recommendationSection(base, seedHandle, heading, placement) {
   return `<section class="section page" data-placement="${esc(placement)}">
   <div class="section-head__row">
     <h2 style="font-size:20px">${esc(heading)}</h2>
-    <a class="link-underline" href="${base}collections/new-season/">View all</a>
+    <a class="link-underline" href="${base}home-loans/">Compare home loans</a>
   </div>
-  <div class="grid grid--4" data-recommend="${esc(seedHandle || '')}" data-recommend-limit="4" data-placement="${esc(placement)}"></div>
+  <div class="grid grid--3" data-recommend="${esc(seedHandle || '')}" data-recommend-limit="3" data-placement="${esc(placement)}"></div>
 </section>`;
+}
+
+const recentlyViewedSection = () => `
+<section class="section--tight page" hidden>
+  <div class="section-head__row"><h2 style="font-size:20px">Recently viewed</h2></div>
+  <div class="grid grid--3" data-recently-viewed data-placement="recently-viewed"></div>
+</section>`;
+
+function steps() {
+  return [
+    ['Apply online', 'About 20 minutes. Save as you go and come back any time.'],
+    ['See where you stand', 'A conditional decision on screen as soon as you submit.'],
+    ['Send your documents', 'Payslips, ID and statements, uploaded from your phone.'],
+    ['Settle with a lender', 'One lender takes your loan all the way to settlement.'],
+  ];
 }
 
 /* --- home ----------------------------------------------------------------- */
@@ -300,62 +375,96 @@ function recommendationSection(base, seedHandle, heading, placement) {
 function homePage() {
   const base = '';
   const home = pages.home;
-  const signature = collections.find((c) => c.handle === 'signature');
-  const signatureProducts = signature.products
-    .map((h) => byHandle.get(h))
-    .filter(Boolean);
+  const featured = products.filter((p) => p.featured);
+  const lead = homeLoans
+    .filter((p) => p.rateType === 'variable')
+    .sort((a, b) => a.rate - b.rate)[0];
 
   const content = `
 <section class="hero">
-  <img class="hero__media" src="${base}${home.heroImage}" alt="" fetchpriority="high">
   <div class="hero__inner">
+    <p class="eyebrow">${esc(home.heroEyebrow)}</p>
     <h1>${esc(home.heroHeading)}</h1>
     <p class="hero__sub">${esc(home.heroSub)}</p>
     <div class="hero__actions">
-      <a class="btn btn--ghost" href="${base}collections/new-season/">Shop all</a>
-      <a class="btn btn--ghost" href="${base}pages/services/">Work with us</a>
+      <a class="btn" href="${base}home-loans/">Compare home loans</a>
+      <a class="btn btn--outline" href="${base}calculators/borrowing-power/">What can I borrow?</a>
     </div>
+  </div>
+  <div class="hero__card" data-placement="home-hero">
+    ${productCard(lead, base)}
+  </div>
+</section>
+
+<section class="section page" data-placement="home-featured">
+  <div class="section-head__row">
+    <div class="section-head" style="margin:0">
+      <h2>${esc(home.featuredHeading)}</h2>
+      <p>${esc(home.featuredSub)}</p>
+    </div>
+    <a class="link-underline" href="${base}home-loans/">Compare all ${homeLoans.length}</a>
+  </div>
+  <div class="grid grid--3">
+    ${featured.map((p) => productCard(p, base)).join('')}
+  </div>
+</section>
+
+<section class="section--tight page">
+  <div class="section-head">
+    <h2>${esc(home.toolsHeading)}</h2>
+    <p>${esc(home.toolsSub)}</p>
+  </div>
+  <div class="grid grid--2">
+    <a class="tool-tile" href="${base}calculators/borrowing-power/">
+      <span class="tool-tile__label">Borrowing power</span>
+      <span class="tool-tile__title">How much could I borrow?</span>
+      <span class="muted">Your income, your expenses and our assessment rate, in one number.</span>
+      <span class="link-underline">Work it out</span>
+    </a>
+    <a class="tool-tile" href="${base}calculators/repayments/">
+      <span class="tool-tile__label">Repayments</span>
+      <span class="tool-tile__title">What would my repayments be?</span>
+      <span class="muted">Weekly, fortnightly or monthly, on any of our loans.</span>
+      <span class="link-underline">Work it out</span>
+    </a>
   </div>
 </section>
 
 <section class="section page">
   <div class="section-head section-head--center">
-    <h2>${esc(home.pitchHeading)}</h2>
-    <p>${esc(home.pitchBody)}</p>
+    <h2>HOW APPLYING WORKS</h2>
   </div>
+  <ol class="how-steps">
+    ${steps()
+      .map(
+        (s, i) =>
+          `<li><span class="how-steps__n">${i + 1}</span><strong>${esc(s[0])}</strong><span class="muted">${esc(
+            s[1]
+          )}</span></li>`
+      )
+      .join('')}
+  </ol>
+  <p style="text-align:center;margin-top:28px"><a class="btn" href="${base}apply/" data-apply-link data-apply-source="home_how_it_works">Start an application</a></p>
 </section>
 
-<section class="section--tight page" data-placement="home-collections">
+<section class="section--tight page">
   <div class="section-head">
-    <h2>${esc(home.collectionListHeading)}</h2>
-    <p>${esc(home.collectionListSub)}</p>
+    <h2>${esc(home.bankingHeading)}</h2>
+    <p>${esc(home.bankingSub)}</p>
   </div>
   <div class="grid grid--3">
-    ${brandCollections
+    ${bankingCategories
       .map(
-        (c) => `<a class="tile" href="${base}collections/${c.handle}/">
-      <span class="tile__media"><img src="${base}${c.image}" alt="${esc(c.title)}" loading="lazy"></span>
-      <span class="tile__label">${esc(c.title)}</span>
+        (c) => `<a class="tool-tile" href="${base}${c.handle}/">
+      <span class="tool-tile__label">${esc(c.title)}</span>
+      <span class="muted">${esc(c.subtitle)}</span>
+      <span class="link-underline">See ${esc(c.title.toLowerCase())}</span>
     </a>`
       )
       .join('')}
   </div>
 </section>
-
-<section class="section page" data-placement="home-signature">
-  <div class="section-head">
-    <h2>${esc(home.signatureHeading)}</h2>
-    <p>${esc(home.signatureSub)}</p>
-  </div>
-  <div class="grid grid--3">
-    ${signatureProducts.map((p) => productCard(p, base)).join('')}
-  </div>
-</section>
-
-<section class="section--tight page" hidden>
-  <div class="section-head__row"><h2 style="font-size:20px">Recently viewed</h2></div>
-  <div class="grid grid--4" data-recently-viewed data-placement="recently-viewed"></div>
-</section>
+${recentlyViewedSection()}
 `;
 
   return layout({
@@ -368,98 +477,88 @@ function homePage() {
   });
 }
 
-/* --- collections index ---------------------------------------------------- */
+/* --- category ------------------------------------------------------------- */
 
-function collectionsIndexPage() {
+function categoryPage(c) {
   const base = '../';
+  const items = products.filter((p) => p.category === c.handle);
+  const isLoans = c.handle === 'home-loans';
+  const hasRates = items.some((p) => p.rate != null);
+
+  const pop = (id, label, boxes) => `<div class="filter-pop">
+    <button class="btn--sm" type="button" data-pop-toggle="${id}"
+      style="border:0;background:none;cursor:pointer;padding:6px 0">${label} &#9662;</button>
+    <div class="filter-pop__panel" id="${id}" hidden>
+      ${boxes
+        .map(
+          (b) =>
+            `<label class="check"><input type="checkbox" value="${b[1]}" data-filter="${b[0]}"><span>${esc(
+              b[2]
+            )}</span></label>`
+        )
+        .join('')}
+    </div>
+  </div>`;
+
+  const filters = isLoans
+    ? pop('pop-purpose', 'Purpose', [
+        ['purpose', 'owner_occupier', 'Owner occupier'],
+        ['purpose', 'investor', 'Investor'],
+      ]) +
+      pop('pop-rate', 'Rate type', [
+        ['rateType', 'variable', 'Variable'],
+        ['rateType', 'fixed', 'Fixed'],
+      ]) +
+      pop('pop-features', 'Features', [
+        ['offset', 'true', 'Offset account'],
+        ['firstHomeBuyer', 'true', 'For first home buyers'],
+      ]) +
+      `<button class="btn--sm" type="button" data-filter-clear style="border:0;background:none;cursor:pointer;padding:6px 0;text-decoration:underline">Clear</button>`
+    : '';
+
   const content = `
-<div class="collection-banner collection-banner--plain page">
-  <h1>Collections</h1>
-  <p class="muted">Every label here is a brand we&rsquo;ve designed for, plus the categories that cut across them.</p>
-</div>
-<section class="section--tight page" data-placement="collections-index">
-  <div class="grid grid--3">
-    ${collections
-      .map(
-        (c) => `<a class="tile" href="${base}collections/${c.handle}/">
-      <span class="tile__media"><img src="${base}${c.image}" alt="${esc(c.title)}" loading="lazy"></span>
-      <span class="tile__label">${esc(c.title)}</span>
-    </a>`
-      )
-      .join('')}
-  </div>
-</section>
-`;
-  return layout({
-    base,
-    page: 'collections',
-    title: 'Collections',
-    description: 'Browse Laneway by collaboration or by category.',
-    content,
-    pageData: { name: 'Collections' },
-  });
-}
-
-/* --- collection ----------------------------------------------------------- */
-
-function collectionPage(c) {
-  const base = '../../';
-  const items = c.products.map((h) => byHandle.get(h)).filter(Boolean);
-  const maxPrice = Math.max(...items.map((p) => p.priceMax), 0);
-
-  const banner = c.image
-    ? `<div class="collection-banner">
-  <img class="collection-banner__media" src="${base}${c.image}" alt="" fetchpriority="high">
-  <h1>${esc(c.title)}</h1>
-  <p>${esc(c.subtitle)}</p>
-</div>`
-    : `<div class="collection-banner collection-banner--plain page">
+<div class="collection-banner page">
+  <p class="eyebrow">${isLoans ? 'Compare' : 'Banking'}</p>
   <h1>${esc(c.title)}</h1>
   <p class="muted">${esc(c.subtitle)}</p>
-</div>`;
-
-  const content = `
-${banner}
+</div>
 <div class="toolbar">
-  <div class="filter-pop">
-    <button class="btn--sm" type="button" data-pop-toggle="pop-availability"
-      style="border:0;background:none;cursor:pointer;padding:6px 0">Availability &#9662;</button>
-    <div class="filter-pop__panel" id="pop-availability" hidden>
-      <label class="check"><input type="checkbox" value="in-stock" data-filter-availability><span>In stock</span></label>
-      <label class="check"><input type="checkbox" value="out-of-stock" data-filter-availability><span>Out of stock</span></label>
-    </div>
-  </div>
-  <div class="filter-pop">
-    <button class="btn--sm" type="button" data-pop-toggle="pop-price"
-      style="border:0;background:none;cursor:pointer;padding:6px 0">Price &#9662;</button>
-    <div class="filter-pop__panel" id="pop-price" hidden>
-      <div class="field-row">
-        <label class="field"><span>From</span><input type="number" min="0" placeholder="0" data-price-min></label>
-        <label class="field"><span>To</span><input type="number" min="0" placeholder="${Math.ceil(maxPrice)}" data-price-max></label>
-      </div>
-      <p class="muted" style="font-size:12px;margin:0 0 10px">Highest price is ${money(maxPrice)}</p>
-      <button class="btn btn--sm btn--outline" type="button" data-filter-clear>Clear all</button>
-    </div>
-  </div>
-  <span class="toolbar__count" data-collection-count>${items.length} items</span>
+  ${filters}
+  <span class="toolbar__count" data-collection-count>${items.length} products</span>
   <label>
     <span class="visually-hidden">Sort by</span>
     <select data-sort>
       <option value="featured">Featured</option>
-      <option value="title-asc">Alphabetically, A-Z</option>
-      <option value="title-desc">Alphabetically, Z-A</option>
-      <option value="price-asc">Price, low to high</option>
-      <option value="price-desc">Price, high to low</option>
-      <option value="date-desc">Date, new to old</option>
-      <option value="date-asc">Date, old to new</option>
+      ${hasRates ? '<option value="rate-asc">Interest rate, low to high</option>' : ''}
+      ${isLoans ? '<option value="comparison-asc">Comparison rate, low to high</option>' : ''}
+      ${isLoans ? '<option value="fee-asc">Annual fee, low to high</option>' : ''}
+      <option value="title-asc">Name, A&ndash;Z</option>
     </select>
   </label>
 </div>
-<section class="section--tight page" data-placement="collection-grid">
-  <div class="grid grid--4" data-collection-grid>
+<section class="section--tight page" data-placement="category-grid">
+  <div class="grid grid--3" data-collection-grid>
     ${items.map((p) => productCard(p, base)).join('')}
   </div>
 </section>
+${
+  isLoans
+    ? `<section class="section--tight page">
+  <div class="grid grid--2">
+    <a class="tool-tile" href="${base}calculators/borrowing-power/">
+      <span class="tool-tile__label">Not sure which?</span>
+      <span class="tool-tile__title">Start with what you can borrow</span>
+      <span class="link-underline">Borrowing power calculator</span>
+    </a>
+    <a class="tool-tile" href="${base}talk-to-us/">
+      <span class="tool-tile__label">Rather talk it through?</span>
+      <span class="tool-tile__title">A lender can come to you</span>
+      <span class="link-underline">Talk to a lender</span>
+    </a>
+  </div>
+</section>`
+    : ''
+}
 `;
 
   return layout({
@@ -473,8 +572,7 @@ ${banner}
       collection: {
         handle: c.handle,
         title: c.title,
-        isBrand: c.isBrand,
-        products: c.products,
+        products: items.map((p) => p.handle),
       },
     },
   });
@@ -484,300 +582,422 @@ ${banner}
 
 function productPage(p) {
   const base = '../../';
-  const inCollections = collections.filter((c) => c.products.includes(p.handle));
-  const brandCollection = inCollections.find((c) => c.isBrand);
+  const s = slimByHandle.get(p.handle);
+  const c = categoryByHandle.get(p.category);
+  const isLoan = p.category === 'home-loans';
 
-  const gallery = p.images
-    .map(
-      (img, i) =>
-        `<figure><img src="${base}${img.src}" alt="${esc(img.alt)}"${
-          i === 0 ? ' fetchpriority="high"' : ' loading="lazy"'
-        }></figure>`
-    )
-    .join('');
+  const yesNo = (v) => (v ? 'Yes' : 'No');
+  const fee = (n) => (n ? money0(n) : '$0');
+  const facts = isLoan
+    ? [
+        ['Rate type', p.rateType === 'fixed' ? `Fixed for ${p.fixedYears} years` : 'Variable'],
+        ['Interest rate', pct(p.rate)],
+        ['Comparison rate*', pct(p.comparisonRate)],
+        p.interestOnlyRate && ['Interest-only rate', pct(p.interestOnlyRate)],
+        ['For', PURPOSE_LABEL[p.purpose]],
+        ['Maximum LVR', p.maxLvr + '%'],
+        ['Offset account', yesNo(p.offset)],
+        ['Redraw', yesNo(p.redraw)],
+        ['Application fee', fee(p.fees.application)],
+        ['Annual fee', fee(p.fees.annual)],
+        ['Monthly fee', fee(p.fees.monthly)],
+      ].filter(Boolean)
+    : [
+        p.rate != null && [p.rateLabel[0].toUpperCase() + p.rateLabel.slice(1), pct(p.rate)],
+        p.fees && p.fees.annual != null && ['Annual fee', fee(p.fees.annual)],
+        p.fees && p.fees.monthly != null && ['Monthly account fee', fee(p.fees.monthly)],
+      ].filter(Boolean);
 
-  const options = p.options
-    .map(
-      (opt) => `<div class="option">
-    <span class="option__label">${esc(opt.name)}</span>
-    <div class="option__values" role="group" aria-label="${esc(opt.name)}">
-      ${opt.values
-        .map(
-          (v) =>
-            `<button class="swatch" type="button" aria-pressed="false" data-option-name="${esc(
-              opt.name
-            )}" data-option-value="${esc(v)}">${esc(v)}</button>`
-        )
-        .join('')}
-    </div>
-  </div>`
-    )
-    .join('');
+  const example = isLoan
+    ? `<p class="muted" style="font-size:13px;margin:14px 0 0">On a ${money0(600000)} loan over 30 years, that&rsquo;s about <strong>${money0(
+        monthlyRepayment(600000, p.rate, 30)
+      )} a month</strong>${p.rateType === 'fixed' ? ' during the fixed term' : ''}.</p>`
+    : '';
 
-  const description = p.descriptionBlocks
-    .map((b) => {
-      if (b.type === 'heading') return `<h3>${esc(b.text)}</h3>`;
-      if (b.type === 'list')
-        return '<ul>' + b.items.map((i) => `<li>${esc(i)}</li>`).join('') + '</ul>';
-      return `<p>${esc(b.text)}</p>`;
-    })
-    .join('');
-
-  const meta = [
-    p.brand && ['Brand', p.brand],
-    p.type && ['Category', p.type],
-    p.tier && ['Tier', p.tier],
-    p.season && ['Season', p.season],
-  ]
-    .filter(Boolean)
-    .map((m) => `<span class="chip">${esc(m[0])}: ${esc(m[1])}</span>`)
-    .join('');
+  const actions = isLoan
+    ? `<a class="btn btn--block" href="${base}apply/?product=${esc(p.handle)}" data-apply-link data-apply-source="product_page">Apply now</a>
+    <a class="btn btn--block btn--outline" href="${base}calculators/repayments/?product=${esc(p.handle)}">Calculate repayments</a>
+    <p class="muted" style="font-size:13px;margin:12px 0 0">Prefer to talk first? <a class="link-underline" href="${base}talk-to-us/">A lender can call you</a>.</p>`
+    : `<button class="btn btn--block" type="button" data-register-interest>Register interest</button>
+    <p class="muted" style="font-size:13px;margin:12px 0 0" data-interest-msg>Opening ${esc(
+      c.title.toLowerCase()
+    )} online isn&rsquo;t part of this demo. Registering interest shows how a cross-sell signal lands in Braze.</p>`;
 
   const content = `
 <nav class="page" aria-label="Breadcrumb" style="padding-top:20px;font-size:12px">
-  <a class="muted" href="${base}collections/">Shop</a>
-  ${
-    brandCollection
-      ? ' <span class="muted">/</span> <a class="muted" href="' +
-        base +
-        'collections/' +
-        brandCollection.handle +
-        '/">' +
-        esc(brandCollection.title) +
-        '</a>'
-      : ''
-  }
+  <a class="muted" href="${base}${c.handle}/">${esc(c.title)}</a>
   <span class="muted">/</span> <span>${esc(p.title)}</span>
 </nav>
 
 <div class="product">
-  <div class="product__gallery">${gallery}</div>
-  <div class="product__info">
-    <p class="product__brand">${esc(p.brand)}</p>
+  <div>
+    <p class="eyebrow">${esc(s.kicker)}</p>
     <h1 class="product__title">${esc(p.title)}</h1>
-    <p class="product__price" data-product-price>${money(p.priceMin)}</p>
+    <p class="product__lede">${esc(p.tagline)}</p>
 
-    ${options}
-
-    <div class="buy-row">
-      <div class="qty">
-        <button type="button" data-qty-step="-1" aria-label="Decrease quantity">&minus;</button>
-        <label class="visually-hidden" for="qty">Quantity</label>
-        <input id="qty" type="number" min="1" max="99" value="1" data-qty-input>
-        <button type="button" data-qty-step="1" aria-label="Increase quantity">+</button>
-      </div>
-      <button class="btn" type="button" data-add-to-cart>${icon.cart}<span>Add to cart</span></button>
+    <div class="product__figures">
+      ${s.figures
+        .map(
+          (f) =>
+            `<div class="figure figure--lg"><span class="figure__value">${esc(f.value)}<small>${esc(
+              f.unit
+            )}</small></span><span class="figure__label">${esc(f.label)}</span></div>`
+        )
+        .join('')}
     </div>
-    <a class="btn btn--block btn--outline" href="${base}cart/">View cart</a>
 
-    <div class="product__description">${description}</div>
-    <div class="product__meta">${meta}</div>
+    <div class="product__description">
+      <p>${esc(p.description)}</p>
+      <h3>Features</h3>
+      <ul class="ticks">${p.features.map((f) => `<li>${icon.check}<span>${esc(f)}</span></li>`).join('')}</ul>
+      ${
+        facts.length
+          ? `<h3>Key facts</h3>
+      <dl class="facts">${facts.map((f) => `<div><dt>${esc(f[0])}</dt><dd>${esc(f[1])}</dd></div>`).join('')}</dl>`
+          : ''
+      }
+      ${isLoan ? `<p class="muted" style="font-size:12px;margin-top:18px">${esc(site.comparisonNote)}</p>` : ''}
+    </div>
   </div>
+
+  <aside class="product__info">
+    <div class="summary">
+      <p class="mega__title" style="margin-bottom:8px">${esc(p.title)}</p>
+      ${s.figures
+        .slice(0, 1)
+        .map(
+          (f) =>
+            `<p class="figure"><span class="figure__value">${esc(f.value)}<small>${esc(
+              f.unit
+            )}</small></span><span class="figure__label">${esc(f.label)}</span></p>`
+        )
+        .join('')}
+      ${example}
+      <div class="stack" style="margin-top:18px">${actions}</div>
+    </div>
+  </aside>
 </div>
 
-${recommendationSection(base, p.handle, 'You may also like', 'product-recs')}
+${recommendationSection(base, p.handle, 'You might also consider', 'product-recs')}
+${recentlyViewedSection()}
 
-<section class="section--tight page" hidden>
-  <div class="section-head__row"><h2 style="font-size:20px">Recently viewed</h2></div>
-  <div class="grid grid--4" data-recently-viewed data-placement="recently-viewed"></div>
-</section>
-
-<div class="quick-bar">
-  <img src="${base}${p.images[0].src}" alt="">
-  <span class="quick-bar__text">${esc(p.title)}<span data-quickbar-variant></span></span>
-  <span data-product-price>${money(p.priceMin)}</span>
-  <button class="btn btn--sm" type="button" data-quickbar-add>${icon.cart}<span>Add to cart</span></button>
-</div>
+${
+  isLoan
+    ? `<div class="quick-bar">
+  <span class="quick-bar__text">${esc(p.title)}<span>${esc(s.figures[0].value + s.figures[0].unit + ' ' + s.figures[0].label)}</span></span>
+  <a class="btn btn--sm" href="${base}apply/?product=${esc(p.handle)}" data-apply-link data-apply-source="sticky_bar">Apply now</a>
+</div>`
+    : ''
+}
 `;
 
   return layout({
     base,
     page: 'product',
     title: p.title,
-    description: p.descriptionText.slice(0, 160),
+    description: p.tagline,
     content,
-    pageData: {
-      name: p.title,
-      product: {
-        handle: p.handle,
-        title: p.title,
-        brand: p.brand,
-        category: p.type,
-        tier: p.tier,
-        priceMin: p.priceMin,
-        options: p.options,
-        variants: p.variants,
-        images: p.images.map((i) => ({ src: i.src })),
-      },
-    },
+    pageData: { name: p.title, product: s },
   });
 }
 
-/* --- cart ----------------------------------------------------------------- */
+/* --- calculators ---------------------------------------------------------- */
 
-function cartPage() {
-  const base = '../';
+const loanOptions = (selected) =>
+  homeLoans
+    .map(
+      (p) =>
+        `<option value="${esc(p.handle)}"${p.handle === selected ? ' selected' : ''}>${esc(
+          p.title
+        )} (${pct(p.rate)})</option>`
+    )
+    .join('');
+
+const segmented = (name, options, checked) =>
+  `<div class="segmented" role="radiogroup">${options
+    .map(
+      (o) =>
+        `<label><input type="radio" name="${name}" value="${esc(o[0])}"${
+          o[0] === checked ? ' checked' : ''
+        }><span>${esc(o[1])}</span></label>`
+    )
+    .join('')}</div>`;
+
+const moneyField = (name, label, value, hint) =>
+  `<label class="field"><span>${esc(label)}</span><span class="input-money"><input name="${name}" type="number" inputmode="numeric" min="0" step="1000" value="${
+    value ?? ''
+  }"></span>${hint ? `<small class="muted">${esc(hint)}</small>` : ''}</label>`;
+
+function borrowingPowerPage() {
+  const base = '../../';
   const content = `
-<div data-cart-empty hidden>
-  <div class="empty-state">
-    <h1 style="margin-bottom:12px">Your cart is empty</h1>
-    <p>Nothing in here yet.</p>
-    <a class="btn" href="${base}collections/new-season/" style="margin-top:12px">Continue shopping</a>
-  </div>
+<div class="collection-banner page">
+  <p class="eyebrow">Calculator</p>
+  <h1>How much could I borrow?</h1>
+  <p class="muted">An estimate from your income and outgoings, tested the way we&rsquo;d test a real application: at the loan&rsquo;s rate plus a 3% buffer.</p>
 </div>
-
-<div data-cart-body>
-  <div class="cart">
-    <div>
-      <div class="cart__title">
-        <h1 style="font-size:28px">Cart</h1>
-        <span class="cart__count" data-cart-title-count>0</span>
-      </div>
-      <p class="muted" data-shipping-progress role="status" style="margin-bottom:8px"></p>
-      <div data-cart-lines></div>
-      <p style="margin-top:24px"><a class="link-underline" href="${base}collections/new-season/">Continue shopping</a></p>
+<div class="calc page">
+  <form class="calc__form" data-calc="borrowing_power" novalidate>
+    <fieldset class="field">
+      <legend>Who&rsquo;s applying?</legend>
+      ${segmented('applicants', [['1', 'Just me'], ['2', 'Two of us']], '1')}
+    </fieldset>
+    <div class="field-row">
+      ${moneyField('income', 'Your income before tax, per year', 95000)}
+      <div data-partner-only hidden>${moneyField('partnerIncome', 'Their income before tax, per year', 0)}</div>
     </div>
-    <aside class="summary">
-      <details class="disclosure" style="margin-bottom:12px">
-        <summary>Discount</summary>
-        <label class="field" style="margin-top:12px">
-          <span class="visually-hidden">Discount code</span>
-          <input type="text" placeholder="Discount code">
-        </label>
-        <p class="muted" style="font-size:12px;margin:0">No codes are active on this teaching store.</p>
-      </details>
-      <div data-cart-summary></div>
-      <p class="summary__note">Taxes and shipping calculated at checkout.</p>
-      <button class="btn btn--block" type="button" data-checkout>Check out</button>
-    </aside>
-  </div>
-  ${recommendationSection(base, '', 'You may also like', 'cart-recs')}
+    ${moneyField('otherIncome', 'Other income per year', 0, 'Rent, dividends, a second job.')}
+    <label class="field"><span>Dependants</span>
+      <select name="dependants"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
+    </label>
+    ${moneyField('expenses', 'Living expenses per month', 2000, 'Groceries, bills, transport, childcare. Not rent.')}
+    ${moneyField('debts', 'Other loan repayments per month', 0, 'Car loans, personal loans, HECS repayments.')}
+    ${moneyField('cardLimits', 'Total credit card limits', 5000, 'The limit counts, not what you owe.')}
+    <label class="field"><span>Loan to test against</span><select name="product">${loanOptions('variable-home-loan')}</select></label>
+  </form>
+  <aside class="calc__result summary" aria-live="polite">
+    <p class="mega__title">You could borrow around</p>
+    <p class="calc__big" data-result="amount">&mdash;</p>
+    <p class="muted" data-result="assessed"></p>
+    <div class="summary__row"><span>Estimated repayments</span><strong data-result="repayment">&mdash;</strong></div>
+    <div class="stack" style="margin-top:18px">
+      <a class="btn btn--block" href="${base}apply/" data-calc-apply data-apply-link data-apply-source="borrowing_power_calculator">Apply with this amount</a>
+      <a class="btn btn--block btn--outline" href="${base}talk-to-us/">Talk to a lender</a>
+    </div>
+    <p class="muted" style="font-size:12px;margin:14px 0 0">An estimate only, not an offer of credit. Assumes a ${30}-year principal and interest loan.</p>
+  </aside>
 </div>
 `;
   return layout({
     base,
-    page: 'cart',
-    title: 'Your Shopping Cart',
+    page: 'calc-borrowing',
+    title: 'Borrowing power calculator',
+    description: 'Estimate how much you could borrow for a home loan.',
     content,
-    pageData: { name: 'Cart' },
+    pageData: { name: 'Borrowing power calculator' },
   });
 }
 
-/* --- checkout ------------------------------------------------------------- */
+function repaymentsPage() {
+  const base = '../../';
+  const content = `
+<div class="collection-banner page">
+  <p class="eyebrow">Calculator</p>
+  <h1>What would my repayments be?</h1>
+  <p class="muted">Pick a loan, an amount and how often you&rsquo;d pay.</p>
+</div>
+<div class="calc page">
+  <form class="calc__form" data-calc="repayments" novalidate>
+    ${moneyField('amount', 'Loan amount', 600000)}
+    <label class="field"><span>Loan</span><select name="product">${loanOptions('variable-home-loan')}</select></label>
+    <label class="field"><span>Loan term</span>
+      <select name="term"><option value="30">30 years</option><option value="25">25 years</option><option value="20">20 years</option><option value="15">15 years</option></select>
+    </label>
+    <fieldset class="field">
+      <legend>Repayments</legend>
+      ${segmented('frequency', [['monthly', 'Monthly'], ['fortnightly', 'Fortnightly'], ['weekly', 'Weekly']], 'monthly')}
+    </fieldset>
+    <fieldset class="field" data-repayment-type>
+      <legend>Repayment type</legend>
+      ${segmented('repaymentType', [['principal_and_interest', 'Principal and interest'], ['interest_only', 'Interest only']], 'principal_and_interest')}
+    </fieldset>
+  </form>
+  <aside class="calc__result summary" aria-live="polite">
+    <p class="mega__title" data-result="label">Monthly repayment</p>
+    <p class="calc__big" data-result="repayment">&mdash;</p>
+    <p class="muted" data-result="rate"></p>
+    <div class="summary__row"><span>Total interest</span><strong data-result="interest">&mdash;</strong></div>
+    <div class="summary__row"><span>Total repaid</span><strong data-result="total">&mdash;</strong></div>
+    <div class="stack" style="margin-top:18px">
+      <a class="btn btn--block" href="${base}apply/" data-calc-apply data-apply-link data-apply-source="repayments_calculator">Apply for this loan</a>
+      <a class="btn btn--block btn--outline" href="${base}calculators/borrowing-power/">How much could I borrow?</a>
+    </div>
+    <p class="muted" style="font-size:12px;margin:14px 0 0">An estimate only. Fixed rates revert to the variable rate after the fixed term, which this doesn&rsquo;t model.</p>
+  </aside>
+</div>
+`;
+  return layout({
+    base,
+    page: 'calc-repayments',
+    title: 'Repayments calculator',
+    description: 'Estimate your home loan repayments.',
+    content,
+    pageData: { name: 'Repayments calculator' },
+  });
+}
 
-function checkoutPage() {
+/* --- application ---------------------------------------------------------- */
+
+const STATES = ['VIC', 'NSW', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT'];
+
+function applyPage() {
   const base = '../';
   const content = `
-<div data-checkout-empty hidden>
-  <div class="empty-state">
-    <h1 style="margin-bottom:12px">Nothing to check out</h1>
-    <a class="btn" href="${base}collections/new-season/" style="margin-top:12px">Continue shopping</a>
-  </div>
-</div>
-
-<div data-checkout-wrap>
 <div class="checkout">
-  <form data-checkout-form novalidate>
+  <form data-apply-form novalidate>
     <ol class="steps">
-      <li data-step-nav aria-current="step">1 Contact</li>
-      <li data-step-nav>2 Shipping</li>
-      <li data-step-nav>3 Payment</li>
-      <li data-step-nav>4 Review</li>
+      <li data-step-nav aria-current="step">1 About you</li>
+      <li data-step-nav>2 The property</li>
+      <li data-step-nav>3 Your finances</li>
+      <li data-step-nav>4 Your loan</li>
+      <li data-step-nav>5 Review</li>
     </ol>
+    <p class="muted" data-resume-note hidden style="margin:-12px 0 20px">Welcome back. We saved your application where you left it.</p>
 
     <section class="checkout__step" data-step>
-      <h1 style="font-size:24px;margin-bottom:18px">Contact</h1>
-      <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email"></label>
+      <h1 class="step-title">About you</h1>
+      <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required aria-required="true"></label>
       <div class="field-row">
         <label class="field"><span>First name</span><input name="firstName" autocomplete="given-name"></label>
         <label class="field"><span>Last name</span><input name="lastName" autocomplete="family-name"></label>
       </div>
-      <label class="check"><input type="checkbox" name="marketingOptIn" checked><span>Email me about new collections and collaborations</span></label>
-      <p class="muted" style="font-size:12px;margin-top:10px">Nothing is charged and nothing ships. The email is only used to show how identity flows into Amplitude and Braze.</p>
-      <button class="btn" type="button" data-step-next style="margin-top:14px">Continue to shipping</button>
+      <fieldset class="field"><legend>Who&rsquo;s applying?</legend>
+        ${segmented('applicants', [['1', 'Just me'], ['2', 'Two of us']], '1')}
+      </fieldset>
+      <fieldset class="field"><legend>Is this your first home?</legend>
+        ${segmented('firstHomeBuyer', [['yes', 'Yes'], ['no', 'No']], 'no')}
+      </fieldset>
+      <label class="check"><input type="checkbox" name="marketingOptIn" checked><span>Send me rate updates and tips on buying</span></label>
+      <p class="muted" style="font-size:12px;margin-top:10px">We need your email to save the application and to send you updates on it. It&rsquo;s also what identifies you in Amplitude and Braze.</p>
+      <div class="step-actions"><button class="btn" type="button" data-step-next>Continue</button></div>
     </section>
 
     <section class="checkout__step" data-step hidden>
-      <h1 style="font-size:24px;margin-bottom:18px">Shipping</h1>
-      <label class="field"><span>Address</span><input name="address" autocomplete="street-address"></label>
-      <div class="field-row">
-        <label class="field"><span>City</span><input name="city" autocomplete="address-level2"></label>
-        <label class="field"><span>Postcode</span><input name="postcode" autocomplete="postal-code"></label>
-      </div>
-      <label class="field"><span>Country</span>
-        <select name="country"><option>Australia</option><option>New Zealand</option></select>
+      <h1 class="step-title">The property</h1>
+      <fieldset class="field"><legend>What&rsquo;s the loan for?</legend>
+        ${segmented('loanPurpose', [['buy_home', 'Buying a home to live in'], ['buy_investment', 'Buying an investment'], ['refinance', 'Refinancing']], 'buy_home')}
+      </fieldset>
+      <label class="field" data-buy-only><span>Where are you up to?</span>
+        <select name="propertyStage">
+          <option value="researching">Just researching</option>
+          <option value="looking" selected>Looking at properties</option>
+          <option value="found">Found a property</option>
+          <option value="contract_signed">Signed a contract</option>
+        </select>
       </label>
-      <fieldset style="border:1px solid var(--line);border-radius:12px;padding:14px;margin:0 0 14px">
-        <legend style="font-size:13px;padding:0 6px">Delivery</legend>
-        <label class="check"><input type="radio" name="shippingMethod" value="standard" checked><span>Standard &mdash; free over ${money(
-          9.95 * 0 + 100
-        )}, otherwise ${money(9.95)}</span></label>
-        <label class="check"><input type="radio" name="shippingMethod" value="express"><span>Express &mdash; ${money(
-          19.95
-        )}</span></label>
-      </fieldset>
-      <button class="btn btn--outline" type="button" data-step-back>Back</button>
-      <button class="btn" type="button" data-step-next>Continue to payment</button>
+      <div class="field-row">
+        ${moneyField('propertyValue', 'Property value', 750000)}
+        <div data-buy-only>${moneyField('deposit', 'Your deposit', 150000)}</div>
+        <div data-refi-only hidden>${moneyField('currentBalance', 'What you owe now', 480000)}</div>
+      </div>
+      <div class="field-row">
+        <label class="field"><span>State</span><select name="state">${STATES.map((s) => `<option>${s}</option>`).join('')}</select></label>
+        <label class="field"><span>Postcode</span><input name="postcode" inputmode="numeric" maxlength="4"></label>
+      </div>
+      <p class="callout" data-lvr-note></p>
+      <div class="step-actions">
+        <button class="btn btn--outline" type="button" data-step-back>Back</button>
+        <button class="btn" type="button" data-step-next>Continue</button>
+      </div>
     </section>
 
     <section class="checkout__step" data-step hidden>
-      <h1 style="font-size:24px;margin-bottom:18px">Payment</h1>
-      <p class="muted">No payment is taken and no card details are collected. Pick a method so the event carries one.</p>
-      <fieldset style="border:1px solid var(--line);border-radius:12px;padding:14px;margin:14px 0">
-        <legend style="font-size:13px;padding:0 6px">Method</legend>
-        <label class="check"><input type="radio" name="paymentMethod" value="card" checked><span>Card (simulated)</span></label>
-        <label class="check"><input type="radio" name="paymentMethod" value="paypal"><span>PayPal (simulated)</span></label>
-        <label class="check"><input type="radio" name="paymentMethod" value="afterpay"><span>Afterpay (simulated)</span></label>
-      </fieldset>
-      <button class="btn btn--outline" type="button" data-step-back>Back</button>
-      <button class="btn" type="button" data-step-next>Review order</button>
+      <h1 class="step-title">Your finances</h1>
+      <label class="field"><span>Employment</span>
+        <select name="employment">
+          <option value="full_time">Full time</option>
+          <option value="part_time">Part time</option>
+          <option value="casual">Casual</option>
+          <option value="self_employed">Self employed</option>
+        </select>
+      </label>
+      <div class="field-row">
+        ${moneyField('income', 'Your income before tax, per year', 120000)}
+        <div data-partner-only hidden>${moneyField('partnerIncome', 'Their income before tax, per year', 0)}</div>
+      </div>
+      ${moneyField('otherIncome', 'Other income per year', 0)}
+      <div class="field-row">
+        <label class="field"><span>Dependants</span>
+          <select name="dependants"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
+        </label>
+        ${moneyField('expenses', 'Living expenses per month', 2000)}
+      </div>
+      <div class="field-row">
+        ${moneyField('debts', 'Other loan repayments per month', 0)}
+        ${moneyField('cardLimits', 'Total credit card limits', 5000)}
+      </div>
+      <p class="muted" style="font-size:12px">Your exact income stays in this browser. Amplitude and Braze get a band, like <code>$50k&ndash;$100k</code>.</p>
+      <div class="step-actions">
+        <button class="btn btn--outline" type="button" data-step-back>Back</button>
+        <button class="btn" type="button" data-step-next>Continue</button>
+      </div>
     </section>
 
     <section class="checkout__step" data-step hidden>
-      <h1 style="font-size:24px;margin-bottom:18px">Review</h1>
-      <p class="muted">Placing the order writes it to localStorage and sends Amplitude an <code>Order Completed</code> event carrying the order total as revenue and a <code>products</code> array. Braze gets the same event and a <code>logPurchase</code> per line item.</p>
-      <button class="btn btn--outline" type="button" data-step-back>Back</button>
-      <button class="btn" type="button" data-place-order>Place order</button>
+      <h1 class="step-title">Your loan</h1>
+      <fieldset class="field"><legend>Choose a loan</legend>
+        <div class="loan-choices" data-loan-choices></div>
+      </fieldset>
+      <fieldset class="field" data-repayment-type><legend>Repayment type</legend>
+        ${segmented('repaymentType', [['principal_and_interest', 'Principal and interest'], ['interest_only', 'Interest only']], 'principal_and_interest')}
+      </fieldset>
+      <div class="field-row">
+        <label class="field"><span>Loan term</span>
+          <select name="term"><option value="30">30 years</option><option value="25">25 years</option><option value="20">20 years</option></select>
+        </label>
+        <fieldset class="field"><legend>Repayments</legend>
+          ${segmented('frequency', [['monthly', 'Monthly'], ['fortnightly', 'Fortnightly'], ['weekly', 'Weekly']], 'monthly')}
+        </fieldset>
+      </div>
+      <div class="step-actions">
+        <button class="btn btn--outline" type="button" data-step-back>Back</button>
+        <button class="btn" type="button" data-step-next>Review</button>
+      </div>
+    </section>
+
+    <section class="checkout__step" data-step hidden>
+      <h1 class="step-title">Review and submit</h1>
+      <dl class="facts" data-review></dl>
+      <label class="check" style="margin-top:18px"><input type="checkbox" name="creditCheckConsent" checked><span>I agree to Laneway Bank running a credit check (simulated: nothing is checked)</span></label>
+      <p class="muted" style="font-size:12px;margin-top:10px">Submitting sends <code>Application Submitted</code> to Amplitude and Braze with the loan, the LVR and the instant decision. Only your email is required.</p>
+      <div class="step-actions">
+        <button class="btn btn--outline" type="button" data-step-back>Back</button>
+        <button class="btn" type="button" data-submit-application>Submit application</button>
+      </div>
     </section>
   </form>
 
-  <aside class="summary">
-    <p class="mega__title" style="margin-bottom:12px">Order summary</p>
-    <div data-checkout-lines></div>
-    <div data-checkout-summary style="margin-top:14px"></div>
+  <aside class="summary apply-summary" aria-live="polite">
+    <p class="mega__title" style="margin-bottom:12px">Your application</p>
+    <div data-apply-summary></div>
+    <p class="muted" style="font-size:12px;margin:14px 0 0">Saved in this browser after every step.</p>
   </aside>
-</div>
 </div>
 `;
   return layout({
     base,
-    page: 'checkout',
-    title: 'Checkout',
+    page: 'apply',
+    title: 'Apply for a home loan',
     content,
-    pageData: { name: 'Checkout' },
+    pageData: { name: 'Home loan application' },
   });
 }
 
-/* --- order ---------------------------------------------------------------- */
-
-function orderPage() {
-  const base = '../';
+function submittedPage() {
+  const base = '../../';
   const content = `
 <div class="page page--narrow" style="padding-block:56px 80px">
-  <div data-order></div>
+  <div data-application></div>
   <p style="margin-top:28px">
-    <a class="btn" href="${base}collections/new-season/">Continue shopping</a>
-    <a class="btn btn--outline" href="${base}account/">View account</a>
+    <a class="btn" href="${base}account/">Go to internet banking</a>
+    <a class="btn btn--outline" href="${base}talk-to-us/">Talk to a lender</a>
   </p>
 </div>
-${recommendationSection(base, '', 'Complete the set', 'post-purchase-recs')}
+<section class="section page" data-placement="post-application-cross-sell">
+  <div class="section-head__row"><h2 style="font-size:20px">Set up the rest of your banking</h2></div>
+  <div class="grid grid--3">
+    ${['offset-account', 'bonus-saver', 'rewards-card']
+      .map((h) => productCard(products.find((p) => p.handle === h), base))
+      .join('')}
+  </div>
+</section>
 `;
   return layout({
     base,
-    page: 'order',
-    title: 'Order confirmed',
+    page: 'submitted',
+    title: 'Application submitted',
     content,
-    pageData: { name: 'Order confirmation' },
+    pageData: { name: 'Application submitted' },
   });
 }
 
@@ -788,9 +1008,9 @@ function accountPage() {
   return layout({
     base: '../',
     page: 'account',
-    title: 'Account',
+    title: 'Internet banking',
     content,
-    pageData: { name: 'Account' },
+    pageData: { name: 'Internet banking' },
   });
 }
 
@@ -806,7 +1026,7 @@ function aboutPage() {
   ${a.body.map((p) => `<p>${esc(p)}</p>`).join('')}
   <hr style="border:0;border-top:1px solid var(--line);margin:40px 0">
   <h2 style="font-size:20px;margin-bottom:12px">About this mock</h2>
-  <p class="muted">This is a static, fully mocked rebuild of the Laneway teaching store, made to demonstrate Amplitude and Braze working together. There is no server: the cart, customer, orders and browsing history all live in your browser's localStorage, and the storefront password is a cookie. Open the event stream at the bottom right to watch every Amplitude and Braze call as you click.</p>
+  <p class="muted">This is a static site with no server. The application in progress, submitted applications, the customer and browsing history all live in your browser's localStorage, and the session id is a cookie. Open the event stream at the bottom right to watch every Amplitude and Braze call as you click.</p>
 </div>
 `;
   return layout({
@@ -819,101 +1039,80 @@ function aboutPage() {
   });
 }
 
-/* --- services ------------------------------------------------------------- */
+/* --- talk to us ----------------------------------------------------------- */
 
-function servicesPage() {
-  const base = '../../';
-  const s = pages.services;
+function talkPage() {
+  const base = '../';
+  const t = pages.talk;
   const content = `
 <section class="section page">
   <div class="section-head">
-    <h1 style="margin-bottom:14px">${esc(s.title)}</h1>
-    <p style="font-size:17px">${esc(s.lede)}</p>
-    <p style="margin-top:18px"><a class="btn" href="#enquiry" data-service-cta="Custom Collection Design">Start a project</a></p>
+    <p class="eyebrow">Talk to us</p>
+    <h1 style="margin-bottom:14px">${esc(t.title)}</h1>
+    <p style="font-size:17px">${esc(t.lede)}</p>
   </div>
 </section>
 
 <section class="section--tight page">
-  <div class="section-head">
-    <h2 style="font-size:20px">What we do</h2>
-    <p>${esc(s.whatWeDo)}</p>
-  </div>
-</section>
-
-<section class="section page">
-  <div class="section-head"><h2>${esc(s.servicesHeading)}</h2></div>
+  <div class="section-head"><h2 style="font-size:20px">${esc(t.optionsHeading)}</h2></div>
   <div class="service-cards">
-    ${s.items
+    ${t.items
       .map(
         (item) => `<article class="service-card">
       <h3>${esc(item.name)}</h3>
-      <p class="service-card__price">${esc(item.price)}</p>
       <p>${esc(item.body)}</p>
       <p class="muted" style="font-size:13px">${esc(item.bestFor)}</p>
-      <a class="btn btn--sm" href="#enquiry" data-service-cta="${esc(item.name)}">Start a project</a>
+      <a class="btn btn--sm" href="#request" data-contact-cta="${esc(item.method)}">Choose ${esc(item.name.toLowerCase())}</a>
     </article>`
       )
       .join('')}
   </div>
 </section>
 
-<section class="section--tight page" data-placement="services-work">
-  <div class="section-head"><h2 style="font-size:20px">Recent work</h2></div>
-  <div class="grid grid--3">
-    ${brandCollections
-      .map(
-        (c) => `<a class="tile" href="${base}collections/${c.handle}/">
-      <span class="tile__media"><img src="${base}${c.image}" alt="${esc(c.title)}" loading="lazy"></span>
-      <span class="tile__label">${esc(c.title)}</span>
-    </a>`
-      )
-      .join('')}
-  </div>
-</section>
-
-<section class="section page page--narrow" id="enquiry">
-  <div class="section-head"><h2 style="font-size:24px">Start a project</h2><p>${esc(
-    s.enquiryNote
-  )}</p></div>
+<section class="section page page--narrow" id="request">
+  <div class="section-head"><h2 style="font-size:24px">Ask a lender to get in touch</h2><p>${esc(t.formNote)}</p></div>
   <form data-enquiry novalidate>
     <div class="field-row">
       <label class="field"><span>Name</span><input name="name" autocomplete="name"></label>
-      <label class="field"><span>Work email</span><input name="email" type="email" autocomplete="email"></label>
+      <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required aria-required="true"></label>
     </div>
     <div class="field-row">
-      <label class="field"><span>Company</span><input name="company"></label>
-      <label class="field"><span>Service</span>
-        <select name="service">
-          ${s.items.map((i) => `<option>${esc(i.name)}</option>`).join('')}
-          <option>Not sure yet</option>
+      <label class="field"><span>What&rsquo;s it about?</span>
+        <select name="topic">
+          <option value="first_home">Buying my first home</option>
+          <option value="next_home">Buying my next home</option>
+          <option value="refinance">Refinancing</option>
+          <option value="investing">Investing</option>
+          <option value="my_application">My application</option>
+          <option value="other">Something else</option>
+        </select>
+      </label>
+      <label class="field"><span>How should we get in touch?</span>
+        <select name="method">
+          ${t.items.map((i) => `<option value="${esc(i.method)}">${esc(i.name)}</option>`).join('')}
         </select>
       </label>
     </div>
-    <label class="field"><span>Budget</span>
-      <select name="budget">
-        <option>Under $5,000</option>
-        <option>$5,000 &ndash; $15,000</option>
-        <option>$15,000 &ndash; $50,000</option>
-        <option>Over $50,000</option>
-      </select>
+    <label class="field"><span>Best time</span>
+      <select name="time"><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="evening">Evening</option></select>
     </label>
-    <label class="field"><span>What are you working on?</span><textarea name="message" rows="4"></textarea></label>
-    <button class="btn" type="submit">Send enquiry</button>
+    <label class="field"><span>Anything we should know?</span><textarea name="message" rows="4"></textarea></label>
+    <button class="btn" type="submit">Send request</button>
   </form>
   <div data-enquiry-done hidden>
-    <h3>Thanks &mdash; that&rsquo;s logged.</h3>
-    <p class="muted">In a real setup this would create a Braze profile with <code>lead_type: b2b_enquiry</code> and fire an <code>Enquiry Submitted</code> event into Amplitude. Open the event stream to see both.</p>
+    <h3>Thanks. That&rsquo;s logged.</h3>
+    <p class="muted">This sends <code>Lender Callback Requested</code> to Amplitude and Braze, and tags the Braze profile with <code>lead_type: home_loan_enquiry</code>. Open the event stream to see both.</p>
   </div>
-  <p class="muted" style="font-size:12px;margin-top:20px">${esc(s.disclaimer)}</p>
+  <p class="muted" style="font-size:12px;margin-top:20px">${esc(t.disclaimer)}</p>
 </section>
 `;
   return layout({
     base,
-    page: 'services',
-    title: 'Services',
-    description: s.lede,
+    page: 'talk',
+    title: 'Talk to a lender',
+    description: t.lede,
     content,
-    pageData: { name: 'Services' },
+    pageData: { name: 'Talk to a lender' },
   });
 }
 
@@ -946,12 +1145,12 @@ function notFoundPage() {
 <body>
 <div>
   <h1>Page not found</h1>
-  <p>That page doesn&rsquo;t exist in this mock.</p>
-  <a id="home" href="/">Go to the storefront</a>
+  <p>That page doesn&rsquo;t exist at Laneway Bank.</p>
+  <a id="home" href="/">Go to Laneway Bank</a>
 </div>
 <script>
   // On a GitHub Pages project site everything lives under /<repo>/, so the
-  // storefront root is the first path segment. At a domain root it is "/".
+  // site root is the first path segment. At a domain root it is "/".
   (function () {
     var seg = location.pathname.split('/').filter(Boolean);
     document.getElementById('home').href = seg.length > 1 ? '/' + seg[0] + '/' : '/';
@@ -965,45 +1164,15 @@ function notFoundPage() {
 /* --- slim client index ---------------------------------------------------- */
 
 function indexScript() {
-  const slim = products.map((p) => ({
-    handle: p.handle,
-    title: p.title,
-    brand: p.brand,
-    category: p.type,
-    tier: p.tier,
-    typeTag: p.typeTag,
-    priceMin: p.priceMin,
-    priceMax: p.priceMax,
-    available: p.variants.some((v) => v.available),
-    image: p.images[0] ? p.images[0].src : null,
-    image2: p.images[1] ? p.images[1].src : null,
-    publishedAt: p.publishedAt,
-    firstVariantId: p.variants[0] ? p.variants[0].id : null,
-    firstVariantTitle:
-      p.variants[0] && p.variants[0].title !== 'Default Title'
-        ? p.variants[0].title
-        : null,
-    // { Color: 'Gray', Size: 'XL' }: the same shape the product page stores
-    // on a cart line, so seeded lines carry colour and size too.
-    firstVariantOptions:
-      p.options.length && p.variants[0]
-        ? Object.fromEntries(
-            p.options.map((o, i) => [o.name, p.variants[0].options[i]])
-          )
-        : null,
-  }));
-  const slimCollections = collections.map((c) => ({
-    handle: c.handle,
-    title: c.title,
-    isBrand: c.isBrand,
-    count: c.products.length,
-  }));
   return (
-    '/* Generated by build.mjs — slim catalogue for search, recommendations\n' +
-    '   and cart lookups. Inlined as a script (not fetched) so the site also\n' +
-    '   works opened straight off the filesystem. */\n' +
+    '/* Generated by build.mjs — slim catalogue for search, recommendations,\n' +
+    '   the calculators and the application. Inlined as a script (not\n' +
+    '   fetched) so the site also works opened straight off the filesystem. */\n' +
     'window.LANEWAY_INDEX = ' +
-    JSON.stringify({ products: slim, collections: slimCollections }) +
+    JSON.stringify({
+      products: slimProducts,
+      categories: categories.map((c) => ({ handle: c.handle, title: c.title })),
+    }) +
     ';\n'
   );
 }
@@ -1049,24 +1218,19 @@ writeFileSync(
   `self.importScripts('https://js.appboycdn.com/web-sdk/${brazeVersion[1]}/service-worker.js');\n`
 );
 
-emit('index.html', homePage());
-emit('collections/index.html', collectionsIndexPage());
-collections.forEach((c) =>
-  emit('collections/' + c.handle + '/index.html', collectionPage(c))
-);
-products.forEach((p) => emit('products/' + p.handle + '/index.html', productPage(p)));
-emit('cart/index.html', cartPage());
-emit('checkout/index.html', checkoutPage());
-emit('order/index.html', orderPage());
-emit('account/index.html', accountPage());
-emit('pages/about/index.html', aboutPage());
-emit('pages/services/index.html', servicesPage());
-emit('404.html', notFoundPage());
+const built = [
+  ['index.html', homePage()],
+  ...categories.map((c) => [c.handle + '/index.html', categoryPage(c)]),
+  ...products.map((p) => [productPath(p) + 'index.html', productPage(p)]),
+  ['calculators/borrowing-power/index.html', borrowingPowerPage()],
+  ['calculators/repayments/index.html', repaymentsPage()],
+  ['apply/index.html', applyPage()],
+  ['apply/submitted/index.html', submittedPage()],
+  ['account/index.html', accountPage()],
+  ['talk-to-us/index.html', talkPage()],
+  ['pages/about/index.html', aboutPage()],
+  ['404.html', notFoundPage()],
+];
+built.forEach(([path, html]) => emit(path, html));
 
-console.log(
-  'built ' +
-    (products.length + collections.length + 8) +
-    ' pages into ' +
-    OUT +
-    '/'
-);
+console.log('built ' + built.length + ' pages into ' + OUT + '/');

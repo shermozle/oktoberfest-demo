@@ -1,49 +1,43 @@
 # Tracking plan
 
-Everything fires from `src/assets/js/tracking.js`. There are three call shapes:
+Everything fires from `src/assets/js/tracking.js`. There are two call shapes:
 
 - `track(name, props)` sends to **both** Amplitude (`track`) and Braze
   (`logCustomEvent`, with the name lower-snake-cased).
 - `trackAnalyticsOnly(name, props)` sends to Amplitude only. It's used for
   high-frequency UI interactions no campaign would trigger on.
-- `trackPurchase(order)` sends a Braze `logPurchase` per line item, then
-  `Order Completed` to both, with the order total as Amplitude revenue.
 
-## The `products` array
+## Product properties
 
-Every event that carries product detail carries it in a `products` object
-array, the shape Amplitude's Cart Analysis chart reads. There are no flat
-`product`, `brand` or `price` properties on events; the array is the single
-place product detail lives. One helper, `productItem()`, builds every element,
-so the shape is identical wherever an event comes from.
+An event about one product carries it as flat properties, built by one
+helper, `productProps()`, so the shape is the same wherever an event comes
+from. Both tools can segment on these directly, and Braze Liquid can quote
+them back in a message.
 
-| Child property | Present on | |
+| Property | Present on | |
 |---|---|---|
-| `product_id` | every element | The product handle, e.g. `heavyweight-studio-jacket`. Matches the Braze `logPurchase` product id. |
-| `product_name` | every element | |
-| `brand` | every element | `Laneway`, `Southbank` or `RMIT` |
-| `category` | every element | `Apparel`, `Drinkware`, `Accessories` |
-| `price` | every element | Unit price for the selected variant |
-| `tier` | when known | `entry`, `mid` or `premium`, from the product tags |
-| `variant_id`, `variant` | when a variant is chosen | e.g. `Black / XL` |
-| `color`, `size` | products with those options | Split out of the variant so each can be grouped on |
-| `quantity` | cart and order lines | |
-| `revenue` | cart and order lines | `price × quantity`. **This is the Cart Analysis revenue metric.** |
-| `position` | lists the visitor was shown | 1-based: collection grids, search results, recommendations, clicked cards |
+| `product_id` | every product | The handle, e.g. `package-home-loan` |
+| `product_name` | every product | |
+| `product_category` | every product | `home-loans`, `everyday`, `savings`, `credit-cards` |
+| `interest_rate` | products with a rate | % p.a. On loan events this is the rate for the chosen repayment type, so interest-only shows the interest-only rate. |
+| `comparison_rate` | home loans | % p.a. |
+| `rate_type` | home loans | `variable` or `fixed` |
+| `fixed_years` | fixed loans | |
+| `loan_purpose_type` | home loans | `owner_occupier` or `investor`: who the product is for |
 
-Views and impressions carry `price` without `quantity` or `revenue`, so only
-real cart and order lines contribute to Cart Analysis revenue.
+An event about a list (a category page, search results, recommendations)
+carries the handles in `product_ids` instead.
 
-**To enable Cart Analysis:** in Amplitude Data, open the `products` event
-property, set **Property Is Array** to true and turn on property splitting.
-Each child property then counts toward the project's 2,000 event property
-limit. If that's tight, keep `product_id`, `product_name`, `category`,
-`price`, `quantity` and `revenue`.
+## Money: bands and exact figures
 
-**Braze** receives the same array as a nested event property on the events
-sent to both tools. Braze segmentation works on the scalar custom attributes
-listed below, while the array is there for Liquid templating, for example
-listing cart contents in an abandoned-cart message.
+A bank would be careful about sending someone's finances to two more
+systems, so the site sends bands where an exact figure adds nothing:
+`income_band` (`$50k–$100k`), `property_value_band` and `loan_amount_band`.
+Exact income never leaves the browser.
+
+Three figures do go across exactly, because a campaign quotes them back
+("you could borrow around $680,000"): `loan_amount`, `borrowing_power` and
+`estimated_repayment`, plus `lvr`.
 
 ## Page views
 
@@ -68,70 +62,87 @@ Added automatically, so any event can be broken down by it.
 |---|---|
 | `session_id` | From the mock's own session cookie |
 | `signed_in` | Boolean |
-| `cart_size` | Units in the cart at the moment of the event |
-| `cart_value` | Cart subtotal |
+| `application_in_progress` | Boolean: a saved, unsubmitted application exists |
 | `page_path` | |
 | `currency` | `AUD` |
 
-## Events sent to both tools
+## The application funnel
 
-| Event | Braze name | `products` holds | Other properties |
-|---|---|---|---|
-| `Collection Viewed` | `collection_viewed` | the grid, with `position` | `collection`, `collection_handle`, `collection_type` (brand/category), `product_count` |
-| `Product Viewed` | `product_viewed` | the product and its default variant | |
-| `Product Detail Read` | `product_detail_read` | the product as configured | Fires past 70% scroll depth. A browse-abandonment trigger. |
-| `Product Added to Cart` | `product_added_to_cart` | the added line | `add_source` (`product_page` or `sticky_bar`) |
-| `Product Removed from Cart` | `product_removed_from_cart` | the line, at the quantity removed | |
-| `Cart Quantity Changed` | `cart_quantity_changed` | the line, at its new quantity | `from_quantity`, `to_quantity` |
-| `Cart Viewed` | `cart_viewed` | the whole cart | `free_shipping_gap` |
-| `Checkout Started` | `checkout_started` | the whole cart | |
-| `Contact Entered` | `contact_entered` | n/a | `email_provided`, `marketing_opt_in`. Fires on leaving the contact step, after the email identifies the visitor. |
-| `Shipping Entered` | `shipping_entered` | n/a | `shipping_method`, `shipping`, `country`. No address details. |
-| `Payment Entered` | `payment_entered` | n/a | `payment_method` |
-| `Order Completed` | `order_completed` | the order lines | `order_id`, `revenue`, `subtotal`, `shipping`, `tax_included`, `item_count`, `shipping_method`, `payment_method` |
-| `Search Performed` | `search_performed` | the results, with `position` | `query`, `results_count` |
-| `Cart Seeded` | `cart_seeded` | the seeded lines | `source`. Demo control only. |
-| `Newsletter Subscribed` | `newsletter_subscribed` | n/a | `email`, `source` |
-| `Account Created` | `account_created` | n/a | `email`, `method` |
-| `Signed In` | `signed_in` | n/a | `email`, `method` |
-| `Signed Out` | `signed_out` | n/a | `email` |
-| `Email Subscription Started` / `Stopped` | `email_subscription_started` / `_stopped` | n/a | `source` |
-| `Enquiry Submitted` | `enquiry_submitted` | n/a | `service`, `company`, `budget`, `message_length` |
-| `Service Interest` | `service_interest` | n/a | `service` |
-| `Storefront Unlocked` | `storefront_unlocked` | n/a | `method` |
+The home loan application is the path the demo follows. Each event goes to
+both tools: Amplitude builds the funnel, and Braze knows how far someone got
+when they stop, which is what an abandoned application campaign runs on.
+Every event carries `application_id`.
+
+| Event | Braze name | Properties |
+|---|---|---|
+| `Application Started` | `application_started` | `source` (the button that started it: `product_page`, `borrowing_power_calculator`, `header`, `in_app_message`…), plus product properties if a loan was pre-chosen. Fires once, when a new draft is created. |
+| `Application Resumed` | `application_resumed` | `step`, `step_number`, `minutes_since_saved`. A returning visitor reopening a saved draft; the signal to stop an abandonment campaign. |
+| `Applicant Details Entered` | `applicant_details_entered` | `applicant_count`, `first_home_buyer`, `email_provided` (always true now email is required), `marketing_opt_in`. Fires after the email identifies the visitor. |
+| `Property Details Entered` | `property_details_entered` | `loan_purpose` (`buy_home`, `buy_investment`, `refinance`), `property_stage`, `property_value_band`, `loan_amount`, `lvr`, `state` |
+| `Financials Entered` | `financials_entered` | `employment_type`, `income_band`, `dependants`, `borrowing_power`, `within_borrowing_power` |
+| `Loan Selected` | `loan_selected` | product properties, `repayment_type`, `loan_term_years`, `repayment_frequency`, `estimated_repayment` |
+| `Application Submitted` | `application_submitted` | everything above, plus `decision` (`conditionally_approved` or `referred_to_lender`), `decision_reasons`, `minutes_to_submit` |
+| `Document Uploaded` | `document_uploaded` | `document_type`, `documents_outstanding` |
+
+The decision is arithmetic: within borrowing power and within the loan's
+maximum LVR is a conditional approval, anything else is referred. Going back
+a step sends nothing, and typing only saves the draft.
+
+The draft is saved in localStorage after every step and every keystroke, so
+reloading or leaving and coming back resumes where the visitor stopped.
+
+## Other events sent to both tools
+
+| Event | Braze name | Properties |
+|---|---|---|
+| `Product List Viewed` | `product_list_viewed` | `category`, `category_handle`, `product_count`, `product_ids` |
+| `Product Viewed` | `product_viewed` | product properties |
+| `Product Detail Read` | `product_detail_read` | product properties. Fires past 70% scroll depth. A browse-abandonment trigger. |
+| `Product Interest Registered` | `product_interest_registered` | product properties. Accounts, savings and cards can't be opened in the demo, so this is the cross-sell signal. |
+| `Borrowing Power Calculated` | `borrowing_power_calculated` | `applicant_count`, `dependants`, `income_band`, `borrowing_power`, `estimated_repayment`, product properties. Sent 1.2s after the visitor stops changing inputs. |
+| `Repayments Calculated` | `repayments_calculated` | `loan_amount`, `loan_amount_band`, `loan_term_years`, `repayment_frequency`, `repayment_type`, `repayment`, product properties. Same debounce. |
+| `Search Performed` | `search_performed` | `query`, `results_count`, `product_ids` |
+| `Lender Callback Requested` | `lender_callback_requested` | `topic`, `contact_method`, `preferred_time`, `message_length` |
+| `Contact Method Chosen` | `contact_method_chosen` | `contact_method` (`mobile_lender`, `video`, `phone`) |
+| `Rate Updates Subscribed` | `rate_updates_subscribed` | `email`, `source` |
+| `Account Created` | `account_created` | `email`, `method` |
+| `Signed In` | `signed_in` | `email`, `method` |
+| `Signed Out` | `signed_out` | `email` |
+| `Email Subscription Started` / `Stopped` | `email_subscription_started` / `_stopped` | `source` |
+| `Application Seeded` | `application_seeded` | `source`, `step`, `loan_amount`. Demo control only. |
 
 ## Amplitude-only events
 
 These are useful for funnels and session replay but would be noise in an
 engagement tool.
 
-| Event | `products` holds | Other properties |
-|---|---|---|
-| `Product Variant Selected` | the product at its new variant | `option_name`, `option_value`, `available` |
-| `Product Card Clicked` | the clicked product, with `position` | `placement` |
-| `Recommendations Shown` | the recommended list, with `position` | `seed_product_id`, `placement` |
-| `Collection Sorted` | the re-sorted grid, with `position` | `collection`, `sort_by`, `results_count` |
-| `Collection Filtered` | the filtered grid, with `position` | `collection`, `availability`, `price_min`, `price_max`, `results_count` |
-| `Search Result Clicked` | the clicked result, with `position` | `query` |
+| Event | Properties |
+|---|---|
+| `Product Card Clicked` | product properties, `placement`, `position` |
+| `Recommendations Shown` | `seed_product_id`, `placement`, `product_ids` |
+| `Product List Sorted` | `category`, `sort_by`, `results_count`, `product_ids` |
+| `Product List Filtered` | `category`, `purpose`, `rate_type`, `features`, `results_count`, `product_ids` |
+| `Search Result Clicked` | product properties, `query`, `position` |
 
 Also sent with no product detail: `Search Opened`, `Navigation Clicked`, and
 `In-App Message Shown` / `Clicked` / `Dismissed`. `In-App Message Shown` goes
 to Amplitude only, because Braze records its own impressions.
 
-Arriving on the checkout or order confirmation page sends nothing extra:
-`Checkout Started` and `Order Completed` already carry the cart and order, and
-the page view is autocaptured.
+Arriving on the application outcome page sends nothing extra:
+`Application Submitted` already carries the application, and the page view is
+autocaptured.
 
 ## Web push
 
-Submitting the storefront password asks for notification permission, via the
-browser's own prompt inside the submit click (Safari and Firefox only allow it
-from a user action). Once granted, Braze subscribes the browser. Braze records
-the subscription and push opens itself; these go to Amplitude only:
+Signing up for rate updates (the footer form) asks for notification
+permission, via the browser's own prompt inside the submit click (Safari and
+Firefox only allow it from a user action). Once granted, Braze subscribes
+the browser. Braze records the subscription and push opens itself; these go
+to Amplitude only:
 
 | Amplitude event | When | Properties |
 |---|---|---|
-| `Push Permission Requested` | The prompt is shown | `source` (`password_gate`) |
+| `Push Permission Requested` | The prompt is shown | `source` (`rate_updates`) |
 | `Push Permission Granted` | The visitor allows it | `source` |
 | `Push Permission Denied` | The visitor blocks or dismisses it | `source`, `permission` (`denied` = blocked, `default` = dismissed) |
 
@@ -151,8 +162,7 @@ Only what the visitor does with cards is tracked:
 | `Content Card Clicked` (`card_id`, `card_title`) | `logContentCardClick` | A card is clicked |
 
 Card syncs from Braze aren't events. The SDK fetches cards once per page and
-the event stream shows each sync, marked as not sent. Sending them as events
-put three per page load into Amplitude and cost a Braze data point each.
+the event stream shows each sync, marked as not sent.
 
 ## User properties and Braze custom attributes
 
@@ -161,20 +171,26 @@ found in the other. They stay scalar because that's what Braze segments on.
 
 | Property | Set when |
 |---|---|
-| `email`, `first_name`, `last_name` | Sign-in, registration, checkout step 1, newsletter, enquiry |
-| `marketing_opt_in` | Sign-up checkbox or account toggle. Also drives Braze's email subscription state. |
-| `persona` | Demo persona switch |
-| `lifetime_orders`, `lifetime_value` | Order placed |
-| `favourite_brand` | Order placed: the most-purchased brand on the order |
-| `last_brand_viewed`, `last_category_viewed`, `last_product_viewed` | Product page view |
-| `last_product_added` | Add to cart |
-| `cart_value`, `cart_size` | Any cart change. Zeroed on order. |
-| `last_order_id`, `last_order_at` | Order placed |
-| `lead_type`, `interested_service` | Services enquiry |
+| `email`, `first_name`, `last_name` | Sign-in, registration, application step 1, rate updates, callback request |
+| `marketing_opt_in` | Sign-up checkbox, application step 1 or internet banking toggle. Also drives Braze's email subscription state. |
+| `persona`, `existing_customer`, `has_home_loan` | Demo persona switch |
+| `application_status` | `started`, `conditionally_approved`, `referred_to_lender`, `documents_received` |
+| `application_step` | The next step to complete: `about_you` … `review`, then `submitted` |
+| `application_started_at`, `application_submitted_at`, `application_id` | Start and submit |
+| `application_product` | Loan chosen at step 4 |
+| `first_home_buyer` | Step 1 |
+| `loan_purpose`, `loan_amount`, `lvr` | Step 2 |
+| `income_band`, `borrowing_power` | Step 3, or the borrowing power calculator |
+| `documents_outstanding` | Submit, then each upload |
+| `last_product_viewed`, `last_category_viewed` | Product page view |
+| `interested_product` | Register interest on a non-loan product |
+| `lead_type`, `enquiry_topic` | Lender callback request |
 
-No form validates its input. An email only becomes the Amplitude user id if
-it's at least 5 characters, since Amplitude rejects shorter ids; a blank email
-leaves the visitor as they were.
+Email is required, and must look like an address (`name@example.com`), on
+every form that takes one: application step 1, the lender callback form,
+internet banking and rate updates. It's what Braze sends to, and it becomes
+the user id in both tools. Every other field is optional. A draft seeded from
+the demo controls without an email is sent back to step 1 on submit.
 
 ## Identity
 
@@ -194,9 +210,9 @@ opens and so on) to Amplitude with the Braze external id as the Amplitude
   to use. Amplitude waits up to 5 seconds for Braze to load before starting
   (events fired meanwhile are queued), and switches over if Braze arrives
   later than that.
-- **Storefront sign-out** leaves Braze on the same user, as Braze recommends,
-  and clears Amplitude's user id but keeps the shared device id, so both still
-  see the same person.
+- **Internet banking sign-out** leaves Braze on the same user, as Braze
+  recommends, and clears Amplitude's user id but keeps the shared device id,
+  so both still see the same person.
 - **"Reset identity"** in the event stream's Controls tab calls Braze's
   `wipeData()` and Amplitude's `reset()`, giving a new anonymous visitor in
   both with a new shared device id. Use it before switching persona in a demo.
@@ -205,39 +221,34 @@ The State tab shows the ids each SDK is actually using and whether they match.
 
 ## Revenue
 
-`Order Completed` carries the order total as Amplitude's event-level
-`revenue` field, with `revenueType: purchase`, so Amplitude's revenue metrics
-and LTV count it directly. There's no separate `revenue()` call; that created
-a second event, shown in Amplitude as "Revenue (Unverified)", repeating the
-same total. ("Unverified" only means no App Store or Play Store receipt,
-which never applies on the web.) Product-level revenue comes from Cart
-Analysis over `products.revenue` on the same event.
-
-Braze gets one `logPurchase(product_id, price, currency, quantity, properties)`
-per line item, since Braze's purchase model is per product and that's what
-drives revenue-based segmentation and post-purchase campaigns. An immediate
-data flush follows.
+Nothing is sent as revenue, and Braze gets no `logPurchase`. An application
+isn't a purchase, and a loan amount booked as revenue would swamp every
+revenue chart. Measure the funnel on `Application Submitted` with
+`decision = conditionally_approved`, and sum `loan_amount` where a value is
+needed.
 
 ## Suggested things to show
 
-1. **Add to cart.** One click produces an Amplitude event carrying the line
-   in `products`, a Braze custom event with the same array, and Braze
-   attribute writes for `cart_value` and `last_brand_viewed`. Behaviour
-   Amplitude measures becomes segmentable in Braze straight away.
-2. **Switch persona** from the Controls tab. Watch `changeUser`, `setEmail`,
+1. **Run the borrowing power calculator.** Stop typing and one
+   `Borrowing Power Calculated` event lands in both tools, and
+   `borrowing_power` becomes a Braze attribute a campaign can quote. With
+   `SIMULATE_IAM: true` a simulated in-app message offers to start an
+   application with that amount.
+2. **Apply from the calculator.** `Application Started` carries
+   `source: borrowing_power_calculator`, so Amplitude can attribute
+   applications to the tool that produced them.
+3. **Stop at step 3 and leave.** Reload, or come back later:
+   `Application Resumed` fires, and the draft is exactly as it was. Braze has
+   `application_status: started` and `application_step: finances`, which is
+   the whole abandoned application segment. "Start one, stopped at step 3" in
+   the Controls tab sets this up in one click.
+4. **Submit two ways.** Enter an email and click straight through with the
+   defaults, and it's conditionally approved; raise the property value or
+   drop the income and it's referred to a lender. The decision is on the event, so a funnel split
+   by `decision` shows both paths.
+5. **Upload documents** on the outcome page. Each `Document Uploaded` lowers
+   `documents_outstanding` in Braze, the attribute a reminder campaign would
+   run on.
+6. **Switch persona** from the Controls tab. Watch `changeUser`, `setEmail`,
    the subscription state and every custom attribute go across, then check
    the State tab for both ids.
-3. **Show a Braze in-app message.** Any real Braze campaign that fires logs
-   `In-App Message Shown` to Amplitude, so campaign exposure is an analytics
-   event and its lift is measurable. With no campaigns built yet, set
-   `SIMULATE_IAM: true` and add something under $100 to see a simulated one.
-4. **Complete a checkout.** No field is required, so you can click straight
-   through. `Checkout Started` carries the cart, then `Contact Entered`,
-   `Shipping Entered` and `Payment Entered` mark each stage (a funnel of
-   those shows where checkouts stall), then `Order Completed` carries the
-   lines with `revenue` per line, Braze logs a purchase per line, and
-   lifetime stats roll forward.
-5. **Open Cart Analysis** on `Order Completed` and group by `products.brand`
-   or `products.size` to show which brand or size drives revenue.
-6. **Sign out, then back in.** Identity resets on both sides while the
-   anonymous device id stays put.

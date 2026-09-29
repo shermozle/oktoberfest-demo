@@ -1,26 +1,32 @@
-# Laneway — mocked storefront for an Amplitude + Braze demo
+# Laneway Bank: a mocked retail bank for an Amplitude + Braze demo
 
-A static, fully mocked rebuild of [lanewaystore.myshopify.com](https://lanewaystore.myshopify.com)
-(RMIT's Marketing Technology Lab teaching store), built to demonstrate
-Amplitude and Braze working together on a real-looking ecommerce site.
+A static, fully mocked retail bank website, built to demonstrate Amplitude
+and Braze working together on a home loan application: rate comparison,
+calculators, a five-step application that saves as you go, an instant
+conditional decision, and document upload. The branding carries over from
+the Laneway teaching store (the wordmark, Inter, black and white).
 
-There is no server. The cart, customer, orders and browsing history live in
-`localStorage`; the storefront password and session id are cookies. Everything
-in `docs/` is plain HTML, CSS, JS and images, so GitHub Pages can serve it with
-no build step.
+Laneway Bank is not a real financial institution. The rates, products and
+credit decisions are invented, and nothing leaves the browser except the
+calls to Amplitude and Braze.
 
-**Password gate:** `mtl`, matching the original. Turn it off with
-`REQUIRE_PASSWORD: false` in `docs/assets/js/config.js`.
+There is no server. The application in progress, submitted applications, the
+customer and browsing history live in `localStorage`; the session id is a
+cookie. Everything in `docs/` is plain HTML, CSS, JS and
+images, so GitHub Pages can serve it with no build step.
+
+The site is public, with no password. Every page carries
+`noindex, nofollow`, so search engines won't list a site that looks like a
+bank.
 
 ## What's in it
 
 | | |
 |---|---|
-| Products | 30, real titles, copy, variants, prices and photography |
-| Collections | 10, three brand collaborations (RMIT, Southbank Coffee Co., Laneway) and seven categories |
-| Pages | Home, collection index, 10 collections, 30 products, cart, 4-step checkout, order confirmation, account, about, services, 404 |
-| Working | Variant picking, cart, quantity edits, checkout, order history, account, live search, filters and sort, recommendations, recently viewed, newsletter capture, B2B enquiry form |
-| Instrumented | Amplitude Browser SDK 2 + Session Replay, Braze Web SDK, and an on-page event stream showing every call |
+| Products | 13: seven home loans, two everyday accounts, two savings products, two credit cards |
+| Pages | Home, 4 category pages, 13 product pages, borrowing power and repayments calculators, the application, the application outcome, internet banking, talk to a lender, about, 404 |
+| Working | Filter and sort home loans, both calculators, the application with save and resume, instant decision, document checklist, internet banking sign-in with persona accounts, live search, recommendations, recently viewed, rate update sign-up, lender callback form |
+| Instrumented | Amplitude Browser SDK 2 + Session Replay, Braze Web SDK, and an on-page event stream showing every call. See [TRACKING.md](TRACKING.md). |
 
 ## Run it locally
 
@@ -68,30 +74,33 @@ subpath, at a domain root, or behind a custom domain with no changes.
 
 Bottom right, or press `` ` ``. Three tabs:
 
-- **Stream** — every Amplitude and Braze call in order, with its full payload,
+- **Stream**: every Amplitude and Braze call in order, with its full payload,
   colour-coded by destination, filterable. Calls held back by a placeholder key
   say so.
-- **Controls** — switch between three personas (first-time visitor, repeat
-  buyer, high-value customer), seed or empty the cart, wipe all local state.
-- **State** — the current identity on both sides, including the ids that bridge
+- **Controls**: switch between three personas (a first home buyer, a
+  customer refinancing from another bank, an investor with an existing
+  Laneway home loan), seed an application stopped at step 3 or discard the
+  one in progress, wipe all local state.
+- **State**: the current identity on both sides, including the ids that bridge
   them.
 
-Turn the whole thing off with `SHOW_DEV_DRAWER: false` for a clean storefront.
+Turn the whole thing off with `SHOW_DEV_DRAWER: false` for a clean site.
 
 ## How the two tools connect
 
 `src/assets/js/tracking.js` is the only place either SDK is touched. One
 `track()` call fans out to both, so events can't drift apart.
 
-**Product detail** travels in a `products` object array on every event that
-has any, in the shape Amplitude's Cart Analysis reads, with `revenue` as the
-line total on cart and order lines. Turn on property splitting for `products`
-in Amplitude Data to use it. Braze gets the same array for Liquid templating.
+**Product detail** travels as flat `product_*` properties on every event
+about one product, and as `product_ids` on events about a list. Income and
+property value go as bands (`$50k–$100k`); the loan amount and borrowing
+power go exactly, because a campaign quotes them back.
 
 **Amplitude → Braze.** On-site behaviour becomes Braze custom attributes and
-custom events, so Braze can segment and message on it: `last_brand_viewed`,
-`cart_value`, `cart_size`, `lifetime_value`, `favourite_brand`. Adding to cart
-or browsing a brand updates both tools in the same breath.
+custom events, so Braze can segment and message on it: `application_status`,
+`application_step`, `loan_purpose`, `borrowing_power`,
+`documents_outstanding`. Finishing an application step updates both tools in
+the same breath, which is what an abandoned application campaign needs.
 
 **Braze → Amplitude.** In-app messages and content cards log Amplitude events
 when they're shown, clicked and dismissed, so campaign exposure lands in the
@@ -107,8 +116,8 @@ See [TRACKING.md](TRACKING.md) for the full event and property list.
 
 ## Web push
 
-Submitting the storefront password asks for notification permission
-(`WEB_PUSH_ON_UNLOCK` in config). Braze needs web push enabled for the app,
+Signing up for rate updates in the footer asks for notification permission
+(`WEB_PUSH_ON_RATE_UPDATES` in config). Braze needs web push enabled for the app,
 which it is for this one. `build.mjs` writes `service-worker.js` next to
 `index.html`, loading Braze's worker for the same SDK version as
 `tracking.js`, and the SDK is pointed at it, so it works under a GitHub Pages
@@ -123,10 +132,12 @@ campaign half of a demo works before anything exists in Braze. It's switched
 off (`SIMULATE_IAM: false`), so only real Braze campaigns appear. Set it to
 `true` to bring back:
 
-- a free-shipping nudge on add-to-cart when the cart is under $100
-- a cart-abandonment message on a later page view once the cart has sat for
-  two minutes (hours, in a real campaign)
-- win-back and back-in-stock messages from buttons in the Controls tab
+- a "you could borrow around $X" message after the borrowing power
+  calculator, offering to start an application with that amount
+- an abandoned application message on a later page once the draft has sat
+  for two minutes (a day, in a real campaign)
+- abandoned application, rate cut and refinance messages from buttons in the
+  Controls tab
 - two content cards behind the bell icon
 
 Each fake logs `In-App Message Shown`, `Clicked` or `Dismissed` to Amplitude,
@@ -144,46 +155,28 @@ node build.mjs
 | Path | |
 |---|---|
 | `build.mjs` | Generates `docs/` from the catalogue and templates |
-| `src/data/catalog.json` | Products, collections and page copy |
-| `src/assets/css/site.css` | All styles, storefront and event stream |
-| `src/assets/js/config.js` | Keys and feature switches |
-| `src/assets/js/store.js` | Cart, customer, orders, history (localStorage + cookies) |
+| `src/data/catalog.json` | Products, rates, categories and page copy |
+| `src/assets/css/site.css` | All styles, site and event stream |
+| `src/assets/js/config.js` | Keys, feature switches and the lending assumptions |
+| `src/assets/js/store.js` | Application draft, submitted applications, customer, history (localStorage + cookies) |
+| `src/assets/js/finance.js` | Repayments, tax, borrowing power and income bands, shared by the calculators and the application |
 | `src/assets/js/tracking.js` | Amplitude + Braze, the only SDK call sites |
-| `src/assets/js/app.js` | Storefront behaviour |
+| `src/assets/js/app.js` | Site behaviour |
 | `src/assets/js/devtools.js` | Event stream drawer |
-| `src/assets/img/` | 70 product, collection and site images |
-| `scripts/build-catalog.mjs` | Re-derives the catalogue from `raw/` |
-| `scripts/fetch-images.sh` | Re-downloads images from `raw/image-manifest.txt` |
-| `raw/` | The original Shopify JSON, kept so the catalogue can be rebuilt |
+| `src/assets/img/site/` | The Laneway wordmark and the favicon |
+| `scripts/check-links.mjs` | Fails if any generated link or asset doesn't resolve |
 
-Re-scraping the source store is only needed if its catalogue changes:
-
-```bash
-curl -sc raw/jar -o /dev/null https://lanewaystore.myshopify.com/password
-curl -sb raw/jar -c raw/jar -o /dev/null -X POST https://lanewaystore.myshopify.com/password \
-  --data-urlencode form_type=storefront_password --data-urlencode password=mtl -L
-curl -sb raw/jar 'https://lanewaystore.myshopify.com/products.json?limit=250' -o raw/products.json
-node scripts/build-catalog.mjs && ./scripts/fetch-images.sh && node build.mjs
-```
-
-## Known quirks carried over from the source store
-
-- **Laneway Studio Crew is priced at $0.00.** That is the real price on the
-  source store, kept rather than invented. A free line item makes revenue
-  demos look broken, so if that matters, set `priceMin`, `priceMax` and the
-  variant prices for `laneway-studio-crew` in `src/data/catalog.json` and
-  rebuild. $89 fits the range.
-- The source store lists a **"Home page" collection** (Shopify's `frontpage`)
-  on its collection index. It holds one product and is platform plumbing
-  rather than a real collection, so it isn't in this mock.
-- Collection descriptions on the source store are Word-pasted HTML. The
-  one-line subtitles here were lifted from the rendered pages and live in
-  `scripts/build-catalog.mjs`.
+To change a rate, edit it in `src/data/catalog.json` and rebuild. Cards,
+product pages, calculators and the application all read from there. The
+announcement bar and the simulated messages quote rates in plain text, so
+update those too.
 
 ## What is and isn't real
 
-Nothing is for sale. No payment details are collected, no card fields exist, no
-order ships, and no email is sent. Sign-in accepts any email address and never
-stores or checks a password — the identity exists only so you can watch it flow
-into Amplitude and Braze. Product photography, copy and brands come from the
-RMIT teaching store, which is itself a simulation.
+Laneway Bank is not a bank. No account is opened, no credit check is run, no
+document is uploaded and no money moves. The conditional decision is
+arithmetic on what was typed: within the estimated borrowing power and the
+loan's maximum LVR is approved, anything else is referred. Sign-in accepts
+any email address and never stores or checks a password; the identity exists
+only so you can watch it flow into Amplitude and Braze. The rates are
+invented and the comparison rates are illustrative, not calculated.
