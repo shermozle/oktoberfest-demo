@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Laneway demo — configuration
+   Laneway Bank demo — configuration
    ==========================================================================
 
    FILL THESE IN BEFORE DEPLOYING.
@@ -27,7 +27,7 @@
                          EU-02  sdk.fra-02.braze.eu
                          AU-01  sdk.au-01.braze.com
 
-   Until these are filled in the storefront still runs and the event stream
+   Until these are filled in the site still runs and the event stream
    still shows every call it would make, each flagged NOT SENT. That is the
    "dry run" mode — useful for rehearsing a demo without polluting a project.
    ========================================================================== */
@@ -69,22 +69,20 @@ window.LANEWAY_CONFIG = {
     doNotLoadFontAwesome: true,
   },
 
-  // Ask for web push permission when the storefront password is submitted.
+  // Ask for web push permission when someone signs up for rate updates.
   // Needs web push enabled for this app in Braze. The service worker is
   // written to the site root by build.mjs.
-  WEB_PUSH_ON_UNLOCK: true,
+  WEB_PUSH_ON_RATE_UPDATES: true,
 
-  /* --- Storefront --------------------------------------------------------- */
-
-  // The real store sits behind a Shopify storefront password. Keeping the gate
-  // makes the mock behave like the original; set to false to open the site up.
-  REQUIRE_PASSWORD: true,
-  PASSWORD: 'mtl',
+  /* --- Site --------------------------------------------------------------- */
 
   CURRENCY: 'AUD',
-  SHIPPING_FLAT: 9.95,
-  SHIPPING_FREE_OVER: 100,
-  TAX_RATE: 0.1, // GST, already included in displayed prices
+
+  // Lending maths used by the calculators and the application's instant
+  // decision. Serviceability is tested at the product rate plus this buffer,
+  // as Australian lenders do (APRA's buffer is 3 percentage points).
+  ASSESSMENT_BUFFER: 3,
+  LOAN_TERM_YEARS: 30,
 
   /* --- Demo instrumentation ---------------------------------------------- */
 

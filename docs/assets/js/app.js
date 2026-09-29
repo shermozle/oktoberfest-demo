@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Laneway demo — storefront behaviour
+   Laneway Bank demo — site behaviour
    Everything is client-side. Each generated page sets document.body.dataset
    .page and window.LANEWAY_PAGE, and this file wires up whatever that page
    needs.
@@ -10,9 +10,10 @@
 
   const store = window.LanewayStore;
   const track = window.LanewayTrack;
+  const finance = window.LanewayFinance;
   const cfg = window.LANEWAY_CONFIG || {};
   const PAGE = window.LANEWAY_PAGE || {};
-  const INDEX = window.LANEWAY_INDEX || { products: [], collections: [] };
+  const INDEX = window.LANEWAY_INDEX || { products: [], categories: [] };
   const BASE = window.LANEWAY_BASE || '';
 
   const $ = (sel, root) => (root || document).querySelector(sel);
@@ -20,10 +21,11 @@
     Array.from((root || document).querySelectorAll(sel));
 
   const url = (path) => BASE + path;
-  const productUrl = (handle) => url('products/' + handle + '/');
+  const query = new URLSearchParams(location.search);
 
   const productByHandle = (handle) =>
     INDEX.products.find((p) => p.handle === handle);
+  const homeLoans = () => INDEX.products.filter((p) => p.category === 'home-loans');
 
   const escapeHtml = (s) =>
     String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
@@ -33,6 +35,82 @@
       '"': '&quot;',
       "'": '&#39;',
     })[c]);
+
+  const num = (v) => Number(v) || 0;
+
+  // Reads a form into a plain object: radios as their checked value,
+  // checkboxes as booleans, everything else as the raw string.
+  function formValues(form) {
+    const out = {};
+    Array.from(form.elements).forEach(function (el) {
+      if (!el.name) return;
+      if (el.type === 'radio') {
+        if (el.checked) out[el.name] = el.value;
+      } else if (el.type === 'checkbox') {
+        out[el.name] = el.checked;
+      } else {
+        out[el.name] = el.value;
+      }
+    });
+    return out;
+  }
+
+  function fillForm(form, values) {
+    Object.entries(values || {}).forEach(function (pair) {
+      const els = $$('[name="' + pair[0] + '"]', form);
+      els.forEach(function (el) {
+        if (el.type === 'radio') el.checked = el.value === pair[1];
+        else if (el.type === 'checkbox') el.checked = !!pair[1];
+        else el.value = pair[1];
+      });
+    });
+  }
+
+  // Email is the one required field anywhere on the site: it's the Braze
+  // external id, and the address Braze sends to. Everything else stays
+  // optional.
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const validEmail = (s) => EMAIL.test(String(s || '').trim());
+
+  // Flags the email input and shows a message, or clears both. `msgEl` is
+  // where the message goes; by default a line added inside the field's
+  // label. Returns whether the email passed.
+  function checkEmail(input, msgEl) {
+    const ok = validEmail(input.value);
+    input.setAttribute('aria-invalid', String(!ok));
+    let msg = msgEl;
+    if (!msg) {
+      msg = input.closest('label').querySelector('.field-error');
+      if (!msg && !ok) {
+        msg = document.createElement('small');
+        msg.className = 'field-error';
+        msg.setAttribute('role', 'alert');
+        input.closest('label').appendChild(msg);
+      }
+    }
+    if (msg) msg.textContent = ok ? '' : 'Enter your email address, like name@example.com.';
+    if (!ok) {
+      input.focus();
+      // Clear the message as soon as they fix it.
+      input.addEventListener('input', function clear() {
+        if (!validEmail(input.value)) return;
+        input.setAttribute('aria-invalid', 'false');
+        if (msg) msg.textContent = '';
+        input.removeEventListener('input', clear);
+      });
+    }
+    return ok;
+  }
+
+  // Runs fn once the visitor stops changing things for `ms`.
+  function debounce(fn, ms) {
+    let timer = null;
+    return function () {
+      const args = arguments;
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(null, args), ms);
+    };
+  }
 
   /* ======================================================================
      Toasts
@@ -54,60 +132,17 @@
   }
 
   /* ======================================================================
-     Password gate — mirrors the Shopify storefront password on the original
-     ====================================================================== */
-
-  function initGate() {
-    if (!cfg.REQUIRE_PASSWORD) return true;
-    if (store.getCookie(store.NS + '_gate') === 'open') return true;
-
-    const gate = $('#gate');
-    if (!gate) return true;
-    gate.hidden = false;
-    document.documentElement.style.overflow = 'hidden';
-
-    const form = $('form', gate);
-    const input = $('input', gate);
-    const error = $('.gate__error', gate);
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      const value = input.value.trim().toLowerCase();
-      if (value === String(cfg.PASSWORD).toLowerCase()) {
-        // First, while this still counts as the visitor's own action: the
-        // browser only shows the push prompt from a user gesture.
-        if (cfg.WEB_PUSH_ON_UNLOCK) track.requestWebPush('password_gate');
-        store.setCookie(store.NS + '_gate', 'open', 30);
-        gate.hidden = true;
-        document.documentElement.style.overflow = '';
-        track.track('Storefront Unlocked', { method: 'password' });
-        boot();
-      } else {
-        error.textContent = 'That password is incorrect.';
-        input.value = '';
-        input.focus();
-      }
-    });
-
-    setTimeout(() => input.focus(), 50);
-    return false;
-  }
-
-  /* ======================================================================
      Header
      ====================================================================== */
 
-  function renderCartBadge() {
-    const count = store.cartCount();
-    $$('[data-cart-count]').forEach(function (el) {
-      el.textContent = String(count);
-      el.hidden = count === 0;
-    });
+  function renderDraftIndicator() {
+    const draft = store.getDraft();
+    $$('[data-draft-link]').forEach((el) => (el.hidden = !draft));
   }
 
   function initHeader() {
-    renderCartBadge();
-    store.on('cart:changed', renderCartBadge);
+    renderDraftIndicator();
+    store.on('application:changed', renderDraftIndicator);
 
     const header = $('.site-header');
     if (header) {
@@ -134,6 +169,15 @@
           location: a.dataset.navLink,
         });
       });
+    });
+
+    // Every "Apply" button carries where it was clicked, so Application
+    // Started can say which part of the site produced the application.
+    $$('[data-apply-link]').forEach(function (a) {
+      if (!a.dataset.applySource) return;
+      const target = new URL(a.getAttribute('href'), location.href);
+      target.searchParams.set('source', a.dataset.applySource);
+      a.href = target.href;
     });
   }
 
@@ -166,7 +210,7 @@
       if (!needle) return [];
       return INDEX.products
         .map(function (p) {
-          const haystack = [p.title, p.brand, p.category, p.typeTag]
+          const haystack = [p.title, p.kicker, p.categoryTitle, p.tagline]
             .join(' ')
             .toLowerCase();
           let score = 0;
@@ -185,12 +229,14 @@
       const hits = search(q);
       if (!q.trim()) {
         results.innerHTML =
-          '<p class="muted" style="text-align:center">Search 30 products across Laneway, Southbank Coffee Co. and RMIT.</p>';
+          '<p class="muted" style="text-align:center">Search ' +
+          INDEX.products.length +
+          ' products: home loans, accounts, savings and cards.</p>';
         return;
       }
       if (!hits.length) {
         results.innerHTML =
-          '<p class="muted" style="text-align:center">No products match &ldquo;' +
+          '<p class="muted" style="text-align:center">Nothing matches &ldquo;' +
           escapeHtml(q) +
           '&rdquo;.</p>';
         return;
@@ -199,24 +245,19 @@
         .map(
           (p, i) =>
             '<a class="search-hit" href="' +
-            productUrl(p.handle) +
+            url(p.path) +
             '" data-hit="' +
             escapeHtml(p.handle) +
             '" data-position="' +
             (i + 1) +
             '">' +
-            '<img src="' +
-            url(p.image) +
-            '" alt="" loading="lazy">' +
             '<span><span style="display:block">' +
             escapeHtml(p.title) +
             '</span><span class="muted" style="font-size:12px">' +
-            escapeHtml(p.brand) +
-            ' · ' +
-            escapeHtml(p.category) +
+            escapeHtml(p.kicker) +
             '</span></span>' +
             '<span>' +
-            store.money(p.priceMin) +
+            escapeHtml(p.figures[0].value + p.figures[0].unit) +
             '</span></a>'
         )
         .join('');
@@ -228,7 +269,7 @@
         track.track('Search Performed', {
           query: lastQuery,
           results_count: hits.length,
-          products: track.listProducts(hits),
+          product_ids: track.productIds(hits),
         });
       }, 700);
     }
@@ -242,12 +283,13 @@
       const hit = e.target.closest('[data-hit]');
       const p = hit && productByHandle(hit.dataset.hit);
       if (p) {
-        track.trackAnalyticsOnly('Search Result Clicked', {
-          query: input.value.trim(),
-          products: [
-            track.productItem(p, { position: Number(hit.dataset.position) }),
-          ],
-        });
+        track.trackAnalyticsOnly(
+          'Search Result Clicked',
+          Object.assign(
+            { query: input.value.trim(), position: Number(hit.dataset.position) },
+            track.productProps(p)
+          )
+        );
       }
     });
     document.addEventListener('keydown', function (e) {
@@ -265,162 +307,44 @@
     if (!product) return;
 
     store.recordView(product.handle);
+    const props = track.productProps(product);
 
-    const selection = {};
-    product.options.forEach(function (opt, i) {
-      const firstAvailable = product.variants.find(
-        (v) => v.available && v.options[i]
-      );
-      selection[opt.name] = firstAvailable
-        ? firstAvailable.options[i]
-        : opt.values[0];
+    track.track('Product Viewed', props);
+    track.setUserProperties({
+      last_product_viewed: product.title,
+      last_category_viewed: product.categoryTitle,
     });
 
-    function currentVariant() {
-      if (!product.options.length) return product.variants[0];
-      return (
-        product.variants.find((v) =>
-          product.options.every((opt, i) => v.options[i] === selection[opt.name])
-        ) || null
-      );
-    }
-
-    // The product as currently configured on the page (selected variant,
-    // colour and size) as one element of a `products` array.
-    function selectedItem(extra) {
-      const v = currentVariant();
-      return track.productItem(
-        product,
-        Object.assign(
-          {
-            variantId: v ? v.id : null,
-            variantTitle: v && v.title !== 'Default Title' ? v.title : null,
-            price: v ? v.price : product.priceMin,
-            selectedOptions: product.options.length
-              ? Object.assign({}, selection)
-              : null,
-          },
-          extra
-        )
-      );
-    }
-
-    const priceEl = $('[data-product-price]');
-    const addBtn = $('[data-add-to-cart]');
-    const qtyInput = $('[data-qty-input]');
+    // Sticky apply bar once the main apply button scrolls away.
     const quickBar = $('.quick-bar');
-    const quickBarText = $('[data-quickbar-variant]');
-
-    function refresh() {
-      const v = currentVariant();
-      $$('[data-option-value]').forEach(function (btn) {
-        const selected = selection[btn.dataset.optionName] === btn.dataset.optionValue;
-        btn.setAttribute('aria-pressed', String(selected));
-      });
-      if (priceEl) priceEl.textContent = v ? store.money(v.price) : '—';
-      if (addBtn) {
-        addBtn.disabled = !v || !v.available;
-        addBtn.querySelector('span').textContent =
-          !v ? 'Unavailable' : v.available ? 'Add to cart' : 'Sold out';
-      }
-      if (quickBarText && v)
-        quickBarText.textContent = v.title === 'Default Title' ? '' : v.title;
-    }
-
-    $$('[data-option-value]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const name = btn.dataset.optionName;
-        const value = btn.dataset.optionValue;
-        if (selection[name] === value) return;
-        selection[name] = value;
-        refresh();
-        const v = currentVariant();
-        track.trackAnalyticsOnly('Product Variant Selected', {
-          option_name: name,
-          option_value: value,
-          available: v ? v.available : false,
-          products: [selectedItem()],
-        });
-      });
-    });
-
-    // Quantity stepper
-    $$('[data-qty-step]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const delta = Number(btn.dataset.qtyStep);
-        const next = Math.max(1, Math.min(99, Number(qtyInput.value) + delta));
-        qtyInput.value = String(next);
-      });
-    });
-
-    function add(source) {
-      const v = currentVariant();
-      if (!v || !v.available) return;
-      const quantity = Math.max(1, Number(qtyInput ? qtyInput.value : 1) || 1);
-      const line = {
-        handle: product.handle,
-        variantId: v.id,
-        variantTitle: v.title === 'Default Title' ? null : v.title,
-        title: product.title,
-        price: v.price,
-        quantity: quantity,
-        image: product.images[0] ? product.images[0].src : null,
-        brand: product.brand,
-        category: product.category,
-        tier: product.tier,
-        // Kept on the line so colour and size reach the products array on
-        // every later cart, checkout and order event.
-        selectedOptions: product.options.length
-          ? Object.assign({}, selection)
-          : null,
-      };
-      store.addToCart(line);
-
-      track.track('Product Added to Cart', {
-        add_source: source,
-        products: [track.productItem(line)],
-      });
-
-      // Behaviour observed here becomes Braze segmentation fuel.
-      track.setUserProperties({
-        last_brand_viewed: product.brand,
-        last_product_added: product.title,
-        cart_value: Math.round(store.cartSubtotal() * 100) / 100,
-        cart_size: store.cartCount(),
-      });
-
-      toast(product.title + ' added to your cart');
-      maybeShowFreeShippingNudge();
-    }
-
-    if (addBtn) addBtn.addEventListener('click', () => add('product_page'));
-    const quickAdd = $('[data-quickbar-add]');
-    if (quickAdd) quickAdd.addEventListener('click', () => add('sticky_bar'));
-
-    // Sticky quick-add bar once the main buy button scrolls away.
-    if (quickBar && addBtn) {
+    const mainCta = $('.product__info .btn');
+    if (quickBar && mainCta) {
       const io = new IntersectionObserver(
         function (entries) {
-          const gone = !entries[0].isIntersecting;
-          quickBar.classList.toggle('quick-bar--visible', gone);
+          quickBar.classList.toggle('quick-bar--visible', !entries[0].isIntersecting);
         },
         { rootMargin: '-80px 0px 0px 0px' }
       );
-      io.observe(addBtn);
+      io.observe(mainCta);
     }
 
-    refresh();
+    // Everyday, savings and card products can't be opened in this demo.
+    // Registering interest is the cross-sell signal a bank would act on.
+    const interest = $('[data-register-interest]');
+    if (interest)
+      interest.addEventListener('click', function () {
+        track.track('Product Interest Registered', props);
+        track.setUserProperties({ interested_product: product.title });
+        interest.disabled = true;
+        interest.textContent = 'Interest registered';
+        const msg = $('[data-interest-msg]');
+        if (msg)
+          msg.textContent =
+            'Thanks. Braze now has interested_product on this profile, ready for a cross-sell campaign.';
+      });
 
-    track.track('Product Viewed', { products: [selectedItem()] });
-
-    track.setUserProperties({
-      last_brand_viewed: product.brand,
-      last_category_viewed: product.category,
-      last_product_viewed: product.title,
-    });
-
-    // Depth of engagement on the page — the kind of signal a Braze "browse
-    // abandonment" campaign triggers on.
+    // How far down the page they read: the signal a Braze browse
+    // abandonment campaign triggers on.
     let deepSeen = false;
     window.addEventListener(
       'scroll',
@@ -430,7 +354,7 @@
           (window.scrollY + window.innerHeight) / document.body.scrollHeight;
         if (seen > 0.7) {
           deepSeen = true;
-          track.track('Product Detail Read', { products: [selectedItem()] });
+          track.track('Product Detail Read', props);
         }
       },
       { passive: true }
@@ -438,7 +362,7 @@
   }
 
   /* ======================================================================
-     Collection page — sort and filter, client-side
+     Category page: filter and sort, client-side
      ====================================================================== */
 
   function initCollection() {
@@ -448,45 +372,38 @@
     const gridEl = $('[data-collection-grid]');
     const countEl = $('[data-collection-count]');
     const sortEl = $('[data-sort]');
-    const availEl = $$('[data-filter-availability]');
-    const priceMinEl = $('[data-price-min]');
-    const priceMaxEl = $('[data-price-max]');
+    const boxes = $$('[data-filter]');
     const clearEl = $('[data-filter-clear]');
 
-    const items = collection.products
-      .map(productByHandle)
-      .filter(Boolean);
+    const items = collection.products.map(productByHandle).filter(Boolean);
+
+    // Checked values per filter, e.g. { purpose: ['investor'], offset: ['true'] }.
+    function selected() {
+      const out = {};
+      boxes
+        .filter((b) => b.checked)
+        .forEach((b) => (out[b.dataset.filter] = (out[b.dataset.filter] || []).concat(b.value)));
+      return out;
+    }
 
     function apply() {
-      const inStockOnly = availEl.some(
-        (c) => c.checked && c.value === 'in-stock'
+      const sel = selected();
+      let list = items.filter((p) =>
+        Object.entries(sel).every((pair) => pair[1].includes(String(p[pair[0]])))
       );
-      const outOnly = availEl.some(
-        (c) => c.checked && c.value === 'out-of-stock'
-      );
-      const min = Number(priceMinEl && priceMinEl.value) || 0;
-      const max = Number(priceMaxEl && priceMaxEl.value) || Infinity;
 
-      let list = items.filter(function (p) {
-        if (inStockOnly && !p.available) return false;
-        if (outOnly && p.available) return false;
-        return p.priceMin >= min && p.priceMin <= max;
-      });
-
-      const sort = sortEl ? sortEl.value : 'featured';
       const sorters = {
         featured: null,
+        'rate-asc': (a, b) => (a.rate ?? 99) - (b.rate ?? 99),
+        'comparison-asc': (a, b) => (a.comparisonRate ?? 99) - (b.comparisonRate ?? 99),
+        'fee-asc': (a, b) => a.annualFee - b.annualFee,
         'title-asc': (a, b) => a.title.localeCompare(b.title),
-        'title-desc': (a, b) => b.title.localeCompare(a.title),
-        'price-asc': (a, b) => a.priceMin - b.priceMin,
-        'price-desc': (a, b) => b.priceMin - a.priceMin,
-        'date-desc': (a, b) => b.publishedAt.localeCompare(a.publishedAt),
-        'date-asc': (a, b) => a.publishedAt.localeCompare(b.publishedAt),
       };
+      const sort = sortEl ? sortEl.value : 'featured';
       if (sorters[sort]) list = list.slice().sort(sorters[sort]);
 
       if (countEl)
-        countEl.textContent = list.length + (list.length === 1 ? ' item' : ' items');
+        countEl.textContent = list.length + (list.length === 1 ? ' product' : ' products');
       gridEl.innerHTML = list.length
         ? list.map(cardHtml).join('')
         : '<p class="empty-state" style="grid-column:1/-1">No products match these filters.</p>';
@@ -496,37 +413,37 @@
     if (sortEl)
       sortEl.addEventListener('change', function () {
         const list = apply();
-        track.trackAnalyticsOnly('Collection Sorted', {
-          collection: collection.title,
+        track.trackAnalyticsOnly('Product List Sorted', {
+          category: collection.title,
           sort_by: sortEl.value,
           results_count: list.length,
-          products: track.listProducts(list),
+          product_ids: track.productIds(list),
         });
       });
 
-    availEl.concat([priceMinEl, priceMaxEl].filter(Boolean)).forEach(function (el) {
+    boxes.forEach(function (el) {
       el.addEventListener('change', function () {
         const list = apply();
-        track.trackAnalyticsOnly('Collection Filtered', {
-          collection: collection.title,
-          availability: availEl.filter((c) => c.checked).map((c) => c.value),
-          price_min: Number(priceMinEl && priceMinEl.value) || null,
-          price_max: Number(priceMaxEl && priceMaxEl.value) || null,
+        const sel = selected();
+        track.trackAnalyticsOnly('Product List Filtered', {
+          category: collection.title,
+          purpose: sel.purpose || [],
+          rate_type: sel.rateType || [],
+          features: []
+            .concat(sel.offset ? ['offset'] : [])
+            .concat(sel.firstHomeBuyer ? ['first_home_buyer'] : []),
           results_count: list.length,
-          products: track.listProducts(list),
+          product_ids: track.productIds(list),
         });
       });
     });
 
     if (clearEl)
       clearEl.addEventListener('click', function () {
-        availEl.forEach((c) => (c.checked = false));
-        if (priceMinEl) priceMinEl.value = '';
-        if (priceMaxEl) priceMaxEl.value = '';
+        boxes.forEach((c) => (c.checked = false));
         apply();
       });
 
-    // Filter popovers
     $$('[data-pop-toggle]').forEach(function (btn) {
       const panel = $('#' + btn.dataset.popToggle);
       btn.addEventListener('click', function (e) {
@@ -543,106 +460,109 @@
 
     const shown = apply();
 
-    track.track('Collection Viewed', {
-      collection: collection.title,
-      collection_handle: collection.handle,
-      collection_type: collection.isBrand ? 'brand' : 'category',
+    track.track('Product List Viewed', {
+      category: collection.title,
+      category_handle: collection.handle,
       product_count: items.length,
-      products: track.listProducts(shown),
+      product_ids: track.productIds(shown),
     });
   }
 
   /* ======================================================================
-     Product cards + recommendations
+     Rate cards + recommendations
      ====================================================================== */
 
+  // Mirrors productCard() in build.mjs.
   function cardHtml(p) {
-    const second = p.image2
-      ? '<img src="' + url(p.image2) + '" alt="" loading="lazy">'
-      : '';
     return (
-      '<article class="card" data-product-card="' +
+      '<article class="rate-card" data-product-card="' +
       escapeHtml(p.handle) +
       '">' +
-      '<a class="card__media" href="' +
-      productUrl(p.handle) +
-      '">' +
-      '<img src="' +
-      url(p.image) +
-      '" alt="' +
-      escapeHtml(p.title) +
-      '" loading="lazy">' +
-      second +
-      '</a>' +
-      '<div class="card__body">' +
-      '<span class="card__brand">' +
-      escapeHtml(p.brand) +
-      '</span>' +
-      '<a class="card__title" href="' +
-      productUrl(p.handle) +
+      '<p class="rate-card__kicker">' +
+      escapeHtml(p.kicker) +
+      '</p>' +
+      '<a class="rate-card__title" href="' +
+      url(p.path) +
       '">' +
       escapeHtml(p.title) +
       '</a>' +
-      '<div class="card__price">' +
-      (p.priceMin === p.priceMax
-        ? store.money(p.priceMin)
-        : 'From ' + store.money(p.priceMin)) +
+      '<p class="rate-card__tagline">' +
+      escapeHtml(p.tagline) +
+      '</p>' +
+      '<div class="rate-card__figures">' +
+      p.figures
+        .map(
+          (f) =>
+            '<div class="figure"><span class="figure__value">' +
+            escapeHtml(f.value) +
+            '<small>' +
+            escapeHtml(f.unit) +
+            '</small></span><span class="figure__label">' +
+            escapeHtml(f.label) +
+            '</span></div>'
+        )
+        .join('') +
       '</div>' +
-      '</div>' +
+      '<a class="btn btn--sm btn--outline rate-card__cta" href="' +
+      url(p.path) +
+      '">View details</a>' +
       '</article>'
     );
   }
 
   /**
    * Stand-in for a recommendation service. Ranks the catalogue against the
-   * current product or the visitor's browsing history: same brand and same
-   * category score highest, then price proximity.
+   * current product or the visitor's browsing history: the same category
+   * and purpose score highest, then a close rate, and an offset loan pulls
+   * in the offset account.
    */
   function recommend(seedHandle, limit) {
     const viewed = store.recentlyViewed();
-    const seed = seedHandle ? productByHandle(seedHandle) : productByHandle(viewed[0]);
-    const pool = INDEX.products.filter(
-      (p) => p.handle !== (seed && seed.handle)
-    );
-    if (!seed) return pool.slice(0, limit || 4);
+    const seed = productByHandle(seedHandle) || productByHandle(viewed[0]);
+    const pool = INDEX.products.filter((p) => p.handle !== (seed && seed.handle));
+    const n = limit || 3;
+    if (!seed) return pool.filter((p) => p.featured).slice(0, n);
 
     return pool
       .map(function (p) {
         let score = 0;
-        if (p.brand === seed.brand) score += 4;
         if (p.category === seed.category) score += 3;
-        if (p.tier === seed.tier) score += 1;
-        if (p.typeTag === seed.typeTag) score += 2;
-        score -= Math.min(3, Math.abs(p.priceMin - seed.priceMin) / 40);
+        if (p.purpose && p.purpose === seed.purpose) score += 2;
+        if (p.rateType && p.rateType === seed.rateType) score += 1;
+        if (seed.offset && p.handle === 'offset-account') score += 4;
+        if (seed.firstHomeBuyer && p.handle === 'bonus-saver') score += 3;
+        if (p.rate != null && seed.rate != null && p.category === seed.category)
+          score -= Math.min(2, Math.abs(p.rate - seed.rate) * 2);
         if (viewed.includes(p.handle)) score -= 2; // already seen it
         return { p, score };
       })
       .sort((a, b) => b.score - a.score)
-      .slice(0, limit || 4)
+      .slice(0, n)
       .map((r) => r.p);
   }
 
   function initRecommendations() {
     $$('[data-recommend]').forEach(function (holder) {
       const seed = holder.dataset.recommend || null;
-      const limit = Number(holder.dataset.recommendLimit) || 4;
+      const limit = Number(holder.dataset.recommendLimit) || 3;
       const items = recommend(seed, limit);
       holder.innerHTML = items.map(cardHtml).join('');
       track.trackAnalyticsOnly('Recommendations Shown', {
         // The product the list was computed from, not one of those shown.
         seed_product_id: seed,
-        placement: holder.dataset.placement || 'you-may-also-like',
-        products: track.listProducts(items),
+        placement: holder.dataset.placement || 'you-might-also-consider',
+        product_ids: track.productIds(items),
       });
     });
 
     const recent = $('[data-recently-viewed]');
     if (recent) {
-      const handles = store
+      const items = store
         .recentlyViewed()
         .filter((h) => h !== (PAGE.product && PAGE.product.handle))
-        .slice(0, 4);
-      const items = handles.map(productByHandle).filter(Boolean);
+        .slice(0, 3)
+        .map(productByHandle)
+        .filter(Boolean);
       if (items.length) {
         recent.closest('section').hidden = false;
         recent.innerHTML = items.map(cardHtml).join('');
@@ -651,570 +571,899 @@
 
     document.addEventListener('click', function (e) {
       const card = e.target.closest('[data-product-card]');
-      if (!card) return;
+      if (!card || !e.target.closest('a')) return;
       const p = productByHandle(card.dataset.productCard);
       if (!p) return;
       const siblings = $$('[data-product-card]', card.parentElement);
-      track.trackAnalyticsOnly('Product Card Clicked', {
-        placement: card.closest('[data-placement]')
-          ? card.closest('[data-placement]').dataset.placement
-          : 'grid',
-        products: [
-          track.productItem(p, { position: siblings.indexOf(card) + 1 }),
-        ],
-      });
+      const holder = card.closest('[data-placement]');
+      track.trackAnalyticsOnly(
+        'Product Card Clicked',
+        Object.assign(
+          {
+            placement: holder ? holder.dataset.placement : 'grid',
+            position: siblings.indexOf(card) + 1,
+          },
+          track.productProps(p)
+        )
+      );
     });
   }
 
   /* ======================================================================
-     Cart page
+     Calculators
      ====================================================================== */
 
-  function lineHtml(line) {
-    return (
-      '<div class="line" data-line="' +
-      escapeHtml(line.handle) +
-      '" data-variant="' +
-      escapeHtml(line.variantId) +
-      '">' +
-      '<a class="line__media" href="' +
-      productUrl(line.handle) +
-      '">' +
-      (line.image
-        ? '<img src="' + url(line.image) + '" alt="" loading="lazy">'
-        : '') +
-      '</a>' +
-      '<div>' +
-      '<a class="line__title" href="' +
-      productUrl(line.handle) +
-      '">' +
-      escapeHtml(line.title) +
-      '</a>' +
-      (line.variantTitle
-        ? '<div class="line__variant">' + escapeHtml(line.variantTitle) + '</div>'
-        : '') +
-      '<div class="line__variant">' +
-      store.money(line.price) +
-      '</div>' +
-      '<div class="line__controls">' +
-      '<div class="qty qty--sm">' +
-      '<button type="button" data-line-step="-1" aria-label="Decrease quantity">&minus;</button>' +
-      '<input type="number" min="0" value="' +
-      line.quantity +
-      '" data-line-qty aria-label="Quantity">' +
-      '<button type="button" data-line-step="1" aria-label="Increase quantity">+</button>' +
-      '</div>' +
-      '<button type="button" class="line__remove" data-line-remove aria-label="Remove ' +
-      escapeHtml(line.title) +
-      '">' +
-      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>' +
-      '</button>' +
-      '</div>' +
-      '</div>' +
-      '<div style="text-align:right">' +
-      store.money(line.price * line.quantity) +
-      '</div>' +
-      '</div>'
+  // Shows the partner-income field only when two people are applying.
+  function syncPartner(form) {
+    const two = String(formValues(form).applicants) === '2';
+    $$('[data-partner-only]', form.closest('main') || document).forEach(
+      (el) => (el.hidden = !two)
     );
   }
 
-  function renderSummary(root, totals, options) {
-    const opts = options || {};
-    const rows = [
-      ['Subtotal', store.money(totals.subtotal)],
-      [
-        'Shipping',
-        totals.count === 0
-          ? '—'
-          : totals.shipping === 0
-          ? 'Free'
-          : store.money(totals.shipping),
-      ],
-    ];
-    if (opts.showTax)
-      rows.push(['GST included', store.money(totals.taxIncluded)]);
+  // Interest-only is offered only on loans that allow it.
+  function syncRepaymentType(form, product) {
+    const allowed = product && (product.repaymentTypes || []).includes('interest_only');
+    const io = $('[name="repaymentType"][value="interest_only"]', form);
+    if (!io) return;
+    io.disabled = !allowed;
+    io.closest('label').classList.toggle('is-disabled', !allowed);
+    if (!allowed && io.checked)
+      $('[name="repaymentType"][value="principal_and_interest"]', form).checked = true;
+  }
 
-    root.innerHTML =
-      rows
+  function rateFor(product, repaymentType) {
+    if (!product) return 6;
+    if (repaymentType === 'interest_only' && product.interestOnlyRate)
+      return product.interestOnlyRate;
+    return product.rate;
+  }
+
+  function setApplyHref(el, params) {
+    const target = new URL(el.getAttribute('href'), location.href);
+    Object.entries(params).forEach((pair) => target.searchParams.set(pair[0], pair[1]));
+    el.href = target.href;
+  }
+
+  function initBorrowingCalc() {
+    const form = $('[data-calc="borrowing_power"]');
+    if (!form) return;
+    const out = (k) => $('[data-result="' + k + '"]');
+    const apply = $('[data-calc-apply]');
+    if (query.get('product')) form.elements.product.value = query.get('product');
+
+    function compute() {
+      const v = formValues(form);
+      const product = productByHandle(v.product);
+      const amount = finance.borrowingPower({
+        applicants: v.applicants,
+        income: v.income,
+        partnerIncome: v.partnerIncome,
+        otherIncome: v.otherIncome,
+        dependants: v.dependants,
+        expenses: v.expenses,
+        debts: v.debts,
+        cardLimits: v.cardLimits,
+        rate: product.rate,
+      });
+      const monthly = finance.repayment(amount, product.rate, cfg.LOAN_TERM_YEARS || 30, 'monthly');
+      return { v, product, amount, monthly };
+    }
+
+    function render() {
+      syncPartner(form);
+      const r = compute();
+      out('amount').textContent = r.amount ? store.money0(r.amount) : '$0';
+      out('assessed').textContent =
+        'Assessed at ' +
+        store.pct(finance.assessmentRate(r.product.rate)) +
+        ': the ' +
+        r.product.title +
+        ' rate plus a ' +
+        (cfg.ASSESSMENT_BUFFER ?? 3) +
+        '% buffer.';
+      out('repayment').textContent = r.amount ? store.money0(r.monthly) + ' a month' : '—';
+      setApplyHref(apply, {
+        amount: r.amount,
+        product: r.product.handle,
+        source: 'borrowing_power_calculator',
+      });
+      return r;
+    }
+
+    // Sent once the visitor stops typing, so one calculation is one event
+    // rather than one per keystroke.
+    const log = debounce(function () {
+      const r = compute();
+      track.track(
+        'Borrowing Power Calculated',
+        Object.assign(
+          {
+            applicant_count: Number(r.v.applicants) || 1,
+            dependants: num(r.v.dependants),
+            income_band: finance.incomeBand(num(r.v.income) + num(r.v.partnerIncome)),
+            borrowing_power: r.amount,
+            estimated_repayment: Math.round(r.monthly),
+          },
+          track.productProps(r.product)
+        )
+      );
+      track.setUserProperties({
+        borrowing_power: r.amount,
+        income_band: finance.incomeBand(num(r.v.income) + num(r.v.partnerIncome)),
+      });
+      maybeShowBorrowingNudge(r.amount);
+    }, 1200);
+
+    form.addEventListener('input', function () {
+      render();
+      log();
+    });
+    form.addEventListener('change', function () {
+      render();
+      log();
+    });
+    render();
+  }
+
+  function initRepaymentsCalc() {
+    const form = $('[data-calc="repayments"]');
+    if (!form) return;
+    const out = (k) => $('[data-result="' + k + '"]');
+    const apply = $('[data-calc-apply]');
+    if (query.get('product')) form.elements.product.value = query.get('product');
+    if (query.get('amount')) form.elements.amount.value = query.get('amount');
+
+    function compute() {
+      const v = formValues(form);
+      const product = productByHandle(v.product);
+      syncRepaymentType(form, product);
+      const type = formValues(form).repaymentType;
+      const rate = rateFor(product, type);
+      const years = num(v.term) || 30;
+      const amount = num(v.amount);
+      const each = finance.repayment(amount, rate, years, v.frequency, type);
+      const interest = finance.totalInterest(amount, rate, years, v.frequency, type);
+      return { v, product, type, rate, years, amount, each, interest };
+    }
+
+    function render() {
+      const r = compute();
+      const label = { monthly: 'Monthly', fortnightly: 'Fortnightly', weekly: 'Weekly' };
+      out('label').textContent = label[r.v.frequency] + ' repayment';
+      out('repayment').textContent = store.money0(r.each);
+      out('rate').textContent =
+        'At ' +
+        store.pct(r.rate) +
+        (r.type === 'interest_only' ? ', interest only' : '') +
+        ' over ' +
+        r.years +
+        ' years.';
+      out('interest').textContent = store.money0(r.interest);
+      out('total').textContent = store.money0(
+        r.interest + (r.type === 'interest_only' ? 0 : r.amount)
+      );
+      setApplyHref(apply, {
+        amount: r.amount,
+        product: r.product.handle,
+        source: 'repayments_calculator',
+      });
+      return r;
+    }
+
+    const log = debounce(function () {
+      const r = compute();
+      track.track(
+        'Repayments Calculated',
+        Object.assign(
+          {
+            loan_amount: r.amount,
+            loan_amount_band: finance.loanBand(r.amount),
+            loan_term_years: r.years,
+            repayment_frequency: r.v.frequency,
+            repayment_type: r.type,
+            repayment: Math.round(r.each),
+          },
+          track.productProps(r.product),
+          { interest_rate: r.rate }
+        )
+      );
+    }, 1200);
+
+    form.addEventListener('input', function () {
+      render();
+      log();
+    });
+    form.addEventListener('change', function () {
+      render();
+      log();
+    });
+    render();
+  }
+
+  /* ======================================================================
+     Home loan application
+     ====================================================================== */
+
+  const STEPS = ['about_you', 'property', 'finances', 'loan', 'review'];
+  const STEP_LABEL = {
+    about_you: 'About you',
+    property: 'The property',
+    finances: 'Your finances',
+    loan: 'Your loan',
+    review: 'Review',
+  };
+  const PURPOSE_LABEL = {
+    buy_home: 'Buying a home to live in',
+    buy_investment: 'Buying an investment',
+    refinance: 'Refinancing',
+  };
+
+  // Everything the application works out from what's been typed so far.
+  // The same function drives the side panel, the review and the event
+  // properties, so all three always agree.
+  function applicationFigures(fields) {
+    const f = fields || {};
+    const purpose = f.loanPurpose || 'buy_home';
+    const refinance = purpose === 'refinance';
+    const value = num(f.propertyValue);
+    const loanAmount = Math.max(
+      0,
+      refinance ? num(f.currentBalance) : value - num(f.deposit)
+    );
+    const product = productByHandle(f.product) || eligibleLoans(f)[0];
+    const type = f.repaymentType || 'principal_and_interest';
+    const rate = rateFor(product, type);
+    const years = num(f.term) || cfg.LOAN_TERM_YEARS || 30;
+    const frequency = f.frequency || 'monthly';
+    const income = num(f.income) + (String(f.applicants) === '2' ? num(f.partnerIncome) : 0);
+    const power = finance.borrowingPower({
+      applicants: f.applicants,
+      income: f.income,
+      partnerIncome: f.partnerIncome,
+      otherIncome: f.otherIncome,
+      dependants: f.dependants,
+      expenses: f.expenses,
+      debts: f.debts,
+      cardLimits: f.cardLimits,
+      rate: product ? product.rate : 6,
+    });
+    return {
+      purpose,
+      refinance,
+      value,
+      loanAmount,
+      lvr: finance.lvr(loanAmount, value),
+      product,
+      type,
+      rate,
+      years,
+      frequency,
+      income,
+      power,
+      repayment: finance.repayment(loanAmount, rate, years, frequency, type),
+    };
+  }
+
+  // Investors see investor loans; owner occupiers see owner-occupier loans,
+  // and the First Home Loan only if this is their first home.
+  function eligibleLoans(fields) {
+    const f = fields || {};
+    const investor = f.loanPurpose === 'buy_investment';
+    return homeLoans().filter(function (p) {
+      if (investor) return p.purpose === 'investor';
+      if (p.purpose !== 'owner_occupier') return false;
+      if (p.firstHomeBuyer)
+        return f.firstHomeBuyer === 'yes' && (f.loanPurpose || 'buy_home') === 'buy_home';
+      return true;
+    });
+  }
+
+  // Arithmetic, not a credit model: within borrowing power and within the
+  // loan's maximum LVR is a conditional approval; anything else goes to a
+  // lender.
+  function decide(fig) {
+    const reasons = [];
+    if (!fig.loanAmount) reasons.push('no_loan_amount');
+    if (fig.loanAmount > fig.power) reasons.push('above_borrowing_power');
+    if (fig.product && fig.lvr > fig.product.maxLvr) reasons.push('above_max_lvr');
+    return {
+      decision: reasons.length ? 'referred_to_lender' : 'conditionally_approved',
+      reasons: reasons,
+    };
+  }
+
+  function requiredDocuments(app) {
+    const docs = [
+      ['photo_id', 'Photo ID for each applicant'],
+      ['payslips', 'Your two most recent payslips'],
+      ['bank_statements', 'Three months of bank statements'],
+    ];
+    if (app.fields.employment === 'self_employed')
+      docs[1] = ['tax_returns', 'Two years of tax returns'];
+    if (app.fields.loanPurpose === 'refinance')
+      docs.push(['loan_statement', 'Six months of statements for your current loan']);
+    else if (['found', 'contract_signed'].includes(app.fields.propertyStage))
+      docs.push(['contract_of_sale', 'The contract of sale']);
+    return docs;
+  }
+
+  function initApply() {
+    const form = $('[data-apply-form]');
+    if (!form) return;
+
+    const steps = $$('[data-step]');
+    const stepNav = $$('[data-step-nav]');
+    const summaryEl = $('[data-apply-summary]');
+    const choicesEl = $('[data-loan-choices]');
+    const lvrNote = $('[data-lvr-note]');
+    const reviewEl = $('[data-review]');
+
+    const wanted = productByHandle(query.get('product'));
+    const amount = num(query.get('amount'));
+    let draft = store.getDraft();
+
+    if (!draft) {
+      const fields = {};
+      if (wanted) fields.product = wanted.handle;
+      if (wanted && wanted.purpose === 'investor') fields.loanPurpose = 'buy_investment';
+      if (wanted && wanted.firstHomeBuyer) fields.firstHomeBuyer = 'yes';
+      // Arriving from a calculator: back the amount out into a property
+      // value with a 20% deposit.
+      if (amount) {
+        const value = Math.round(amount / 0.8 / 1000) * 1000;
+        fields.propertyValue = String(value);
+        fields.deposit = String(value - amount);
+      }
+      const customer = store.getCustomer();
+      if (customer) {
+        fields.email = customer.email || '';
+        fields.firstName = customer.firstName || '';
+        fields.lastName = customer.lastName || '';
+      }
+      draft = store.startDraft({ source: query.get('source') || 'direct', fields: fields });
+      fillForm(form, draft.fields);
+      track.track(
+        'Application Started',
+        Object.assign({ application_id: draft.id, source: draft.source }, track.productProps(wanted))
+      );
+      track.setUserProperties({
+        application_status: 'started',
+        application_step: STEPS[0],
+        application_started_at: draft.startedAt,
+      });
+    } else {
+      if (wanted) draft.fields.product = wanted.handle;
+      fillForm(form, draft.fields);
+      $('[data-resume-note]').hidden = draft.step === 0;
+      track.track('Application Resumed', {
+        application_id: draft.id,
+        step: STEPS[draft.step],
+        step_number: draft.step + 1,
+        minutes_since_saved: Math.round(
+          (Date.now() - new Date(draft.updatedAt).getTime()) / 60000
+        ),
+      });
+    }
+
+    let current = draft.step || 0;
+
+    // The loan radios are drawn by renderChoices, so a product chosen before
+    // they exist (from ?product= or a restored draft) is held here.
+    let chosenProduct = draft.fields.product || null;
+    const readFields = () =>
+      Object.assign({ product: chosenProduct }, formValues(form));
+
+    function save() {
+      draft.fields = readFields();
+      draft.step = current;
+      store.saveDraft(draft);
+    }
+
+    function renderChoices() {
+      const f = readFields();
+      const loans = eligibleLoans(f);
+      const selected = loans.find((p) => p.handle === f.product) || loans[0];
+      chosenProduct = selected ? selected.handle : null;
+      choicesEl.innerHTML = loans
+        .map(
+          (p) =>
+            '<label class="loan-choice"><input type="radio" name="product" value="' +
+            escapeHtml(p.handle) +
+            '"' +
+            (p === selected ? ' checked' : '') +
+            '><span><strong>' +
+            escapeHtml(p.title) +
+            '</strong><span class="muted">' +
+            escapeHtml(p.kicker) +
+            '</span></span><span class="loan-choice__rate">' +
+            store.pct(p.rate) +
+            '<small>' +
+            store.pct(p.comparisonRate) +
+            ' comparison*</small></span></label>'
+        )
+        .join('');
+      syncRepaymentType(form, selected);
+    }
+
+    function syncVisibility() {
+      const f = formValues(form);
+      const refinance = f.loanPurpose === 'refinance';
+      $$('[data-buy-only]', form).forEach((el) => (el.hidden = refinance));
+      $$('[data-refi-only]', form).forEach((el) => (el.hidden = !refinance));
+      syncPartner(form);
+    }
+
+    function renderSummary() {
+      const fig = applicationFigures(readFields());
+      const rows = [
+        ['Loan', fig.product ? fig.product.title : '—'],
+        ['Loan amount', fig.loanAmount ? store.money0(fig.loanAmount) : '—'],
+        ['LVR', fig.lvr != null ? fig.lvr + '%' : '—'],
+        ['Borrowing power', current >= 2 || draft.step >= 2 ? store.money0(fig.power) : 'after step 3'],
+        [
+          'Repayments',
+          fig.loanAmount ? store.money0(fig.repayment) + ' ' + fig.frequency : '—',
+        ],
+      ];
+      summaryEl.innerHTML = rows
         .map(
           (r) =>
             '<div class="summary__row"><span>' +
             r[0] +
-            '</span><span>' +
-            r[1] +
-            '</span></div>'
-        )
-        .join('') +
-      '<div class="summary__row summary__row--total"><span>' +
-      (opts.totalLabel || 'Estimated total') +
-      '</span><span>' +
-      store.money(totals.total) +
-      ' ' +
-      (cfg.CURRENCY || 'AUD') +
-      '</span></div>';
-  }
-
-  function initCart() {
-    const linesEl = $('[data-cart-lines]');
-    if (!linesEl) return;
-    const summaryEl = $('[data-cart-summary]');
-    const countEl = $('[data-cart-title-count]');
-    const emptyEl = $('[data-cart-empty]');
-    const bodyEl = $('[data-cart-body]');
-    const progressEl = $('[data-shipping-progress]');
-
-    function render() {
-      const cart = store.getCart();
-      const totals = store.cartTotals(cart);
-
-      if (emptyEl && bodyEl) {
-        emptyEl.hidden = cart.lines.length > 0;
-        bodyEl.hidden = cart.lines.length === 0;
-      }
-      if (countEl) countEl.textContent = String(totals.count);
-      linesEl.innerHTML = cart.lines.map(lineHtml).join('');
-      if (summaryEl) renderSummary(summaryEl, totals, { showTax: true });
-
-      if (progressEl) {
-        if (totals.count === 0) {
-          progressEl.textContent = '';
-        } else if (totals.freeShippingGap > 0) {
-          progressEl.textContent =
-            'Spend ' +
-            store.money(totals.freeShippingGap) +
-            ' more for free shipping.';
-        } else {
-          progressEl.textContent = 'Free shipping unlocked.';
-        }
-      }
-    }
-
-    linesEl.addEventListener('click', function (e) {
-      const row = e.target.closest('[data-line]');
-      if (!row) return;
-      const handle = row.dataset.line;
-      const variantId = row.dataset.variant;
-      const cart = store.getCart();
-      const line = cart.lines.find(
-        (l) => l.handle === handle && l.variantId === variantId
-      );
-      if (!line) return;
-
-      if (e.target.closest('[data-line-remove]')) {
-        changeQuantity(line, 0);
-        return;
-      }
-      const step = e.target.closest('[data-line-step]');
-      if (step) changeQuantity(line, line.quantity + Number(step.dataset.lineStep));
-    });
-
-    linesEl.addEventListener('change', function (e) {
-      const input = e.target.closest('[data-line-qty]');
-      if (!input) return;
-      const row = input.closest('[data-line]');
-      const line = store
-        .getCart()
-        .lines.find(
-          (l) => l.handle === row.dataset.line && l.variantId === row.dataset.variant
-        );
-      if (line) changeQuantity(line, Math.max(0, Number(input.value) || 0));
-    });
-
-    // One path for the remove button, the +/- steppers and typed quantities.
-    // A removal's products element carries the quantity that left the cart;
-    // a change carries the new quantity, with from/to on the event.
-    function changeQuantity(line, next) {
-      const previous = line.quantity;
-      if (next === previous) return;
-      store.setLineQuantity(line.handle, line.variantId, next);
-      if (next <= 0) {
-        track.track('Product Removed from Cart', {
-          products: [track.productItem(line)],
-        });
-      } else {
-        track.track('Cart Quantity Changed', {
-          from_quantity: previous,
-          to_quantity: next,
-          products: [track.productItem(line, { quantity: next })],
-        });
-      }
-      render();
-      syncCartProperties();
-    }
-
-    render();
-
-    const totals = store.cartTotals();
-    track.track('Cart Viewed', {
-      free_shipping_gap: totals.freeShippingGap,
-      products: track.cartProducts(),
-    });
-
-    const checkoutBtn = $('[data-checkout]');
-    if (checkoutBtn)
-      checkoutBtn.addEventListener('click', function () {
-        const t = store.cartTotals();
-        if (t.count === 0) return;
-        track.track('Checkout Started', { products: track.cartProducts() });
-        location.href = url('checkout/');
-      });
-  }
-
-  function syncCartProperties() {
-    const totals = store.cartTotals();
-    track.setUserProperties({
-      cart_value: totals.subtotal,
-      cart_size: totals.count,
-    });
-  }
-
-  /* ======================================================================
-     Checkout
-     ====================================================================== */
-
-  function initCheckout() {
-    const formEl = $('[data-checkout-form]');
-    if (!formEl) return;
-
-    const steps = $$('[data-step]');
-    const stepNav = $$('[data-step-nav]');
-    const summaryEl = $('[data-checkout-summary]');
-    const linesEl = $('[data-checkout-lines]');
-    const cart = store.getCart();
-
-    if (cart.lines.length === 0) {
-      $('[data-checkout-wrap]').hidden = true;
-      $('[data-checkout-empty]').hidden = false;
-      return;
-    }
-
-    // Prefill from the signed-in customer if there is one.
-    const customer = store.getCustomer();
-    if (customer) {
-      const set = (name, value) => {
-        const el = formEl.elements[name];
-        if (el && value) el.value = value;
-      };
-      set('email', customer.email);
-      set('firstName', customer.firstName);
-      set('lastName', customer.lastName);
-      set('address', customer.address);
-      set('city', customer.city);
-      set('postcode', customer.postcode);
-    }
-
-    let current = 0;
-
-    function totals() {
-      const t = store.cartTotals();
-      const method = formEl.elements.shippingMethod;
-      const express = method && method.value === 'express';
-      const shipping = express ? 19.95 : t.shipping;
-      const rate = cfg.TAX_RATE ?? 0.1;
-      const total = t.subtotal + shipping;
-      return {
-        subtotal: t.subtotal,
-        shipping: shipping,
-        taxIncluded: total - total / (1 + rate),
-        total: total,
-        count: t.count,
-        freeShippingGap: t.freeShippingGap,
-      };
-    }
-
-    function renderSide() {
-      linesEl.innerHTML = cart.lines
-        .map(
-          (l) =>
-            '<div class="line" style="grid-template-columns:56px 1fr auto">' +
-            '<span class="line__media" style="width:56px">' +
-            (l.image ? '<img src="' + url(l.image) + '" alt="">' : '') +
-            '</span>' +
-            '<span><span class="line__title">' +
-            escapeHtml(l.title) +
-            '</span>' +
-            (l.variantTitle
-              ? '<span class="line__variant" style="display:block">' +
-                escapeHtml(l.variantTitle) +
-                '</span>'
-              : '') +
-            '<span class="line__variant" style="display:block">Qty ' +
-            l.quantity +
-            '</span></span>' +
-            '<span>' +
-            store.money(l.price * l.quantity) +
-            '</span>' +
-            '</div>'
+            '</span><strong>' +
+            escapeHtml(r[1]) +
+            '</strong></div>'
         )
         .join('');
-      renderSummary(summaryEl, totals(), {
-        showTax: true,
-        totalLabel: 'Total',
-      });
+
+      if (lvrNote) {
+        const max = fig.product ? fig.product.maxLvr : 80;
+        lvrNote.textContent = !fig.loanAmount
+          ? ''
+          : fig.lvr > max
+          ? 'An LVR of ' + fig.lvr + '% is above the ' + max + '% this loan allows. A lender will review it.'
+          : fig.lvr > 80
+          ? 'An LVR of ' + fig.lvr + '% is above 80%, so lenders mortgage insurance usually applies.'
+          : 'An LVR of ' + fig.lvr + '%. No lenders mortgage insurance.';
+      }
+    }
+
+    function renderReview() {
+      const f = readFields();
+      const fig = applicationFigures(f);
+      const rows = [
+        ['Applicant', [f.firstName, f.lastName].filter(Boolean).join(' ') || '—'],
+        ['Email', f.email || '—'],
+        ['Applying', String(f.applicants) === '2' ? 'Two of us' : 'Just me'],
+        ['First home', f.firstHomeBuyer === 'yes' ? 'Yes' : 'No'],
+        ['Purpose', PURPOSE_LABEL[fig.purpose]],
+        ['Property value', store.money0(fig.value)],
+        ['Loan amount', store.money0(fig.loanAmount)],
+        ['LVR', fig.lvr != null ? fig.lvr + '%' : '—'],
+        ['Borrowing power', store.money0(fig.power)],
+        ['Loan', fig.product ? fig.product.title : '—'],
+        ['Rate', store.pct(fig.rate)],
+        ['Repayments', store.money0(fig.repayment) + ' ' + fig.frequency + ' over ' + fig.years + ' years'],
+      ];
+      reviewEl.innerHTML = rows
+        .map((r) => '<div><dt>' + r[0] + '</dt><dd>' + escapeHtml(r[1]) + '</dd></div>')
+        .join('');
+    }
+
+    function refresh() {
+      syncVisibility();
+      renderChoices();
+      renderSummary();
     }
 
     function showStep(index) {
       current = index;
       steps.forEach((s, i) => (s.hidden = i !== index));
       stepNav.forEach((s, i) =>
-        i === index
-          ? s.setAttribute('aria-current', 'step')
-          : s.removeAttribute('aria-current')
+        i === index ? s.setAttribute('aria-current', 'step') : s.removeAttribute('aria-current')
       );
+      if (STEPS[index] === 'review') renderReview();
+      renderSummary();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // No validation anywhere: every step advances whatever is filled in.
-    $$('[data-step-next]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        // Capturing the email mid-checkout is what makes an abandoned-cart
-        // campaign possible, so hand it to both tools as soon as it exists.
-        // Left blank, the visitor stays as they were rather than being
-        // replaced by an empty customer.
-        const email = formEl.elements.email.value.trim();
-        if (current === 0 && email) {
-          const optIn = formEl.elements.marketingOptIn
-            ? formEl.elements.marketingOptIn.checked
-            : false;
-          const person = store.signIn({
-            email: email,
-            firstName: formEl.elements.firstName
-              ? formEl.elements.firstName.value.trim()
-              : '',
-            marketingOptIn: optIn,
-            source: 'checkout',
-          });
-          track.identify(person);
-        }
-        // After identify, so Contact Entered lands on the identified user.
-        logStageEntered(current);
-        renderSide();
-        showStep(Math.min(current + 1, steps.length - 1));
-      });
-    });
-
-    // One event per completed checkout stage, sent to both tools so Braze can
-    // run abandoned-checkout campaigns off how far someone got. Deliberately
-    // lean: the cart is on Checkout Started and Order Completed, so it isn't
-    // repeated here, and no address details are sent.
-    function logStageEntered(stage) {
-      const f = formEl.elements;
-      const checked = (name) => {
-        const el = formEl.querySelector('[name="' + name + '"]:checked');
-        return el ? el.value : null;
-      };
-      if (stage === 0) {
-        track.track('Contact Entered', {
-          email_provided: !!f.email.value.trim(),
-          marketing_opt_in: f.marketingOptIn ? f.marketingOptIn.checked : false,
+    // One event per completed stage, to both tools, so a Braze abandoned
+    // application campaign knows how far someone got and a funnel of these
+    // shows where applications stall. Money goes as bands except the loan
+    // amount and borrowing power, which a campaign would quote back.
+    function logStage(index) {
+      const f = readFields();
+      const fig = applicationFigures(f);
+      const id = { application_id: draft.id };
+      if (index === 0) {
+        track.track('Applicant Details Entered', Object.assign({}, id, {
+          applicant_count: Number(f.applicants) || 1,
+          first_home_buyer: f.firstHomeBuyer === 'yes',
+          email_provided: !!(f.email || '').trim(),
+          marketing_opt_in: !!f.marketingOptIn,
+        }));
+        track.setUserProperties({
+          first_home_buyer: f.firstHomeBuyer === 'yes',
+          application_step: STEPS[1],
         });
-      } else if (stage === 1) {
-        track.track('Shipping Entered', {
-          shipping_method: checked('shippingMethod'),
-          shipping: totals().shipping,
-          country: f.country ? f.country.value : null,
+      } else if (index === 1) {
+        track.track('Property Details Entered', Object.assign({}, id, {
+          loan_purpose: fig.purpose,
+          property_stage: fig.refinance ? null : f.propertyStage,
+          property_value_band: finance.loanBand(fig.value),
+          loan_amount: fig.loanAmount,
+          lvr: fig.lvr,
+          state: f.state,
+        }));
+        track.setUserProperties({
+          loan_purpose: fig.purpose,
+          loan_amount: fig.loanAmount,
+          lvr: fig.lvr,
+          application_step: STEPS[2],
         });
-      } else if (stage === 2) {
-        track.track('Payment Entered', { payment_method: checked('paymentMethod') });
+      } else if (index === 2) {
+        track.track('Financials Entered', Object.assign({}, id, {
+          employment_type: f.employment,
+          income_band: finance.incomeBand(fig.income),
+          dependants: num(f.dependants),
+          borrowing_power: fig.power,
+          within_borrowing_power: fig.loanAmount <= fig.power,
+        }));
+        track.setUserProperties({
+          income_band: finance.incomeBand(fig.income),
+          borrowing_power: fig.power,
+          application_step: STEPS[3],
+        });
+      } else if (index === 3) {
+        track.track('Loan Selected', Object.assign({}, id, track.productProps(fig.product), {
+          interest_rate: fig.rate,
+          repayment_type: fig.type,
+          loan_term_years: fig.years,
+          repayment_frequency: fig.frequency,
+          estimated_repayment: Math.round(fig.repayment),
+        }));
+        track.setUserProperties({
+          application_product: fig.product ? fig.product.title : null,
+          application_step: STEPS[4],
+        });
       }
     }
 
-    $$('[data-step-back]').forEach(function (btn) {
-      btn.addEventListener('click', () => showStep(Math.max(0, current - 1)));
-    });
-
-    // The chosen methods are reported by Shipping Entered and Payment
-    // Entered, so a radio change only needs to update the totals.
-    $$('[name="shippingMethod"]').forEach(function (radio) {
-      radio.addEventListener('change', renderSide);
-    });
-
-    const placeBtn = $('[data-place-order]');
-    if (placeBtn)
-      placeBtn.addEventListener('click', function () {
-        const t = totals();
-        const data = new FormData(formEl);
-        const order = {
-          lines: store.getCart().lines.slice(),
-          subtotal: Math.round(t.subtotal * 100) / 100,
-          shipping: Math.round(t.shipping * 100) / 100,
-          taxIncluded: Math.round(t.taxIncluded * 100) / 100,
-          total: Math.round(t.total * 100) / 100,
-          currency: cfg.CURRENCY || 'AUD',
-          email: data.get('email'),
-          name: [data.get('firstName'), data.get('lastName')]
-            .filter(Boolean)
-            .join(' '),
-          address: [
-            data.get('address'),
-            data.get('city'),
-            data.get('postcode'),
-            data.get('country'),
-          ]
-            .filter(Boolean)
-            .join(', '),
-          shippingMethod: data.get('shippingMethod'),
-          paymentMethod: data.get('paymentMethod'),
-        };
-
-        const record = store.placeOrder(order);
-        track.trackPurchase(record);
-
-        const person = store.getCustomer();
-        if (person) {
-          track.setUserProperties({
-            lifetime_orders: person.lifetimeOrders || 1,
-            lifetime_value: person.lifetimeValue || record.total,
-            last_order_id: record.id,
-            last_order_at: record.placedAt,
-            favourite_brand: mostCommonBrand(record.lines),
-            cart_value: 0,
-            cart_size: 0,
+    // Only the email is checked. Every other field is optional, and every
+    // later step advances whatever is filled in.
+    $$('[data-step-next]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        // The email is what lets Braze send an abandoned application email,
+        // so step 1 won't advance without one, and it goes to both tools
+        // the moment it's given.
+        const f = formValues(form);
+        const email = (f.email || '').trim();
+        if (current === 0) {
+          if (!checkEmail(form.elements.email)) return;
+          const person = store.signIn({
+            email: email,
+            firstName: (f.firstName || '').trim(),
+            lastName: (f.lastName || '').trim(),
+            marketingOptIn: !!f.marketingOptIn,
+            source: 'application',
           });
+          track.identify(person);
         }
+        // After identify, so the stage event lands on the identified user.
+        logStage(current);
+        current = Math.min(current + 1, steps.length - 1);
+        save();
+        showStep(current);
+      });
+    });
 
-        store.clearCart();
-        store.setPref('lastOrderId', record.id);
-        location.href = url('order/');
+    $$('[data-step-back]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        current = Math.max(0, current - 1);
+        save();
+        showStep(current);
+      });
+    });
+
+    // Typing saves the draft without an event: the stage events already
+    // say how far someone got.
+    form.addEventListener('input', function () {
+      draft.fields = readFields();
+      store.saveDraft(draft);
+      refresh();
+    });
+    form.addEventListener('change', function (e) {
+      if (e.target.name === 'product') chosenProduct = e.target.value;
+      refresh();
+      draft.fields = readFields();
+      store.saveDraft(draft);
+    });
+
+    $('[data-submit-application]').addEventListener('click', function () {
+      const f = readFields();
+      // A draft seeded from the demo controls can reach review without an
+      // email. Send it back to step 1 rather than submit it anonymously.
+      if (!validEmail(f.email)) {
+        current = 0;
+        save();
+        showStep(0);
+        checkEmail(form.elements.email);
+        return;
+      }
+      const fig = applicationFigures(f);
+      const outcome = decide(fig);
+      const record = store.submitApplication({
+        id: draft.id,
+        startedAt: draft.startedAt,
+        source: draft.source,
+        fields: f,
+        product: fig.product ? fig.product.handle : null,
+        productTitle: fig.product ? fig.product.title : null,
+        loanAmount: fig.loanAmount,
+        propertyValue: fig.value,
+        lvr: fig.lvr,
+        borrowingPower: fig.power,
+        rate: fig.rate,
+        repayment: Math.round(fig.repayment),
+        frequency: fig.frequency,
+        years: fig.years,
+        decision: outcome.decision,
+        reasons: outcome.reasons,
+        status: outcome.decision,
       });
 
-    renderSide();
-    showStep(0);
-    // No event on arrival: Checkout Started (from the cart button) and the
-    // autocaptured page view already cover it.
-  }
+      track.track(
+        'Application Submitted',
+        Object.assign(
+          {
+            application_id: record.id,
+            source: record.source,
+            decision: outcome.decision,
+            decision_reasons: outcome.reasons,
+            loan_purpose: fig.purpose,
+            first_home_buyer: f.firstHomeBuyer === 'yes',
+            applicant_count: Number(f.applicants) || 1,
+            loan_amount: fig.loanAmount,
+            loan_amount_band: finance.loanBand(fig.loanAmount),
+            property_value_band: finance.loanBand(fig.value),
+            lvr: fig.lvr,
+            borrowing_power: fig.power,
+            repayment_type: fig.type,
+            loan_term_years: fig.years,
+            repayment_frequency: fig.frequency,
+            estimated_repayment: Math.round(fig.repayment),
+            minutes_to_submit: Math.round(
+              (Date.now() - new Date(record.startedAt).getTime()) / 60000
+            ),
+          },
+          track.productProps(fig.product),
+          { interest_rate: fig.rate }
+        )
+      );
 
-  function mostCommonBrand(lines) {
-    const tally = {};
-    lines.forEach((l) => (tally[l.brand] = (tally[l.brand] || 0) + l.quantity));
-    return Object.entries(tally).sort((a, b) => b[1] - a[1])[0][0];
+      track.setUserProperties({
+        application_status: outcome.decision,
+        application_step: 'submitted',
+        application_id: record.id,
+        application_submitted_at: record.submittedAt,
+        documents_outstanding: requiredDocuments(record).length,
+      });
+
+      const person = store.getCustomer();
+      if (person) {
+        person.applicationStatus = outcome.decision;
+        store.saveCustomer(person);
+      }
+
+      store.setPref('lastApplicationId', record.id);
+      location.href = url('apply/submitted/?id=' + encodeURIComponent(record.id));
+    });
+
+    refresh();
+    showStep(Math.min(current, steps.length - 1));
   }
 
   /* ======================================================================
-     Order confirmation
+     Application submitted
      ====================================================================== */
 
-  function initOrder() {
-    const root = $('[data-order]');
+  function initSubmitted() {
+    const root = $('[data-application]');
     if (!root) return;
-    const orders = store.getOrders();
-    const wanted = store.getPrefs().lastOrderId;
-    const order = orders.find((o) => o.id === wanted) || orders[0];
+    const list = store.getApplications();
+    const wanted = query.get('id') || store.getPrefs().lastApplicationId;
+    let app = list.find((a) => a.id === wanted) || list[0];
 
-    if (!order) {
+    if (!app) {
       root.innerHTML =
-        '<p class="muted">No order to show. <a class="link-underline" href="' +
-        url('collections/new-season/') +
-        '">Start shopping</a>.</p>';
+        '<p class="muted">No application to show. <a class="link-underline" href="' +
+        url('apply/') +
+        '">Start one</a>.</p>';
       return;
     }
 
-    root.innerHTML =
-      '<p class="eyebrow">Order ' +
-      escapeHtml(order.id) +
-      '</p>' +
-      '<h1 style="margin:8px 0 14px">Thanks' +
-      (order.name ? ', ' + escapeHtml(order.name.split(' ')[0]) : '') +
-      '.</h1>' +
-      '<p>' +
-      (order.email
-        ? 'A confirmation is on its way to <strong>' +
-          escapeHtml(order.email) +
-          '</strong>. '
-        : '') +
-      'Nothing ships. This is a teaching store.</p>' +
-      '<div class="order-card" style="margin-top:28px">' +
-      '<div class="order-card__head"><strong>' +
-      order.lines.reduce((n, l) => n + l.quantity, 0) +
-      ' items</strong><span>' +
-      store.money(order.total) +
-      ' ' +
-      escapeHtml(order.currency) +
-      '</span></div>' +
-      '<div class="order-card__items">' +
-      order.lines
-        .map(
-          (l) =>
-            '<div>' +
-            l.quantity +
-            ' × ' +
-            escapeHtml(l.title) +
-            (l.variantTitle ? ' (' + escapeHtml(l.variantTitle) + ')' : '') +
-            '</div>'
+    function render() {
+      const docs = requiredDocuments(app);
+      const approved = app.decision === 'conditionally_approved';
+      const outstanding = docs.filter((d) => !app.documents.includes(d[0])).length;
+      root.innerHTML =
+        '<p class="eyebrow">Application ' +
+        escapeHtml(app.id) +
+        '</p>' +
+        '<h1 style="margin:8px 0 14px">' +
+        (approved ? 'Conditionally approved' : 'With a lender for review') +
+        (app.fields.firstName ? ', ' + escapeHtml(app.fields.firstName) : '') +
+        '.</h1>' +
+        '<p>' +
+        (approved
+          ? 'Based on what you told us, we can lend you ' +
+            store.money0(app.loanAmount) +
+            ' on the ' +
+            escapeHtml(app.productTitle) +
+            '. Send your documents and a lender will confirm it.'
+          : 'Your application is outside what we can approve on screen' +
+            (app.reasons.includes('above_borrowing_power')
+              ? ': the loan amount is above your estimated borrowing power of ' +
+                store.money0(app.borrowingPower)
+              : app.reasons.includes('above_max_lvr')
+              ? ': the LVR is above what this loan allows'
+              : '') +
+            '. A lender will call you within one business day.') +
+        '</p>' +
+        '<p class="muted">Nothing here is a real credit decision. It&rsquo;s arithmetic on what you typed.</p>' +
+        '<div class="panel-card" style="margin-top:28px">' +
+        '<div class="panel-card__head"><strong>' +
+        escapeHtml(app.productTitle || 'Home loan') +
+        '</strong><span>' +
+        store.money0(app.loanAmount) +
+        '</span></div>' +
+        '<div class="panel-card__items">' +
+        '<div>' + store.pct(app.rate) + ', ' + app.years + ' years</div>' +
+        '<div>About ' + store.money0(app.repayment) + ' ' + escapeHtml(app.frequency) + '</div>' +
+        '<div>LVR ' + (app.lvr != null ? app.lvr + '%' : '—') + '</div>' +
+        '</div></div>' +
+        '<h2 style="margin:36px 0 6px;font-size:20px">Next: your documents</h2>' +
+        '<p class="muted" style="margin-bottom:14px">' +
+        (outstanding
+          ? outstanding + ' of ' + docs.length + ' still to send. Nothing is really uploaded.'
+          : 'All received. A lender will be in touch to take it to settlement.') +
+        '</p>' +
+        '<div class="doc-list">' +
+        docs
+          .map(function (d) {
+            const done = app.documents.includes(d[0]);
+            return (
+              '<div class="doc"><span>' +
+              escapeHtml(d[1]) +
+              '</span>' +
+              (done
+                ? '<span class="doc__done">Received</span>'
+                : '<button class="btn btn--sm btn--outline" type="button" data-upload="' +
+                  d[0] +
+                  '">Upload</button>') +
+              '</div>'
+            );
+          })
+          .join('') +
+        '</div>';
+    }
+
+    root.addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-upload]');
+      if (!btn) return;
+      const docs = requiredDocuments(app);
+      const documents = app.documents.concat(btn.dataset.upload);
+      const outstanding = docs.filter((d) => !documents.includes(d[0])).length;
+      app = store.updateApplication(app.id, {
+        documents: documents,
+        status: outstanding ? app.status : 'documents_received',
+      });
+      track.track('Document Uploaded', {
+        application_id: app.id,
+        document_type: btn.dataset.upload,
+        documents_outstanding: outstanding,
+      });
+      track.setUserProperties(
+        Object.assign(
+          { documents_outstanding: outstanding },
+          outstanding ? {} : { application_status: 'documents_received' }
         )
-        .join('') +
-      '</div>' +
-      '<div class="summary__row" style="padding-top:14px;border-top:1px solid var(--line);margin-top:14px"><span>Shipping</span><span>' +
-      (order.shipping === 0 ? 'Free' : store.money(order.shipping)) +
-      '</span></div>' +
-      (order.address
-        ? '<p class="muted" style="margin:14px 0 0">Shipping to ' +
-          escapeHtml(order.address) +
-          '</p>'
-        : '') +
-      '</div>';
-    // No event here: Order Completed, sent as the order is placed, carries
-    // the same order, and the page view is autocaptured.
+      );
+      render();
+    });
+
+    render();
+    // No event on arrival: Application Submitted, sent as it was submitted,
+    // carries the same application, and the page view is autocaptured.
   }
 
   /* ======================================================================
-     Account
+     Internet banking
      ====================================================================== */
+
+  const STATUS_LABEL = {
+    conditionally_approved: 'Conditionally approved',
+    referred_to_lender: 'With a lender',
+    documents_received: 'Documents received',
+  };
 
   function initAccount() {
     const root = $('[data-account]');
     if (!root) return;
 
     function renderSignedIn(customer) {
-      const orders = store.getOrders();
+      const draft = store.getDraft();
+      const apps = store.getApplications();
+      const accounts = customer.accounts || [];
       root.innerHTML =
         '<h1 style="margin-bottom:6px">' +
-        escapeHtml(customer.firstName || 'Your account') +
+        escapeHtml(customer.firstName ? 'Hi, ' + customer.firstName : 'Internet banking') +
         '</h1>' +
         '<p class="muted" style="margin-bottom:28px">' +
         escapeHtml(customer.email) +
         '</p>' +
-        '<dl class="summary" style="display:grid;gap:8px;margin-bottom:24px">' +
-        '<div class="summary__row"><span>Orders</span><span>' +
-        (customer.lifetimeOrders || 0) +
-        '</span></div>' +
-        '<div class="summary__row"><span>Lifetime value</span><span>' +
-        store.money(customer.lifetimeValue || 0) +
-        '</span></div>' +
-        '<div class="summary__row"><span>Favourite brand</span><span>' +
-        escapeHtml(customer.favouriteBrand || '—') +
-        '</span></div>' +
-        '<div class="summary__row"><span>Email marketing</span><span>' +
+        '<h2 style="margin:0 0 12px;font-size:18px">Your accounts</h2>' +
+        (accounts.length
+          ? accounts
+              .map(
+                (a) =>
+                  '<div class="panel-card"><div class="panel-card__head"><strong>' +
+                  escapeHtml(a.name) +
+                  '</strong><span' +
+                  (a.balance < 0 ? ' class="muted"' : '') +
+                  '>' +
+                  store.money(a.balance) +
+                  '</span></div><div class="panel-card__items"><div>' +
+                  escapeHtml(a.number) +
+                  '</div></div></div>'
+              )
+              .join('')
+          : '<p class="muted">No accounts yet. <a class="link-underline" href="' +
+            url('everyday/everyday-account/') +
+            '">Open an Everyday Account</a>.</p>') +
+        '<h2 style="margin:32px 0 12px;font-size:18px">Home loan applications</h2>' +
+        (draft
+          ? '<div class="panel-card"><div class="panel-card__head"><strong>' +
+            escapeHtml(draft.id) +
+            '</strong><span>In progress: ' +
+            escapeHtml(STEP_LABEL[STEPS[draft.step]]) +
+            '</span></div><a class="btn btn--sm" href="' +
+            url('apply/') +
+            '">Continue application</a></div>'
+          : '') +
+        apps
+          .map(
+            (a) =>
+              '<div class="panel-card"><div class="panel-card__head"><strong>' +
+              escapeHtml(a.id) +
+              '</strong><span>' +
+              escapeHtml(STATUS_LABEL[a.status] || a.status) +
+              '</span></div><div class="panel-card__items"><div>' +
+              escapeHtml(a.productTitle || 'Home loan') +
+              ' · ' +
+              store.money0(a.loanAmount) +
+              ' · submitted ' +
+              new Date(a.submittedAt).toLocaleDateString('en-AU') +
+              '</div><div><a class="link-underline" href="' +
+              url('apply/submitted/?id=' + encodeURIComponent(a.id)) +
+              '">View</a></div></div></div>'
+          )
+          .join('') +
+        (!draft && !apps.length
+          ? '<p class="muted">None yet. <a class="link-underline" href="' +
+            url('apply/') +
+            '">Start an application</a>.</p>'
+          : '') +
+        '<dl class="summary" style="display:grid;gap:8px;margin:32px 0 16px">' +
+        '<div class="summary__row"><span>Rate updates by email</span><span>' +
         (customer.marketingOptIn ? 'Subscribed' : 'Not subscribed') +
         '</span></div>' +
         '</dl>' +
         '<button class="btn btn--outline btn--sm" data-optin-toggle>' +
-        (customer.marketingOptIn ? 'Unsubscribe' : 'Subscribe to email') +
+        (customer.marketingOptIn ? 'Unsubscribe' : 'Subscribe to rate updates') +
         '</button> ' +
-        '<button class="btn btn--outline btn--sm" data-signout>Sign out</button>' +
-        '<h2 style="margin:40px 0 14px;font-size:20px">Order history</h2>' +
-        (orders.length
-          ? orders
-              .map(
-                (o) =>
-                  '<div class="order-card"><div class="order-card__head">' +
-                  '<strong>' +
-                  escapeHtml(o.id) +
-                  '</strong><span>' +
-                  new Date(o.placedAt).toLocaleDateString('en-AU') +
-                  ' · ' +
-                  store.money(o.total) +
-                  '</span></div><div class="order-card__items">' +
-                  o.lines
-                    .map(
-                      (l) =>
-                        '<div>' + l.quantity + ' × ' + escapeHtml(l.title) + '</div>'
-                    )
-                    .join('') +
-                  '</div></div>'
-              )
-              .join('')
-          : '<p class="muted">No orders yet.</p>');
+        '<button class="btn btn--outline btn--sm" data-signout>Sign out</button>';
 
       $('[data-signout]').addEventListener('click', function () {
         track.track('Signed Out', { email: customer.email });
@@ -1227,26 +1476,21 @@
         customer.marketingOptIn = !customer.marketingOptIn;
         store.saveCustomer(customer);
         track.track(
-          customer.marketingOptIn
-            ? 'Email Subscription Started'
-            : 'Email Subscription Stopped',
-          { source: 'account_page' }
+          customer.marketingOptIn ? 'Email Subscription Started' : 'Email Subscription Stopped',
+          { source: 'internet_banking' }
         );
         track.identify(customer);
         renderSignedIn(customer);
-        toast(
-          customer.marketingOptIn
-            ? 'Subscribed to email'
-            : 'Unsubscribed from email'
-        );
+        toast(customer.marketingOptIn ? 'Subscribed to rate updates' : 'Unsubscribed');
       });
     }
 
     function renderAuth() {
       root.innerHTML =
+        '<h1 style="margin-bottom:18px;font-size:28px">Internet banking</h1>' +
         '<div class="auth__tabs" role="tablist">' +
-        '<button role="tab" aria-selected="true" data-auth-tab="signin">Sign in</button>' +
-        '<button role="tab" aria-selected="false" data-auth-tab="register">Create account</button>' +
+        '<button role="tab" aria-selected="true" data-auth-tab="signin">Log in</button>' +
+        '<button role="tab" aria-selected="false" data-auth-tab="register">Register</button>' +
         '</div>' +
         '<form data-auth-form novalidate>' +
         '<div data-register-only hidden>' +
@@ -1254,10 +1498,10 @@
         '</div>' +
         '<label class="field"><span>Email</span><input name="email" type="email" autocomplete="email"></label>' +
         '<label class="field"><span>Password</span><input name="password" type="password" autocomplete="current-password"></label>' +
-        '<label class="check" data-register-only hidden><input type="checkbox" name="marketingOptIn"><span>Email me about new collections</span></label>' +
-        '<button class="btn btn--block" type="submit" style="margin-top:10px" data-auth-submit>Sign in</button>' +
+        '<label class="check" data-register-only hidden><input type="checkbox" name="marketingOptIn"><span>Email me rate updates</span></label>' +
+        '<button class="btn btn--block" type="submit" style="margin-top:10px" data-auth-submit>Log in</button>' +
         '</form>' +
-        '<p class="muted" style="margin-top:18px;font-size:12px">No account is really created and no password is stored or checked. Any email works, or none: the point is what Amplitude and Braze do with the identity.</p>';
+        '<p class="muted" style="margin-top:18px;font-size:12px">No account is really created and no password is stored or checked. Any email address works: what matters is what Amplitude and Braze do with the identity.</p>';
 
       let mode = 'signin';
       const form = $('[data-auth-form]', root);
@@ -1268,23 +1512,18 @@
           $$('[data-auth-tab]', root).forEach((t) =>
             t.setAttribute('aria-selected', String(t === tab))
           );
-          $$('[data-register-only]', root).forEach(
-            (el) => (el.hidden = mode !== 'register')
-          );
-          $('[data-auth-submit]', root).textContent =
-            mode === 'register' ? 'Create account' : 'Sign in';
+          $$('[data-register-only]', root).forEach((el) => (el.hidden = mode !== 'register'));
+          $('[data-auth-submit]', root).textContent = mode === 'register' ? 'Register' : 'Log in';
         });
       });
 
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        // Only reachable while signed out, so a blank email replaces nobody.
+        if (!checkEmail(form.elements.email)) return;
         const email = form.elements.email.value.trim();
         const customer = store.signIn({
           email: email,
-          firstName: form.elements.firstName
-            ? form.elements.firstName.value.trim()
-            : '',
+          firstName: form.elements.firstName ? form.elements.firstName.value.trim() : '',
           marketingOptIn: form.elements.marketingOptIn
             ? form.elements.marketingOptIn.checked
             : false,
@@ -1295,7 +1534,7 @@
           method: 'email',
         });
         track.identify(customer);
-        toast(mode === 'register' ? 'Account created' : 'Signed in');
+        toast(mode === 'register' ? 'Registered' : 'Logged in');
         renderSignedIn(customer);
       });
     }
@@ -1303,11 +1542,10 @@
     const existing = store.getCustomer();
     if (existing) renderSignedIn(existing);
     else renderAuth();
-
   }
 
   /* ======================================================================
-     Newsletter + enquiry forms
+     Rate updates + lender callback forms
      ====================================================================== */
 
   function initForms() {
@@ -1317,15 +1555,17 @@
         const input = $('input[type=email]', form);
         const msg = $('.newsletter__msg', form.parentElement) || null;
         const email = input.value.trim();
-        // Nothing typed means nothing to subscribe. Anything typed is taken
-        // as-is, with no format check.
-        if (!email) return;
+        if (!checkEmail(input, msg)) return;
+        // First, while this still counts as the visitor's own action: the
+        // browser only shows the push prompt from a user gesture. Someone
+        // asking to hear when rates move is the natural moment to offer it.
+        if (cfg.WEB_PUSH_ON_RATE_UPDATES) track.requestWebPush('rate_updates');
         const customer = store.signIn({
           email: email,
           marketingOptIn: true,
-          source: 'newsletter',
+          source: 'rate_updates',
         });
-        track.track('Newsletter Subscribed', {
+        track.track('Rate Updates Subscribed', {
           email: email,
           source: form.dataset.newsletter || 'footer',
         });
@@ -1339,28 +1579,25 @@
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         const data = new FormData(form);
+        // A lender can't get in touch without it.
+        if (!checkEmail(form.elements.email)) return;
         const email = String(data.get('email') || '').trim();
-        // Submits whatever is filled in. Without an email the visitor stays
-        // as they were, rather than being replaced by an empty customer.
-        if (email) {
-          const customer = store.signIn({
-            email: email,
-            firstName: String(data.get('name') || '').split(' ')[0],
-            company: data.get('company'),
-            marketingOptIn: true,
-            source: 'services_enquiry',
-          });
-          track.identify(customer);
-        }
-        track.track('Enquiry Submitted', {
-          service: data.get('service'),
-          company: data.get('company'),
-          budget: data.get('budget') || null,
+        const customer = store.signIn({
+          email: email,
+          firstName: String(data.get('name') || '').split(' ')[0],
+          marketingOptIn: true,
+          source: 'lender_callback',
+        });
+        track.identify(customer);
+        track.track('Lender Callback Requested', {
+          topic: data.get('topic'),
+          contact_method: data.get('method'),
+          preferred_time: data.get('time'),
           message_length: String(data.get('message') || '').length,
         });
         track.setUserProperties({
-          lead_type: 'b2b_enquiry',
-          interested_service: data.get('service'),
+          lead_type: 'home_loan_enquiry',
+          enquiry_topic: data.get('topic'),
         });
         form.hidden = true;
         const done = $('[data-enquiry-done]', form.parentElement);
@@ -1368,11 +1605,11 @@
       });
     });
 
-    $$('[data-service-cta]').forEach(function (btn) {
+    $$('[data-contact-cta]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        track.track('Service Interest', { service: btn.dataset.serviceCta });
-        const select = $('[data-enquiry] [name=service]');
-        if (select) select.value = btn.dataset.serviceCta;
+        track.track('Contact Method Chosen', { contact_method: btn.dataset.contactCta });
+        const select = $('[data-enquiry] [name=method]');
+        if (select) select.value = btn.dataset.contactCta;
       });
     });
   }
@@ -1385,17 +1622,17 @@
   // is built in Braze. Each is clearly labelled as simulated in the UI.
   const SIMULATED_CARDS = [
     {
-      id: 'sim-signature',
-      title: 'The Signature Range is live',
-      body: 'Three pieces, made to no brief but our own. Limited numbers.',
-      link: 'collections/signature/',
+      id: 'sim-green',
+      title: 'Our lowest variable rate: 5.59% p.a.',
+      body: 'The Green Home Loan, for homes rated 7 stars or more. 5.62% p.a. comparison rate*.',
+      link: 'home-loans/green-home-loan/',
       simulated: true,
     },
     {
-      id: 'sim-southbank',
-      title: 'New from Southbank Coffee Co.',
-      body: 'The pour-over dripper we made for the roastery, now in the store.',
-      link: 'products/southbank-pour-over-dripper/',
+      id: 'sim-first-home',
+      title: 'Buying your first home?',
+      body: 'Buy with a 5% deposit and no lenders mortgage insurance.',
+      link: 'home-loans/first-home-loan/',
       simulated: true,
     },
   ];
@@ -1445,9 +1682,7 @@
       render();
     }
 
-    document.addEventListener('laneway:contentcards', (e) =>
-      adoptBrazeCards(e.detail)
-    );
+    document.addEventListener('laneway:contentcards', (e) => adoptBrazeCards(e.detail));
 
     const live = track.cachedContentCards();
     if (live.length) adoptBrazeCards(live);
@@ -1468,7 +1703,11 @@
     });
 
     document.addEventListener('click', function (e) {
-      if (!panel.hidden && !e.target.closest('#cards-panel') && !e.target.closest('[data-cards-toggle]'))
+      if (
+        !panel.hidden &&
+        !e.target.closest('#cards-panel') &&
+        !e.target.closest('[data-cards-toggle]')
+      )
         panel.hidden = true;
     });
 
@@ -1478,8 +1717,7 @@
       const card = cards.find((c) => c.id === el.dataset.card);
       if (!card) return;
       track.logContentCardClick(card);
-      if (card.link)
-        location.href = /^https?:/.test(card.link) ? card.link : url(card.link);
+      if (card.link) location.href = /^https?:/.test(card.link) ? card.link : url(card.link);
     });
 
     render();
@@ -1554,39 +1792,39 @@
     );
   }
 
-  function maybeShowFreeShippingNudge() {
-    const t = store.cartTotals();
-    if (t.freeShippingGap <= 0 || t.count === 0) return;
+  function maybeShowBorrowingNudge(amount) {
+    if (!amount || store.getDraft()) return;
     showIam({
-      id: 'free-shipping',
-      campaign: 'Free shipping threshold nudge',
-      trigger: 'cart_value below free shipping threshold',
-      title: 'You&rsquo;re ' + store.money(t.freeShippingGap) + ' from free shipping',
-      body:
-        'Orders over ' +
-        store.money(cfg.SHIPPING_FREE_OVER || 100) +
-        ' ship free anywhere in Australia.',
-      cta: 'Keep shopping',
-      link: 'collections/new-season/',
+      id: 'borrowing-power',
+      campaign: 'Calculator to application',
+      trigger: 'Borrowing Power Calculated, no application started',
+      title: 'You could borrow around ' + store.money0(amount),
+      body: 'Take that number into an application. It takes about 20 minutes, and you can save as you go.',
+      cta: 'Start an application',
+      link: 'apply/?amount=' + amount + '&source=in_app_message',
     });
   }
 
   function maybeShowReturningNudge() {
-    const cart = store.getCart();
-    if (!cart.lines.length) return;
-    const age = Date.now() - new Date(cart.updatedAt || Date.now()).getTime();
-    // A real Braze abandoned-cart campaign waits hours. Two minutes keeps the
-    // demo watchable.
+    const draft = store.getDraft();
+    if (!draft || document.body.dataset.page === 'apply') return;
+    const age = Date.now() - new Date(draft.updatedAt || Date.now()).getTime();
+    // A real Braze abandoned application campaign waits a day. Two minutes
+    // keeps the demo watchable.
     if (age < 120000) return;
-    const first = cart.lines[0];
     showIam({
-      id: 'abandoned-cart',
-      campaign: 'Cart abandonment',
-      trigger: 'cart untouched for 2 minutes (hours, in a real campaign)',
-      title: 'Still thinking about the ' + first.title + '?',
-      body: 'Your cart is waiting. ' + store.cartCount() + ' item(s) held for you.',
-      cta: 'View cart',
-      link: 'cart/',
+      id: 'abandoned-application',
+      campaign: 'Abandoned application',
+      trigger: 'application untouched for 2 minutes (a day, in a real campaign)',
+      title: 'Your application is saved',
+      body:
+        "You're up to step " +
+        (draft.step + 1) +
+        ' of 5: ' +
+        STEP_LABEL[STEPS[draft.step]].toLowerCase() +
+        '. Pick up where you left off.',
+      cta: 'Continue application',
+      link: 'apply/',
     });
   }
 
@@ -1609,9 +1847,10 @@
     const page = document.body.dataset.page;
     if (page === 'product') initProduct();
     if (page === 'collection') initCollection();
-    if (page === 'cart') initCart();
-    if (page === 'checkout') initCheckout();
-    if (page === 'order') initOrder();
+    if (page === 'calc-borrowing') initBorrowingCalc();
+    if (page === 'calc-repayments') initRepaymentsCalc();
+    if (page === 'apply') initApply();
+    if (page === 'submitted') initSubmitted();
     if (page === 'account') initAccount();
 
     // Page views come from Amplitude autocapture (AMPLITUDE_AUTOCAPTURE).
@@ -1621,32 +1860,21 @@
   }
 
   function start() {
-    // SDKs start loading straight away, gate or not, so Braze is usually
-    // ready by the time the password is submitted and can show the push
-    // prompt itself.
     track.init();
-    const open = initGate();
-    if (open) {
-      boot();
-    } else if (window.LanewayDevtools) {
-      // Let the drawer work behind the gate: it shows what a storefront
-      // password does to tracking.
-      window.LanewayDevtools.mount();
-    }
+    boot();
   }
 
-  // Exposed so the dev panel can drive the storefront during a demo.
+  // Exposed so the dev panel can drive the site during a demo.
   window.LanewayApp = {
     toast,
     showIam,
     recommend,
     cardHtml,
-    reboot: function () {
-      renderCartBadge();
-    },
+    STEPS,
+    requiredDocuments,
+    reboot: renderDraftIndicator,
   };
 
-  if (document.readyState === 'loading')
-    document.addEventListener('DOMContentLoaded', start);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 })();

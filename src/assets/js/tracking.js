@@ -1,8 +1,8 @@
 /* ==========================================================================
-   Laneway demo — Amplitude + Braze
+   Laneway Bank demo — Amplitude + Braze
 
-   One call site, two destinations. Every storefront action goes through
-   Laneway.track(), which fans out to Amplitude (analytics, session replay)
+   One call site, two destinations. Every action on the site goes through
+   LanewayTrack.track(), which fans out to Amplitude (analytics, session replay)
    and Braze (engagement), and records what it did in the event stream so the
    integration is visible while you demo it.
 
@@ -10,17 +10,17 @@
 
      Amplitude → Braze   Behaviour observed on site becomes Braze custom
                          attributes and custom events, so Braze can segment
-                         and message on it (last_brand_viewed, cart_value,
-                         abandoned_cart, lifetime_value).
+                         and message on it (application_status,
+                         application_step, borrowing_power, loan_purpose).
 
      Braze → Amplitude   Braze in-app messages and content cards emit
                          Amplitude events when they are shown, clicked and
                          dismissed, so campaign exposure sits in the same
                          funnels as everything else and you can measure lift.
 
-   Identity is bridged both ways: Amplitude's device id is written to Braze as
-   a custom attribute and Braze's external id is written to Amplitude as a
-   user property, so the same person can be found in either tool.
+   Identity is shared: both tools use the email as the user id and Braze's
+   device id as the device id, so Braze Currents events land on the same
+   Amplitude user (see Identity below).
    ========================================================================== */
 
 (function () {
@@ -109,8 +109,8 @@
      Delivery
 
      Both SDKs load asynchronously, and the page fires its view events
-     (Product Viewed, Collection Viewed, Cart Viewed) the moment it boots,
-     before either has arrived. Calls made in that window are queued and
+     (Product Viewed, Product List Viewed, Application Resumed) the moment
+     it boots, before either has arrived. Calls made in that window are queued and
      replayed in order once the SDK is ready. Before this queue existed they
      were silently dropped, so no page-load event ever reached either tool.
      ====================================================================== */
@@ -390,9 +390,8 @@
       first_name: customer.firstName || null,
       last_name: customer.lastName || null,
       marketing_opt_in: !!customer.marketingOptIn,
-      lifetime_orders: customer.lifetimeOrders || 0,
-      lifetime_value: customer.lifetimeValue || 0,
-      favourite_brand: customer.favouriteBrand || null,
+      existing_customer: !!customer.existingCustomer,
+      has_home_loan: !!customer.hasHomeLoan,
       persona: customer.persona || null,
     };
   }
@@ -475,7 +474,7 @@
     };
   }
 
-  // Storefront sign-out. Braze says not to change the user on logout (it
+  // Site sign-out. Braze says not to change the user on logout (it
   // stops you re-engaging them), and an identified Braze user can't go back
   // to anonymous anyway. So Braze keeps the user, and Amplitude drops its
   // user id but keeps the shared device id, which still points both tools at
@@ -541,70 +540,40 @@
 
   // Context every event carries, so anything can be broken down by it later.
   function context() {
-    const cart = store.getCart();
+    const draft = store.getDraft();
     const customer = store.getCustomer();
     return {
       session_id: store.sessionId(),
       signed_in: !!customer,
-      cart_size: store.cartCount(cart),
-      cart_value: Math.round(store.cartSubtotal(cart) * 100) / 100,
+      application_in_progress: !!draft,
       page_path: location.pathname,
       currency: cfg.CURRENCY || 'AUD',
     };
   }
 
-  /* --- products array ---------------------------------------------------- */
+  /* --- product properties ---------------------------------------------- */
 
-  // Every event that carries product detail carries it here, as a `products`
-  // object array in the shape Amplitude's Cart Analysis expects: one element
-  // per product or line item, with `revenue` as the line total. Turn on
-  // property splitting for `products` in Amplitude Data (Property Is Array)
-  // to unlock Cart Analysis. Braze receives the same array as a nested event
-  // property, which its Liquid templating can iterate over.
+  // An event about one product carries it as flat product_* properties,
+  // which both tools can segment and filter on directly. An event about a
+  // list (a category page, search results, recommendations) carries the
+  // handles in product_ids.
 
-  const round2 = (n) => Math.round(Number(n) * 100) / 100;
-
-  function pickOption(options, names) {
-    if (!options) return null;
-    for (const n of names) if (options[n]) return options[n];
-    return null;
-  }
-
-  // Accepts a catalogue product, a slim index entry or a cart line; `extra`
-  // overrides or adds fields (the selected variant, quantity, list position).
-  function productItem(source, extra) {
-    const s = Object.assign({}, source, extra);
-    const price = round2(s.price != null ? s.price : s.priceMin);
-    const item = {
-      product_id: s.handle,
-      product_name: s.title,
-      brand: s.brand || null,
-      category: s.category || null,
-      price: price,
+  function productProps(p) {
+    if (!p) return {};
+    const props = {
+      product_id: p.handle,
+      product_name: p.title,
+      product_category: p.category,
     };
-    if (s.tier) item.tier = s.tier;
-    if (s.variantId) item.variant_id = String(s.variantId);
-    if (s.variantTitle) item.variant = s.variantTitle;
-    const color = pickOption(s.selectedOptions, ['Color', 'Colour']);
-    const size = pickOption(s.selectedOptions, ['Size']);
-    if (color) item.color = color;
-    if (size) item.size = size;
-    if (s.quantity != null) {
-      item.quantity = s.quantity;
-      item.revenue = round2(price * s.quantity);
-    }
-    if (s.position != null) item.position = s.position;
-    return item;
+    if (p.rate != null) props.interest_rate = p.rate;
+    if (p.comparisonRate != null) props.comparison_rate = p.comparisonRate;
+    if (p.rateType) props.rate_type = p.rateType;
+    if (p.fixedYears) props.fixed_years = p.fixedYears;
+    if (p.purpose) props.loan_purpose_type = p.purpose;
+    return props;
   }
 
-  // A list the visitor was shown (collection grid, search results,
-  // recommendations), with a 1-based position for merchandising analysis.
-  const listProducts = (list) =>
-    list.map((p, i) => productItem(p, { position: i + 1 }));
-
-  // Cart or order line items. Defaults to the current cart.
-  const cartProducts = (lines) =>
-    (lines || store.getCart().lines).map((l) => productItem(l));
+  const productIds = (list) => list.map((p) => p.handle);
 
   // Amplitude call with the time it happened, so an event queued while the
   // SDK loads keeps its real timestamp rather than the moment it was replayed.
@@ -620,8 +589,8 @@
   function track(name, props, ampFields) {
     const payload = Object.assign({}, context(), props || {});
 
-    // The stream shows event-level fields alongside the properties so the
-    // revenue on Order Completed is visible; they aren't sent as properties.
+    // The stream shows any Amplitude event-level fields (revenue, say)
+    // alongside the properties; they aren't sent as properties.
     record(
       'amplitude',
       name,
@@ -643,63 +612,6 @@
     const payload = Object.assign({}, context(), props || {});
     record('amplitude', name, payload, outcome('amplitude', ampTrack(name, payload)));
     return payload;
-  }
-
-  /* --- revenue ----------------------------------------------------------- */
-
-  function trackPurchase(order) {
-    // Braze: logPurchase per line drives revenue-based segmentation and
-    // triggers post-purchase campaigns.
-    order.lines.forEach(function (line) {
-      const ok = send('braze', function () {
-        window.braze.logPurchase(
-          line.handle,
-          line.price,
-          cfg.CURRENCY || 'AUD',
-          line.quantity,
-          {
-            order_id: order.id,
-            product_name: line.title,
-            variant: line.variantTitle || null,
-            brand: line.brand,
-            category: line.category,
-          }
-        );
-      });
-      record(
-        'braze',
-        'logPurchase(' + line.handle + ')',
-        {
-          product_id: line.handle,
-          price: line.price,
-          currency: cfg.CURRENCY || 'AUD',
-          quantity: line.quantity,
-          order_id: order.id,
-        },
-        outcome('braze', ok)
-      );
-    });
-
-    track('Order Completed', {
-      order_id: order.id,
-      revenue: order.total,
-      subtotal: order.subtotal,
-      shipping: order.shipping,
-      tax_included: order.taxIncluded,
-      item_count: order.lines.reduce((n, l) => n + l.quantity, 0),
-      products: cartProducts(order.lines),
-      shipping_method: order.shippingMethod || null,
-      payment_method: order.paymentMethod || null,
-    }, {
-      // Revenue carried by Order Completed itself, so Amplitude's revenue
-      // metrics and LTV count it without a separate revenue() call. That call
-      // created a second event, shown as "Revenue (Unverified)", repeating the
-      // same total. Product-level revenue is `products.revenue` in the array.
-      revenue: order.total,
-      revenueType: 'purchase',
-    });
-
-    send('braze', () => window.braze.requestImmediateDataFlush());
   }
 
   /* --- Braze surface interactions ---------------------------------------- */
@@ -781,10 +693,8 @@
     init,
     track,
     trackAnalyticsOnly,
-    trackPurchase,
-    productItem,
-    listProducts,
-    cartProducts,
+    productProps,
+    productIds,
     identify,
     signOut,
     wipeIdentity,

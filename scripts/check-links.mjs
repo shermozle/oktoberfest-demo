@@ -32,7 +32,9 @@ for (const file of pages) {
     // root-relative href is 404.html's fallback, which its own inline script
     // rewrites at runtime from the URL.
     if (/^(https?:|mailto:|#|data:|\/)/.test(raw)) continue;
-    const [path] = raw.split('#');
+    // Query strings (?product=...) are read by the page's script, not the
+    // file system.
+    const [path] = raw.split(/[?#]/);
     if (!path) continue;
     let target = resolve(dirname(file), path);
     if (path.endsWith('/')) target = join(target, 'index.html');
