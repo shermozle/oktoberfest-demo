@@ -7,6 +7,9 @@
   "scripts": {
     "build": "node build.mjs",
     "serve": "python3 -m http.server 8000 --directory docs",
-    "check": "node scripts/check-links.mjs"
+    "check": "node scripts/check-links.mjs",
+    "data:generate": "node datagen/run.mjs generate",
+    "data:report": "node datagen/run.mjs report",
+    "data:send": "node datagen/run.mjs send"
   }
 }

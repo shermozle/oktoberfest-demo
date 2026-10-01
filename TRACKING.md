@@ -68,18 +68,21 @@ Added automatically, so any event can be broken down by it.
 
 ## The application funnel
 
-The home loan application is the path the demo follows. Each event goes to
-both tools: Amplitude builds the funnel, and Braze knows how far someone got
-when they stop, which is what an abandoned application campaign runs on.
-Every event carries `application_id`.
+The home loan application is the path the demo follows, in six steps: about
+you, the property, your income, your expenses, your loan, review. Each event
+goes to both tools: Amplitude builds the funnel, and Braze knows how far
+someone got when they stop, which is what an abandoned application campaign
+runs on. Every event carries `application_id`. See [DEMO.md](DEMO.md) for
+the storyline this supports.
 
 | Event | Braze name | Properties |
 |---|---|---|
 | `Application Started` | `application_started` | `source` (the button that started it: `product_page`, `borrowing_power_calculator`, `header`, `landing_hero`, `in_app_message`…), any `utm_*` parameters it arrived with, plus product properties if a loan was pre-chosen. Fires once, when a new draft is created. |
-| `Application Resumed` | `application_resumed` | `step`, `step_number`, `minutes_since_saved`. A returning visitor reopening a saved draft; the signal to stop an abandonment campaign. |
-| `Applicant Details Entered` | `applicant_details_entered` | `applicant_count`, `first_home_buyer`, `email_provided` (always true now email is required), `marketing_opt_in`. Fires after the email identifies the visitor. |
+| `Application Resumed` | `application_resumed` | `step`, `step_number`, `minutes_since_saved`, and any `utm_*` on the link that brought them back. A reminder email's link carries `utm_source=braze`, so this is the event that measures how many the email re-activated. |
+| `Applicant Details Entered` | `applicant_details_entered` | `applicant_count`, `first_home_buyer`, `email_provided`, `phone_provided` (both always true: step 1 requires them), `marketing_opt_in`. Fires after the email identifies the visitor. |
 | `Property Details Entered` | `property_details_entered` | `loan_purpose` (`buy_home`, `buy_investment`, `refinance`), `property_stage`, `property_value_band`, `loan_amount`, `lvr`, `state` |
-| `Financials Entered` | `financials_entered` | `employment_type`, `income_band`, `dependants`, `borrowing_power`, `within_borrowing_power` |
+| `Income Entered` | `income_entered` | `employment_type`, `income_band`, `applicant_count`, `other_income` (boolean) |
+| `Expenses Entered` | `expenses_entered` | `dependants`, `has_other_debts`, `borrowing_power`, `within_borrowing_power` |
 | `Loan Selected` | `loan_selected` | product properties, `repayment_type`, `loan_term_years`, `repayment_frequency`, `estimated_repayment` |
 | `Application Submitted` | `application_submitted` | everything above, the `utm_*` parameters the application started with, plus `decision` (`conditionally_approved` or `referred_to_lender`), `decision_reasons`, `minutes_to_submit` |
 | `Document Uploaded` | `document_uploaded` | `document_type`, `documents_outstanding` |
@@ -89,7 +92,28 @@ maximum LVR is a conditional approval, anything else is referred. Going back
 a step sends nothing, and typing only saves the draft.
 
 The draft is saved in localStorage after every step and every keystroke, so
-reloading or leaving and coming back resumes where the visitor stopped.
+reloading or leaving and coming back resumes where the visitor stopped. That
+means resuming works in the same browser only: a reminder link opened on
+another device starts a fresh application.
+
+### Progress attributes
+
+After every step (and on start and submit) both tools get the same picture
+of how far the application has got. Braze uses these to personalise a
+reminder, Amplitude to build the abandoner cohort.
+
+| Property | Example after step 2 | |
+|---|---|---|
+| `application_step` | `income` | The next step to do; `submitted` once it's in |
+| `application_steps_completed` | `["about_you","property"]` | Array |
+| `application_steps_remaining` | `4` | |
+| `application_percent_complete` | `33` | |
+| `application_info_needed` | `["Your income and employment", "Your monthly expenses and any other debts", …]` | Array of plain-language items, ready to list in an email |
+| `application_resume_url` | `https://…/apply/` | Where a reminder links to. Add UTMs in the campaign. |
+| `application_product`, `application_product_id` | `Package Home Loan`, `package-home-loan` | Set on start if a loan was pre-chosen (the landing page does), and again at step 5 |
+
+[braze/abandoned-application-email.html](braze/abandoned-application-email.html)
+is a starter reminder email built on these.
 
 ## The Package Home Loan landing page
 
@@ -205,20 +229,22 @@ the event stream shows each sync, marked as not sent.
 ## User properties and Braze custom attributes
 
 These are set on both sides together, so a cohort built in one tool can be
-found in the other. They stay scalar because that's what Braze segments on.
+found in the other. They stay scalar because that's what Braze segments on,
+except the two progress arrays above, which are there for Liquid.
 
 | Property | Set when |
 |---|---|
 | `email`, `first_name`, `last_name` | Sign-in, registration, application step 1, rate updates, callback request |
-| `marketing_opt_in` | Sign-up checkbox, application step 1 or internet banking toggle. Also drives Braze's email subscription state. |
+| `marketing_opt_in` | Sign-up checkbox, application step 1 or internet banking toggle |
+| `phone_provided` | Application step 1. The number itself goes to Braze only, via `setPhoneNumber` (E.164, e.g. `+61412345678`), for SMS. |
 | `persona`, `existing_customer`, `has_home_loan` | Demo persona switch |
 | `application_status` | `started`, `conditionally_approved`, `referred_to_lender`, `documents_received` |
-| `application_step` | The next step to complete: `about_you` … `review`, then `submitted` |
-| `application_started_at`, `application_submitted_at`, `application_id` | Start and submit |
-| `application_product` | Loan chosen at step 4 |
+| `application_step` and the other progress attributes | Every step: see [Progress attributes](#progress-attributes) |
+| `application_started_at`, `application_submitted_at`, `application_id`, `application_last_resumed_at` | Start, submit and resume |
 | `first_home_buyer` | Step 1 |
-| `loan_purpose`, `loan_amount`, `lvr` | Step 2 |
-| `income_band`, `borrowing_power` | Step 3, or the borrowing power calculator |
+| `loan_purpose`, `loan_amount`, `loan_amount_band`, `lvr` | Step 2 |
+| `income_band`, `employment_type` | Step 3 (`income_band` also from the borrowing power calculator) |
+| `borrowing_power` | Step 4, or the borrowing power calculator |
 | `documents_outstanding` | Submit, then each upload |
 | `last_product_viewed`, `last_category_viewed` | Product page view |
 | `interested_product` | Register interest on a non-loan product |
@@ -228,8 +254,15 @@ found in the other. They stay scalar because that's what Braze segments on.
 Email is required, and must look like an address (`name@example.com`), on
 every form that takes one: application step 1, the lender callback form,
 internet banking and rate updates. It's what Braze sends to, and it becomes
-the user id in both tools. Every other field is optional. A draft seeded from
-the demo controls without an email is sent back to step 1 on submit.
+the user id in both tools. Application step 1 also requires an Australian
+mobile (`0412 345 678` or `+61 412 345 678`). Every other field is optional.
+
+**Braze email subscription** has three states. Ticking "Send me rate
+updates" (or subscribing in internet banking) sets `opted_in`. Leaving it
+unticked keeps Braze's default, `subscribed`, so an abandoned application
+reminder still reaches them. Only unsubscribing in internet banking sets
+`unsubscribed`. Send the reminder to `subscribed` and above; send marketing
+to `opted_in` only.
 
 ## Identity
 
@@ -255,6 +288,12 @@ opens and so on) to Amplitude with the Braze external id as the Amplitude
 - **"Reset identity"** in the event stream's Controls tab calls Braze's
   `wipeData()` and Amplitude's `reset()`, giving a new anonymous visitor in
   both with a new shared device id. Use it before switching persona in a demo.
+  It keeps the application and history saved in the browser.
+- **"Start fresh"**, below it, goes further: it resets both SDKs, deletes
+  their saved ids and unsent queues (`AMP_*` cookies, `ab.storage.*`) and
+  everything the site saved, then reloads. The next page view is a brand new
+  visitor with a new device id, which is the way to run the demo journey
+  again from the top.
 
 The State tab shows the ids each SDK is actually using and whether they match.
 
@@ -278,13 +317,14 @@ needed.
    applications to the tool that produced them.
 3. **Stop at step 3 and leave.** Reload, or come back later:
    `Application Resumed` fires, and the draft is exactly as it was. Braze has
-   `application_status: started` and `application_step: finances`, which is
-   the whole abandoned application segment. "Start one, stopped at step 3" in
-   the Controls tab sets this up in one click.
-4. **Submit two ways.** Enter an email and click straight through with the
-   defaults, and it's conditionally approved; raise the property value or
-   drop the income and it's referred to a lender. The decision is on the event, so a funnel split
-   by `decision` shows both paths.
+   `application_status: started`, `application_step: income` and the list of
+   what's left in `application_info_needed`. "High-value abandoner" in the
+   Controls tab sets this up in one click. The full storyline is in
+   [DEMO.md](DEMO.md).
+4. **Submit two ways.** Enter an email and mobile and click straight through
+   with the defaults, and it's conditionally approved; raise the property
+   value or drop the income and it's referred to a lender. The decision is
+   on the event, so a funnel split by `decision` shows both paths.
 5. **Upload documents** on the outcome page. Each `Document Uploaded` lowers
    `documents_outstanding` in Braze, the attribute a reminder campaign would
    run on.

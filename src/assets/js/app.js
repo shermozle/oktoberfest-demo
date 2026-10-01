@@ -77,17 +77,26 @@
     });
   }
 
-  // Email is the one required field anywhere on the site: it's the Braze
-  // external id, and the address Braze sends to. Everything else stays
-  // optional.
+  // Email is required on every form that takes one: it's the Braze
+  // external id and the address Braze sends to. The application also
+  // requires a mobile, for Braze SMS. Everything else stays optional.
   const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const validEmail = (s) => EMAIL.test(String(s || '').trim());
 
-  // Flags the email input and shows a message, or clears both. `msgEl` is
-  // where the message goes; by default a line added inside the field's
-  // label. Returns whether the email passed.
-  function checkEmail(input, msgEl) {
-    const ok = validEmail(input.value);
+  // An Australian mobile in any common format (0412 345 678, +61 412 345
+  // 678), returned as E.164 (+61412345678), the format Braze stores; null
+  // if it isn't one.
+  function normalisePhone(s) {
+    const digits = String(s || '').replace(/[\s()-]/g, '');
+    const m = /^(?:\+?61|0)(4\d{8})$/.exec(digits);
+    return m ? '+61' + m[1] : null;
+  }
+
+  // Flags an input and shows `message` beside it, or clears both. `msgEl`
+  // is where the message goes; by default a line added inside the field's
+  // label. Returns whether the value passed.
+  function checkField(input, valid, message, msgEl) {
+    const ok = valid(input.value);
     input.setAttribute('aria-invalid', String(!ok));
     let msg = msgEl;
     if (!msg) {
@@ -99,12 +108,12 @@
         input.closest('label').appendChild(msg);
       }
     }
-    if (msg) msg.textContent = ok ? '' : 'Enter your email address, like name@example.com.';
+    if (msg) msg.textContent = ok ? '' : message;
     if (!ok) {
       input.focus();
       // Clear the message as soon as they fix it.
       input.addEventListener('input', function clear() {
-        if (!validEmail(input.value)) return;
+        if (!valid(input.value)) return;
         input.setAttribute('aria-invalid', 'false');
         if (msg) msg.textContent = '';
         input.removeEventListener('input', clear);
@@ -112,6 +121,11 @@
     }
     return ok;
   }
+
+  const checkEmail = (input, msgEl) =>
+    checkField(input, validEmail, 'Enter your email address, like name@example.com.', msgEl);
+  const checkPhone = (input) =>
+    checkField(input, (v) => !!normalisePhone(v), 'Enter an Australian mobile number, like 0412 345 678.');
 
   // Runs fn once the visitor stops changing things for `ms`.
   function debounce(fn, ms) {
@@ -829,14 +843,44 @@
      Home loan application
      ====================================================================== */
 
-  const STEPS = ['about_you', 'property', 'finances', 'loan', 'review'];
+  const STEPS = ['about_you', 'property', 'income', 'expenses', 'loan', 'review'];
   const STEP_LABEL = {
     about_you: 'About you',
     property: 'The property',
-    finances: 'Your finances',
+    income: 'Your income',
+    expenses: 'Your expenses',
     loan: 'Your loan',
     review: 'Review',
   };
+  // What each step asks for, in words a reminder email can list.
+  const STEP_NEEDS = {
+    about_you: 'Your contact details',
+    property: 'The property and your deposit',
+    income: 'Your income and employment',
+    expenses: 'Your monthly expenses and any other debts',
+    loan: 'Your choice of loan and repayments',
+    review: 'A final check, and your OK for a credit check',
+  };
+
+  // How far an application has got, as user properties. `next` is the
+  // index of the next step to do. Braze gets these as custom attributes, so
+  // an abandoned application email can list exactly what's left
+  // (application_info_needed) and how far through they are.
+  function progressProps(next) {
+    const done = STEPS.slice(0, next);
+    const left = STEPS.slice(next);
+    return {
+      application_step: left[0] || 'submitted',
+      application_steps_completed: done,
+      application_steps_remaining: left.length,
+      application_percent_complete: Math.round((done.length / STEPS.length) * 100),
+      application_info_needed: left.map((k) => STEP_NEEDS[k]),
+    };
+  }
+
+  // Where a reminder links to. The draft lives in this browser, so the link
+  // resumes it on the same device; elsewhere it starts afresh.
+  const resumeUrl = () => new URL(url('apply/'), location.href).href;
   const PURPOSE_LABEL = {
     buy_home: 'Buying a home to live in',
     buy_investment: 'Buying an investment',
@@ -979,23 +1023,41 @@
           track.productProps(wanted)
         )
       );
-      track.setUserProperties({
-        application_status: 'started',
-        application_step: STEPS[0],
-        application_started_at: draft.startedAt,
-      });
+      track.setUserProperties(
+        Object.assign(
+          {
+            application_status: 'started',
+            application_id: draft.id,
+            application_started_at: draft.startedAt,
+            application_resume_url: resumeUrl(),
+          },
+          progressProps(0),
+          wanted
+            ? { application_product: wanted.title, application_product_id: wanted.handle }
+            : {}
+        )
+      );
     } else {
       if (wanted) draft.fields.product = wanted.handle;
       fillForm(form, draft.fields);
       $('[data-resume-note]').hidden = draft.step === 0;
-      track.track('Application Resumed', {
-        application_id: draft.id,
-        step: STEPS[draft.step],
-        step_number: draft.step + 1,
-        minutes_since_saved: Math.round(
-          (Date.now() - new Date(draft.updatedAt).getTime()) / 60000
-        ),
-      });
+      // Arriving from a reminder email, the link carries utm_source=braze,
+      // so this event is what measures how many the email brought back.
+      track.track(
+        'Application Resumed',
+        Object.assign(
+          {
+            application_id: draft.id,
+            step: STEPS[draft.step],
+            step_number: draft.step + 1,
+            minutes_since_saved: Math.round(
+              (Date.now() - new Date(draft.updatedAt).getTime()) / 60000
+            ),
+          },
+          campaignFrom(query)
+        )
+      );
+      track.setUserProperties({ application_last_resumed_at: new Date().toISOString() });
     }
 
     let current = draft.step || 0;
@@ -1052,7 +1114,7 @@
         ['Loan', fig.product ? fig.product.title : '—'],
         ['Loan amount', fig.loanAmount ? store.money0(fig.loanAmount) : '—'],
         ['LVR', fig.lvr != null ? fig.lvr + '%' : '—'],
-        ['Borrowing power', current >= 2 || draft.step >= 2 ? store.money0(fig.power) : 'after step 3'],
+        ['Borrowing power', current >= 3 || draft.step >= 3 ? store.money0(fig.power) : 'after step 4'],
         [
           'Repayments',
           fig.loanAmount ? store.money0(fig.repayment) + ' ' + fig.frequency : '—',
@@ -1128,17 +1190,16 @@
       const f = readFields();
       const fig = applicationFigures(f);
       const id = { application_id: draft.id };
+      const progress = progressProps(index + 1);
       if (index === 0) {
         track.track('Applicant Details Entered', Object.assign({}, id, {
           applicant_count: Number(f.applicants) || 1,
           first_home_buyer: f.firstHomeBuyer === 'yes',
-          email_provided: !!(f.email || '').trim(),
+          email_provided: validEmail(f.email),
+          phone_provided: !!normalisePhone(f.phone),
           marketing_opt_in: !!f.marketingOptIn,
         }));
-        track.setUserProperties({
-          first_home_buyer: f.firstHomeBuyer === 'yes',
-          application_step: STEPS[1],
-        });
+        track.setUserProperties(Object.assign({ first_home_buyer: f.firstHomeBuyer === 'yes' }, progress));
       } else if (index === 1) {
         track.track('Property Details Entered', Object.assign({}, id, {
           loan_purpose: fig.purpose,
@@ -1148,26 +1209,36 @@
           lvr: fig.lvr,
           state: f.state,
         }));
-        track.setUserProperties({
-          loan_purpose: fig.purpose,
-          loan_amount: fig.loanAmount,
-          lvr: fig.lvr,
-          application_step: STEPS[2],
-        });
+        track.setUserProperties(
+          Object.assign(
+            {
+              loan_purpose: fig.purpose,
+              loan_amount: fig.loanAmount,
+              loan_amount_band: finance.loanBand(fig.loanAmount),
+              lvr: fig.lvr,
+            },
+            progress
+          )
+        );
       } else if (index === 2) {
-        track.track('Financials Entered', Object.assign({}, id, {
+        track.track('Income Entered', Object.assign({}, id, {
           employment_type: f.employment,
           income_band: finance.incomeBand(fig.income),
+          applicant_count: Number(f.applicants) || 1,
+          other_income: num(f.otherIncome) > 0,
+        }));
+        track.setUserProperties(
+          Object.assign({ income_band: finance.incomeBand(fig.income), employment_type: f.employment }, progress)
+        );
+      } else if (index === 3) {
+        track.track('Expenses Entered', Object.assign({}, id, {
           dependants: num(f.dependants),
+          has_other_debts: num(f.debts) > 0,
           borrowing_power: fig.power,
           within_borrowing_power: fig.loanAmount <= fig.power,
         }));
-        track.setUserProperties({
-          income_band: finance.incomeBand(fig.income),
-          borrowing_power: fig.power,
-          application_step: STEPS[3],
-        });
-      } else if (index === 3) {
+        track.setUserProperties(Object.assign({ borrowing_power: fig.power }, progress));
+      } else if (index === 4) {
         track.track('Loan Selected', Object.assign({}, id, track.productProps(fig.product), {
           interest_rate: fig.rate,
           repayment_type: fig.type,
@@ -1175,26 +1246,36 @@
           repayment_frequency: fig.frequency,
           estimated_repayment: Math.round(fig.repayment),
         }));
-        track.setUserProperties({
-          application_product: fig.product ? fig.product.title : null,
-          application_step: STEPS[4],
-        });
+        track.setUserProperties(
+          Object.assign(
+            {
+              application_product: fig.product ? fig.product.title : null,
+              application_product_id: fig.product ? fig.product.handle : null,
+            },
+            progress
+          )
+        );
       }
     }
 
-    // Only the email is checked. Every other field is optional, and every
-    // later step advances whatever is filled in.
+    // Only the email and mobile are checked. Every other field is optional,
+    // and every later step advances whatever is filled in.
     $$('[data-step-next]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        // The email is what lets Braze send an abandoned application email,
-        // so step 1 won't advance without one, and it goes to both tools
-        // the moment it's given.
+        // Email and mobile are what let Braze chase an abandoned
+        // application, so step 1 won't advance without both, and they go
+        // to Braze the moment they're given.
         const f = formValues(form);
         const email = (f.email || '').trim();
         if (current === 0) {
-          if (!checkEmail(form.elements.email)) return;
+          // Phone first, so if both are wrong the email (the top field)
+          // ends up with focus.
+          const phoneOk = checkPhone(form.elements.phone);
+          const emailOk = checkEmail(form.elements.email);
+          if (!phoneOk || !emailOk) return;
           const person = store.signIn({
             email: email,
+            phone: normalisePhone(f.phone),
             firstName: (f.firstName || '').trim(),
             lastName: (f.lastName || '').trim(),
             marketingOptIn: !!f.marketingOptIn,
@@ -1235,11 +1316,12 @@
     $('[data-submit-application]').addEventListener('click', function () {
       const f = readFields();
       // A draft seeded from the demo controls can reach review without an
-      // email. Send it back to step 1 rather than submit it anonymously.
-      if (!validEmail(f.email)) {
+      // email or mobile. Send it back to step 1 rather than submit it.
+      if (!validEmail(f.email) || !normalisePhone(f.phone)) {
         current = 0;
         save();
         showStep(0);
+        checkPhone(form.elements.phone);
         checkEmail(form.elements.email);
         return;
       }
@@ -1296,13 +1378,16 @@
         )
       );
 
-      track.setUserProperties({
-        application_status: outcome.decision,
-        application_step: 'submitted',
-        application_id: record.id,
-        application_submitted_at: record.submittedAt,
-        documents_outstanding: requiredDocuments(record).length,
-      });
+      track.setUserProperties(
+        Object.assign(progressProps(STEPS.length), {
+          application_status: outcome.decision,
+          application_id: record.id,
+          application_submitted_at: record.submittedAt,
+          application_product: fig.product ? fig.product.title : null,
+          application_product_id: fig.product ? fig.product.handle : null,
+          documents_outstanding: requiredDocuments(record).length,
+        })
+      );
 
       const person = store.getCustomer();
       if (person) {
@@ -1534,6 +1619,9 @@
 
       $('[data-optin-toggle]').addEventListener('click', function () {
         customer.marketingOptIn = !customer.marketingOptIn;
+        // An explicit unsubscribe here is the only thing that stops Braze
+        // emailing; leaving the sign-up box unticked doesn't.
+        customer.emailUnsubscribed = !customer.marketingOptIn;
         store.saveCustomer(customer);
         track.track(
           customer.marketingOptIn ? 'Email Subscription Started' : 'Email Subscription Stopped',
@@ -1880,7 +1968,9 @@
       body:
         "You're up to step " +
         (draft.step + 1) +
-        ' of 5: ' +
+        ' of ' +
+        STEPS.length +
+        ': ' +
         STEP_LABEL[STEPS[draft.step]].toLowerCase() +
         '. Pick up where you left off.',
       cta: 'Continue application',
@@ -2078,6 +2168,7 @@
     recommend,
     cardHtml,
     STEPS,
+    progressProps,
     requiredDocuments,
     reboot: renderDraftIndicator,
   };

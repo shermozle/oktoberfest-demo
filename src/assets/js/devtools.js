@@ -25,12 +25,15 @@
 
   // Three profiles that land in different Braze segments and different
   // Amplitude cohorts, so you can show the same page behaving differently.
+  // Phone numbers are from ACMA's range reserved for fiction, so nothing
+  // Braze sends them reaches a real person.
   const PERSONAS = [
     {
       key: 'first-home',
       label: 'Priya — first home buyer',
       customer: {
         email: 'priya.raman@example.com',
+        phone: '+61491570156',
         firstName: 'Priya',
         lastName: 'Raman',
         persona: 'first_home_buyer',
@@ -45,6 +48,7 @@
       label: 'Dan — refinancing from another bank',
       customer: {
         email: 'dan.whitfield@example.com',
+        phone: '+61491570157',
         firstName: 'Dan',
         lastName: 'Whitfield',
         persona: 'refinancer',
@@ -62,6 +66,7 @@
       label: 'Mei — investor, existing home loan',
       customer: {
         email: 'mei.tanaka@example.com',
+        phone: '+61491570158',
         firstName: 'Mei',
         lastName: 'Tanaka',
         persona: 'investor',
@@ -117,13 +122,13 @@
           '</div>'
         : '') +
       '<div class="dev-section"><h4>Application</h4>' +
-      '<button class="dev-btn" data-dev-seed-application>start one, stopped at step 3</button>' +
+      '<button class="dev-btn" data-dev-seed-application>high-value abandoner: Package, $840k, stopped at step 3</button>' +
       '<button class="dev-btn" data-dev-clear-application>discard the application in progress</button>' +
-      '<p class="dev-note">A seeded application counts as abandoned straight away, so the simulated nudge (if on) shows on the next page.</p>' +
+      '<p class="dev-note">Identifies the visitor (as Alex Nguyen if nobody is signed in) and saves an application that stopped at step 3, Your income, three minutes ago. Braze gets the same attributes a real abandoner would, including <code>application_info_needed</code>, so the reminder campaign can be shown on it straight away.</p>' +
       '</div>' +
       '<div class="dev-section"><h4>Reset</h4>' +
-      '<button class="dev-btn" data-dev-reset>wipe all local state</button>' +
-      '<p class="dev-note">Clears the application, customer, submitted applications, history and the session cookie, then reloads.</p>' +
+      '<button class="dev-btn dev-btn--primary" data-dev-reset>start fresh: new device id, nothing saved</button>' +
+      '<p class="dev-note">As if this browser had never visited: a new device id in Amplitude and Braze, a new session, and the application, customer, submitted applications, history and this event log all gone. Reloads the home page. Browser permissions such as web push stay as they are.</p>' +
       '</div>' +
       '</div>' +
       '<div class="dev-pane" data-dev-pane="state" hidden>' +
@@ -250,7 +255,7 @@
       ['existing_customer', customer ? String(!!customer.existingCustomer) : '—'],
       ['has_home_loan', customer ? String(!!customer.hasHomeLoan) : '—'],
       ['marketing_opt_in', customer ? String(!!customer.marketingOptIn) : '—'],
-      ['application_in_progress', draft ? draft.id + ' (step ' + (draft.step + 1) + ' of 5)' : '—'],
+      ['application_in_progress', draft ? draft.id + ' (step ' + (draft.step + 1) + ' of 6)' : '—'],
       ['applications_submitted', apps.length],
       ['last_decision', apps[0] ? apps[0].status : '—'],
       ['recently_viewed', store.recentlyViewed().slice(0, 4).join(', ') || '—'],
@@ -347,42 +352,78 @@
     });
 
     $('[data-dev-seed-application]', drawer).addEventListener('click', function () {
-      const customer = store.getCustomer();
-      // Updated three minutes ago, so it already reads as abandoned.
+      // The demo's high-value abandoner: a Package Home Loan application,
+      // identified by email and mobile, that stopped at step 3 (income).
+      let customer = store.getCustomer();
+      if (!customer || !customer.email) {
+        customer = store.signIn({
+          email: 'alex.nguyen@example.com',
+          phone: '+61491570159',
+          firstName: 'Alex',
+          lastName: 'Nguyen',
+          persona: 'high_value_abandoner',
+          marketingOptIn: true,
+          source: 'demo_control',
+        });
+      } else if (!customer.phone) {
+        customer = store.signIn(Object.assign({}, customer, { phone: '+61491570159' }));
+      }
+      track.identify(customer);
+
+      const loanAmount = 840000;
       const draft = store.startDraft({
-        source: 'demo_control',
+        source: 'landing_hero',
+        campaign: { utm_source: 'google', utm_medium: 'cpc', utm_campaign: 'package_offset' },
         step: 2,
         fields: {
-          email: customer ? customer.email : '',
-          firstName: customer ? customer.firstName : '',
-          lastName: customer ? customer.lastName : '',
+          email: customer.email,
+          phone: customer.phone,
+          firstName: customer.firstName || '',
+          lastName: customer.lastName || '',
           applicants: '2',
           firstHomeBuyer: 'no',
           marketingOptIn: true,
           loanPurpose: 'buy_home',
           propertyStage: 'found',
-          propertyValue: '820000',
-          deposit: '164000',
+          propertyValue: '1050000',
+          deposit: '210000',
           state: 'VIC',
           postcode: '3068',
           product: 'package-home-loan',
         },
       });
+      // Saved three minutes ago, so it already reads as abandoned.
       draft.updatedAt = new Date(Date.now() - 180000).toISOString();
       store.saveDraft(draft, true);
+
       track.track('Application Seeded', {
         source: 'demo_control',
         application_id: draft.id,
-        step: 'finances',
-        loan_amount: 656000,
+        step: 'income',
+        loan_amount: loanAmount,
+        product_id: 'package-home-loan',
       });
-      track.setUserProperties({
-        application_status: 'started',
-        application_step: 'finances',
-        loan_amount: 656000,
-      });
+      const app = window.LanewayApp;
+      track.setUserProperties(
+        Object.assign(
+          {
+            application_status: 'started',
+            application_id: draft.id,
+            application_started_at: draft.startedAt,
+            application_product: 'Package Home Loan',
+            application_product_id: 'package-home-loan',
+            application_resume_url: new URL((window.LANEWAY_BASE || '') + 'apply/', location.href).href,
+            loan_purpose: 'buy_home',
+            loan_amount: loanAmount,
+            loan_amount_band: '$750k–$1m',
+            lvr: 80,
+          },
+          app ? app.progressProps(2) : { application_step: 'income' }
+        )
+      );
       renderState();
-      if (window.LanewayApp) window.LanewayApp.reboot();
+      if (app) app.reboot();
+      if (window.LanewayApp) window.LanewayApp.toast('Seeded: ' + (customer.firstName || customer.email) + ', stopped at step 3');
       if (document.body.dataset.page === 'apply') location.reload();
     });
 
@@ -395,6 +436,7 @@
     });
 
     $('[data-dev-reset]', drawer).addEventListener('click', function () {
+      track.freshStart();
       store.resetAll();
       location.href = (window.LANEWAY_BASE || '') + 'index.html';
     });

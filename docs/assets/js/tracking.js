@@ -390,6 +390,9 @@
       first_name: customer.firstName || null,
       last_name: customer.lastName || null,
       marketing_opt_in: !!customer.marketingOptIn,
+      // The number itself goes to Braze only (setPhoneNumber, below);
+      // analytics just needs to know there is one.
+      phone_provided: !!customer.phone,
       existing_customer: !!customer.existingCustomer,
       has_home_loan: !!customer.hasHomeLoan,
       persona: customer.persona || null,
@@ -416,10 +419,18 @@
       if (customer.email) user.setEmail(customer.email);
       if (customer.firstName) user.setFirstName(customer.firstName);
       if (customer.lastName) user.setLastName(customer.lastName);
+      if (customer.phone) user.setPhoneNumber(customer.phone);
+      // Ticking the sign-up box opts in. Leaving it unticked keeps Braze's
+      // default, subscribed, so service email such as an abandoned
+      // application reminder still reaches them; only an explicit
+      // unsubscribe in internet banking stops email.
+      const types = braze.User.NotificationSubscriptionTypes;
       user.setEmailNotificationSubscriptionType(
-        customer.marketingOptIn
-          ? braze.User.NotificationSubscriptionTypes.OPTED_IN
-          : braze.User.NotificationSubscriptionTypes.UNSUBSCRIBED
+        customer.emailUnsubscribed
+          ? types.UNSUBSCRIBED
+          : customer.marketingOptIn
+          ? types.OPTED_IN
+          : types.SUBSCRIBED
       );
       Object.entries(attrs).forEach(function (pair) {
         if (pair[1] !== null && pair[1] !== undefined)
@@ -431,7 +442,18 @@
     record(
       'braze',
       userId ? 'changeUser + setCustomUserAttribute' : 'setCustomUserAttribute (anonymous: no usable id)',
-      Object.assign({ external_id: userId }, attrs),
+      Object.assign(
+        {
+          external_id: userId,
+          phone: customer.phone || null,
+          email_subscription: customer.emailUnsubscribed
+            ? 'unsubscribed'
+            : customer.marketingOptIn
+            ? 'opted_in'
+            : 'subscribed',
+        },
+        attrs
+      ),
       outcome('braze', ok)
     );
   }
@@ -507,6 +529,55 @@
       });
       record('amplitude', 'reset', { deviceId: store.anonId() }, outcome('amplitude', ampOk));
     }
+  }
+
+  // "Start fresh" in the event stream: forget this browser entirely, as if
+  // it had never visited. Both SDKs are reset in memory first, so nothing
+  // they write while the page unloads brings the old ids back, then their
+  // saved ids, sessions and unsent queues are deleted from cookies and
+  // localStorage. The next page load gets a new Braze device id and
+  // Amplitude adopts it, as on a first visit. The caller clears the site's
+  // own storage and reloads.
+  function freshStart() {
+    try {
+      if (state.braze.ready) window.braze.wipeData();
+    } catch (e) {
+      /* carry on: the storage sweep below covers it */
+    }
+    try {
+      if (state.amplitude.ready) window.amplitude.reset();
+    } catch (e) {
+      /* as above */
+    }
+    state.amplitude.queue.length = 0;
+    state.braze.queue.length = 0;
+
+    // Amplitude keeps its ids in AMP_* cookies (and localStorage, depending
+    // on version); Braze keeps everything under ab.storage.*.
+    const sdkKey = /^(AMP_|amp_|ab\.storage|ab\._)/;
+    try {
+      Object.keys(localStorage)
+        .filter((k) => sdkKey.test(k))
+        .forEach((k) => localStorage.removeItem(k));
+      Object.keys(sessionStorage)
+        .filter((k) => sdkKey.test(k))
+        .forEach((k) => sessionStorage.removeItem(k));
+    } catch (e) {
+      /* storage blocked: nothing saved there to clear */
+    }
+    // A cookie only goes if it's expired with the domain it was set on, and
+    // Amplitude may have set it on the parent domain.
+    const host = location.hostname;
+    const domains = ['', host, '.' + host, '.' + host.split('.').slice(-2).join('.')];
+    document.cookie
+      .split('; ')
+      .map((c) => c.split('=')[0])
+      .filter((name) => sdkKey.test(name))
+      .forEach((name) =>
+        domains.forEach((d) => {
+          document.cookie = name + '=; path=/; max-age=0' + (d ? '; domain=' + d : '');
+        })
+      );
   }
 
   /* ======================================================================
@@ -698,6 +769,7 @@
     identify,
     signOut,
     wipeIdentity,
+    freshStart,
     ids,
     setUserProperties,
     logInAppMessageInteraction,
