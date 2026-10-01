@@ -1,0 +1,84 @@
+{% comment %}
+  Laneway Bank: High Value Application Abandoners reminder.
+
+  A starting point for the Braze email, to be restyled or rewritten with
+  Braze's AI tools in the demo. It uses the custom attributes the site sets
+  on every application step:
+
+    application_info_needed   array of what's left, in plain words
+    application_steps_completed / application_steps_remaining
+    application_percent_complete
+    application_product, application_product_id
+    application_step          next step key, or "submitted"
+    application_resume_url    where the "continue" link goes
+    loan_amount
+
+  Suggested subject:  {{${first_name} | default: 'Hi'}}, your {{custom_attribute.${application_product} | default: 'home loan'}} application is {{custom_attribute.${application_percent_complete}}}% done
+  Suggested preheader: {{custom_attribute.${application_steps_remaining}}} short steps left. Everything you've entered is saved.
+
+  The link carries utm_source=braze, so the site's Application Resumed event
+  records the email as what brought them back.
+{% endcomment %}
+{% if {{custom_attribute.${application_step}}} == 'submitted' %}{% abort_message('Application already submitted') %}{% endif %}
+{% assign needed = {{custom_attribute.${application_info_needed}}} %}
+{% assign product_id = {{custom_attribute.${application_product_id}}} %}
+{% capture resume_link %}{{custom_attribute.${application_resume_url}}}?utm_source=braze&utm_medium=email&utm_campaign=high_value_application_abandoners&utm_content={{custom_attribute.${application_step}}}{% endcapture %}
+<!doctype html>
+<html lang="en-AU">
+<body style="margin:0;padding:0;background:#f3eee6;font-family:Inter,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#1b1b1b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3eee6;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:18px;overflow:hidden;">
+
+        <tr><td style="background:#0c0c0c;padding:22px 32px;color:#ffffff;font-size:13px;font-weight:700;letter-spacing:0.18em;">
+          LANEWAY <span style="border:1px solid #ffffff;border-radius:3px;padding:1px 5px;font-size:10px;letter-spacing:0.14em;">BANK</span>
+        </td></tr>
+
+        <tr><td style="padding:36px 32px 8px;">
+          <p style="margin:0 0 6px;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#6b6b6b;">Your application is saved</p>
+          <h1 style="margin:0 0 16px;font-size:28px;line-height:1.15;color:#0c0c0c;">{{${first_name} | default: 'Hi'}}, you're {{custom_attribute.${application_percent_complete}}}% of the way there.</h1>
+          <p style="margin:0 0 20px;font-size:16px;line-height:1.55;">
+            Your {{custom_attribute.${application_product} | default: 'home loan'}} application{% if {{custom_attribute.${loan_amount}}} %} for ${{custom_attribute.${loan_amount} | number_with_delimiter}}{% endif %} is right where you left it. Here's what's left:
+          </p>
+        </td></tr>
+
+        <tr><td style="padding:0 32px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3eee6;border-radius:14px;">
+            {% for item in needed %}
+            <tr><td style="padding:14px 18px;font-size:15px;border-bottom:1px solid #e6dfd3;">
+              <span style="display:inline-block;width:22px;height:22px;margin-right:10px;border-radius:50%;background:#0c0c0c;color:#ffffff;font-size:12px;line-height:22px;text-align:center;vertical-align:middle;">{{forloop.index}}</span>{{item}}
+            </td></tr>
+            {% endfor %}
+          </table>
+          {% if needed contains 'Your income and employment' %}
+          <p style="margin:14px 0 0;font-size:13px;color:#6b6b6b;">Have your last two payslips handy. Self-employed? Your last two tax returns instead.</p>
+          {% endif %}
+        </td></tr>
+
+        <tr><td style="padding:28px 32px 8px;">
+          {% if product_id == 'package-home-loan' %}
+          <p style="margin:0;font-size:15px;line-height:1.55;">Once it's settled, every dollar in your offset accounts comes off the interest on your loan. $40,000 sitting in offset saves around $2,400 in interest in the first year.</p>
+          {% elsif product_id == 'first-home-loan' %}
+          <p style="margin:0;font-size:15px;line-height:1.55;">With the First Home Loan you can buy with a 5% deposit and no lenders mortgage insurance. Finish today and a first home lender will call you to walk through the next steps.</p>
+          {% elsif product_id contains 'fixed' %}
+          <p style="margin:0;font-size:15px;line-height:1.55;">Fixed rates can move before you lock one in. Finish your application and the rate is locked for free.</p>
+          {% else %}
+          <p style="margin:0;font-size:15px;line-height:1.55;">You'll see a conditional decision the moment you submit.</p>
+          {% endif %}
+        </td></tr>
+
+        <tr><td align="left" style="padding:24px 32px 36px;">
+          <a href="{{resume_link}}" style="display:inline-block;padding:16px 28px;border-radius:12px;background:#0c0c0c;color:#ffffff;font-size:15px;text-decoration:none;">Finish my application</a>
+          <p style="margin:18px 0 0;font-size:13px;color:#6b6b6b;">Rather talk it through? Reply to this email and a lender will call you.</p>
+        </td></tr>
+
+        <tr><td style="padding:20px 32px;background:#fafafa;font-size:11px;line-height:1.5;color:#8a8a8a;">
+          Laneway Bank is a simulated bank built to demonstrate Amplitude and Braze. It is not a real financial institution, and no application or credit decision is real.
+          <br><a href="{{${email_unsubscribe_url}}}" style="color:#8a8a8a;">Unsubscribe</a>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

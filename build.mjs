@@ -896,15 +896,19 @@ function applyPage() {
     <ol class="steps">
       <li data-step-nav aria-current="step">1 About you</li>
       <li data-step-nav>2 The property</li>
-      <li data-step-nav>3 Your finances</li>
-      <li data-step-nav>4 Your loan</li>
-      <li data-step-nav>5 Review</li>
+      <li data-step-nav>3 Your income</li>
+      <li data-step-nav>4 Your expenses</li>
+      <li data-step-nav>5 Your loan</li>
+      <li data-step-nav>6 Review</li>
     </ol>
     <p class="muted" data-resume-note hidden style="margin:-12px 0 20px">Welcome back. We saved your application where you left it.</p>
 
     <section class="checkout__step" data-step>
       <h1 class="step-title">About you</h1>
-      <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required aria-required="true"></label>
+      <div class="field-row">
+        <label class="field"><span>Email</span><input name="email" type="email" autocomplete="email" required aria-required="true"></label>
+        <label class="field"><span>Mobile</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="04xx xxx xxx" required aria-required="true"></label>
+      </div>
       <div class="field-row">
         <label class="field"><span>First name</span><input name="firstName" autocomplete="given-name"></label>
         <label class="field"><span>Last name</span><input name="lastName" autocomplete="family-name"></label>
@@ -916,7 +920,7 @@ function applyPage() {
         ${segmented('firstHomeBuyer', [['yes', 'Yes'], ['no', 'No']], 'no')}
       </fieldset>
       <label class="check"><input type="checkbox" name="marketingOptIn" checked><span>Send me rate updates and tips on buying</span></label>
-      <p class="muted" style="font-size:12px;margin-top:10px">We need your email to save the application and to send you updates on it. It&rsquo;s also what identifies you in Amplitude and Braze.</p>
+      <p class="muted" style="font-size:12px;margin-top:10px">We need your email and mobile to save the application and keep you posted on it. Your email is what identifies you in Amplitude and Braze; your mobile goes to Braze only.</p>
       <div class="step-actions"><button class="btn" type="button" data-step-next>Continue</button></div>
     </section>
 
@@ -950,7 +954,7 @@ function applyPage() {
     </section>
 
     <section class="checkout__step" data-step hidden>
-      <h1 class="step-title">Your finances</h1>
+      <h1 class="step-title">Your income</h1>
       <label class="field"><span>Employment</span>
         <select name="employment">
           <option value="full_time">Full time</option>
@@ -963,18 +967,27 @@ function applyPage() {
         ${moneyField('income', 'Your income before tax, per year', 120000)}
         <div data-partner-only hidden>${moneyField('partnerIncome', 'Their income before tax, per year', 0)}</div>
       </div>
-      ${moneyField('otherIncome', 'Other income per year', 0)}
+      ${moneyField('otherIncome', 'Other income per year', 0, 'Rent, dividends, a second job.')}
+      <p class="muted" style="font-size:12px">Your exact income stays in this browser. Amplitude and Braze get a band, like <code>$50k&ndash;$100k</code>.</p>
+      <div class="step-actions">
+        <button class="btn btn--outline" type="button" data-step-back>Back</button>
+        <button class="btn" type="button" data-step-next>Continue</button>
+      </div>
+    </section>
+
+    <section class="checkout__step" data-step hidden>
+      <h1 class="step-title">Your expenses</h1>
+      <p class="muted" style="margin:-8px 0 18px">What goes out each month. We test the loan against this, so a rough figure is better than none.</p>
       <div class="field-row">
         <label class="field"><span>Dependants</span>
           <select name="dependants"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select>
         </label>
-        ${moneyField('expenses', 'Living expenses per month', 2000)}
+        ${moneyField('expenses', 'Living expenses per month', 2000, 'Groceries, bills, transport, childcare. Not rent.')}
       </div>
       <div class="field-row">
-        ${moneyField('debts', 'Other loan repayments per month', 0)}
-        ${moneyField('cardLimits', 'Total credit card limits', 5000)}
+        ${moneyField('debts', 'Other loan repayments per month', 0, 'Car loans, personal loans, HECS.')}
+        ${moneyField('cardLimits', 'Total credit card limits', 5000, 'The limit counts, not what you owe.')}
       </div>
-      <p class="muted" style="font-size:12px">Your exact income stays in this browser. Amplitude and Braze get a band, like <code>$50k&ndash;$100k</code>.</p>
       <div class="step-actions">
         <button class="btn btn--outline" type="button" data-step-back>Back</button>
         <button class="btn" type="button" data-step-next>Continue</button>
