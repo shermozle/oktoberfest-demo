@@ -9,14 +9,16 @@ their own; and from 8 October, the Braze "High Value Application
 Abandoners" email bringing more of them back, with a control group to
 measure the lift.
 
-Nothing is sent anywhere until you run `send --confirm`.
+Nothing is sent anywhere until you run `send --confirm`. Through npm, the
+flags go after a `--` (`npm run data:send -- --confirm`); without it npm
+keeps them for itself. The script picks them up either way.
 
 ```bash
 npm run data:generate          # build the events and print the story check
 npm run data:report            # the story check again, on the last build
 npm run data:send              # dry run: what would be sent, sends nothing
-node datagen/run.mjs send --confirm                    # send everything
-node datagen/run.mjs send --until 2026-10-01 --confirm # or send in stages
+npm run data:send -- --confirm                         # send everything
+npm run data:send -- --until 2026-10-01 --confirm      # or send in stages
 ```
 
 ## Tweaking
@@ -31,6 +33,7 @@ shape the story:
 | Who applies and for how much | `personas` (property values, deposits, incomes, preferred loans) |
 | Where people drop out | `funnel.steps`, plus `funnel.mobile` and `funnel.bigLoan` for the segments Amplitude's analysis should find |
 | How distracted they are | `funnel.hesitationFactor`, `dropouts.returnOnOwn`, `dropouts.returnHours` |
+| Everything around the journey | `behaviour`: bounces, repeat browsing, search (and the junk people type), filters, calculators, lead forms, rate updates and push prompts, internet banking, and the odd things below |
 | The Braze campaign | `braze.launch`, `minLoan`, `lookbackDays`, `controlGroup`, open and click rates, the second email |
 
 After changing anything, run `generate` and read the report. It shows the
@@ -43,12 +46,39 @@ for a different but equally realistic set.
 
 ## What the data looks like
 
-Events match [TRACKING.md](../TRACKING.md) exactly: the same names,
-properties, user properties and context as the site sends, plus the
-`[Amplitude] Page Viewed`, `session_start` and `session_end` events the
-Browser SDK autocaptures, and UTM attribution user properties. Visitors are
-anonymous (device id only) until step 1 of the application, then
-identified by email, as on the site.
+Every event in [TRACKING.md](../TRACKING.md) is generated, with the same
+names, properties, user properties and context the site sends. On top of
+those come the events the Browser SDK autocaptures: `[Amplitude] Page
+Viewed`, `session_start`, `session_end`, `[Amplitude] Form Started` and
+`[Amplitude] Form Submitted`, plus UTM and referrer attribution. Visitors
+are anonymous (device id only) until they give an email, then identified,
+as on the site. Left out: content cards and in-app messages, which only
+appear when real Braze campaigns run, and the demo-only `Application
+Seeded`.
+
+The application journey is the spine, with the rest around it:
+
+- **People who do nothing.** About a third of sessions are one page and
+  out. A landing page bounce still has `Product Viewed`, because the page
+  fires it on load.
+- **Browsers.** Search, the menus, product cards, filters and sorting,
+  recommendations, both calculators, accounts and cards. Some come back
+  days later, and are more likely to apply when they do.
+- **Leads.** Lender callback requests (including abandoners who ring
+  instead of finishing), rate update sign-ups with the push prompt, new
+  internet banking logins, and existing customers who sign in, browse, sign
+  out or unsubscribe.
+- **Odd behaviour:**
+  - junk and misspelt searches that find nothing
+  - calculator fiddling with silly numbers
+  - going back a step and redoing it, which fires that step's event again,
+    as the site does
+  - leaving the application open past Amplitude's 30-minute session
+    timeout, so it carries on in a new session
+  - coming back on a different device, where the saved application isn't,
+    and starting a second one under the same email (also after clicking a
+    reminder on the other device)
+  - speed-runners who click straight through on the defaults
 
 Emails are at `example.com`, `example.net` and `example.org`, which can't
 receive mail, so a cohort synced to Braze can't email a real person. No
@@ -76,6 +106,11 @@ delete `datagen/out/sent.json`, generate and send.
 
 ## Before you send
 
+- **Form autocapture.** The `[Amplitude] Form Started` and
+  `[Amplitude] Form Submitted` events carry only `[Amplitude] Form
+  Destination`, since the site's forms have no id or name. Compare with a
+  real one in the project, or set `behaviour.formAutocapture` to false to
+  leave them out.
 - **Braze event names.** Synthetic email events are named `Email Sent`,
   `Email Delivered`, `Email Opened`, `Email Clicked` and
   `Campaign Control Group Entered`. Check those against what Braze Currents
@@ -84,7 +119,7 @@ delete `datagen/out/sent.json`, generate and send.
   events land under the same names.
 - **Session replays can't be generated.** Record some yourself on the live
   site, abandoning at step 3 or 4, for the replay part of the demo.
-- **It's around 175,000 events.** Check that suits the project's event
+- **It's around 255,000 events.** Check that suits the project's event
   volume.
 - **Cohort sync.** Syncing a cohort of these users to Braze creates Braze
   profiles for them. They're undeliverable, but they will show up in Braze.

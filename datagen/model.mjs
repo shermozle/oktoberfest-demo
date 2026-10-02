@@ -3,8 +3,15 @@
 
    Turns config.mjs into Amplitude events, shaped exactly as the site sends
    them (see TRACKING.md): the same event names, properties, user properties
-   and context, plus the [Amplitude] Page Viewed and session events the
-   Browser SDK autocaptures, and the Braze email events Currents would add.
+   and context, plus what the Browser SDK autocaptures ([Amplitude] Page
+   Viewed, session_start and session_end, form interactions, UTM
+   attribution) and the Braze email events Currents would add.
+
+   The home loan application is the main journey. Around it: people who
+   leave straight away, browsers who search, filter and come back days
+   later, lead forms, internet banking customers, and the odd things people
+   do mid-application (going back a step, leaving the tab open, finishing
+   on a different device).
 
    It reuses the site's own lending maths (src/assets/js/finance.js) and
    loan catalogue (src/data/catalog.json), so borrowing power, decisions
@@ -32,6 +39,21 @@ export { siteConfig };
 
 const PRODUCTS = new Map(catalog.products.map((p) => [p.handle, p]));
 const HOME_LOANS = catalog.products.filter((p) => p.category === 'home-loans');
+const CATEGORY = new Map(catalog.categories.map((c) => [c.handle, c]));
+const productPath = (p) => p.category + '/' + p.handle + '/';
+
+// Mirrors kicker() in build.mjs: the line search matches against.
+function kickerOf(p) {
+  if (p.category !== 'home-loans') return CATEGORY.get(p.category).title;
+  return [
+    p.rateType === 'fixed' ? 'Fixed' : 'Variable',
+    p.purpose === 'investor' ? 'Investor' : 'Owner occupier',
+    p.offset ? 'Offset' : null,
+    p.firstHomeBuyer ? 'First home buyers' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
 
 // Mirrors productProps() in src/assets/js/tracking.js.
 function productProps(handle) {
@@ -44,6 +66,48 @@ function productProps(handle) {
   if (p.fixedYears) props.fixed_years = p.fixedYears;
   if (p.purpose) props.loan_purpose_type = p.purpose;
   return props;
+}
+
+// Mirrors search() in src/assets/js/app.js.
+function search(query) {
+  const needle = query.trim().toLowerCase();
+  return catalog.products
+    .map((p) => {
+      const title = p.title.toLowerCase();
+      const hay = [p.title, kickerOf(p), CATEGORY.get(p.category).title, p.tagline].join(' ').toLowerCase();
+      let score = 0;
+      if (title.startsWith(needle)) score += 5;
+      if (title.includes(needle)) score += 3;
+      if (hay.includes(needle)) score += 1;
+      return { p, score };
+    })
+    .filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8)
+    .map((r) => r.p);
+}
+
+// Mirrors recommend() in src/assets/js/app.js.
+function recommend(seedHandle, viewed, limit = 3) {
+  const seed = PRODUCTS.get(seedHandle) || PRODUCTS.get(viewed[0]);
+  const pool = catalog.products.filter((p) => p !== seed);
+  if (!seed) return pool.filter((p) => p.featured).slice(0, limit);
+  return pool
+    .map((p) => {
+      let score = 0;
+      if (p.category === seed.category) score += 3;
+      if (p.purpose && p.purpose === seed.purpose) score += 2;
+      if (p.rateType && p.rateType === seed.rateType) score += 1;
+      if (seed.offset && p.handle === 'offset-account') score += 4;
+      if (seed.firstHomeBuyer && p.handle === 'bonus-saver') score += 3;
+      if (p.rate != null && seed.rate != null && p.category === seed.category)
+        score -= Math.min(2, Math.abs(p.rate - seed.rate) * 2);
+      if (viewed.includes(p.handle)) score -= 2;
+      return { p, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map((r) => r.p);
 }
 
 // Mirrors STEPS, STEP_NEEDS and progressProps() in src/assets/js/app.js.
@@ -73,10 +137,16 @@ const TITLE = {
   'index.html': 'Laneway Bank',
   'landing/': 'Package Home Loan with 100% offset – Laneway Bank',
   'home-loans/': 'Home loans – Laneway Bank',
+  'everyday/': 'Everyday accounts – Laneway Bank',
+  'savings/': 'Savings – Laneway Bank',
+  'credit-cards/': 'Credit cards – Laneway Bank',
   'calculators/borrowing-power/': 'Borrowing power calculator – Laneway Bank',
+  'calculators/repayments/': 'Repayments calculator – Laneway Bank',
   'apply/': 'Apply for a home loan – Laneway Bank',
   'apply/submitted/': 'Application submitted – Laneway Bank',
   'account/': 'Internet banking – Laneway Bank',
+  'talk-to-us/': 'Talk to a lender – Laneway Bank',
+  'pages/about/': 'About Laneway Bank – Laneway Bank',
 };
 
 /* --- random numbers ------------------------------------------------------ */
@@ -147,6 +217,7 @@ const hash = (s) => {
 
 const MIN = 60000;
 const HOUR = 60 * MIN;
+const DAY = 24 * HOUR;
 
 function makeClock(timezone) {
   const fmt = new Intl.DateTimeFormat('en-AU', {
@@ -214,6 +285,7 @@ export function generate(cfg) {
   const launchMs = clock.at(cfg.braze.launch, 10);
   const base = new URL(cfg.site);
   const sitePath = base.pathname;
+  const B = cfg.behaviour;
   const events = [];
   const stats = { visitors: 0, sessions: 0 };
 
@@ -222,12 +294,14 @@ export function generate(cfg) {
 
   /* --- one visitor ------------------------------------------------------ */
 
+  function pickDevice(rng, mobile) {
+    return rng.weighted(cfg.devices[mobile ? 'mobile' : 'desktop']);
+  }
+
   function visitor(index) {
     const rng = new Rng(hash(`${cfg.seed}:${index}`));
     const channel = rng.weighted(cfg.channels);
     const mobile = rng.chance(channel.mobileShare);
-    const device = rng.weighted(cfg.devices[mobile ? 'mobile' : 'desktop']);
-    const place = rng.weighted(cfg.locations);
     const persona = rng.weighted(cfg.personas);
     const first = rng.pick(FIRST);
     const last = rng.pick(LAST);
@@ -237,8 +311,8 @@ export function generate(cfg) {
       rng,
       channel,
       mobile,
-      device,
-      place,
+      device: pickDevice(rng, mobile),
+      place: rng.weighted(cfg.locations),
       persona,
       deviceId: rng.uuid(),
       userId: null,
@@ -248,9 +322,18 @@ export function generate(cfg) {
       email: `${slug(first)}.${slug(last)}${index}@${rng.pick(DOMAINS)}`,
       seq: 0,
       app: null,
+      viewed: [],
+      speedRunner: rng.chance(B.speedRunner),
     };
     v.profile = profile(v);
     return v;
+  }
+
+  // A different phone or laptop: new device id, same person.
+  function switchDevice(v) {
+    v.mobile = !v.mobile;
+    v.device = pickDevice(v.rng, v.mobile);
+    v.deviceId = v.rng.uuid();
   }
 
   function profile(v) {
@@ -273,10 +356,10 @@ export function generate(cfg) {
       income: Math.round(rng.between(...p.income) / 1000) * 1000,
       partnerIncome: couple ? Math.round((rng.between(...p.income) * 0.75) / 1000) * 1000 : 0,
       otherIncome: rng.chance(0.2) ? rng.int(5, 30) * 1000 : 0,
-      dependants: rng.weightedKey({ 0: 50, 1: 22, 2: 20, 3: 8 }),
+      dependants: Number(rng.weightedKey({ 0: 50, 1: 22, 2: 20, 3: 8 })),
       expenses: Math.round(rng.between(...p.expenses) / 50) * 50,
       debts: rng.chance(0.35) ? rng.int(2, 12) * 50 : 0,
-      cardLimits: rng.weightedKey({ 0: 20, 5000: 35, 10000: 25, 20000: 15, 30000: 5 }) * 1,
+      cardLimits: Number(rng.weightedKey({ 0: 20, 5000: 35, 10000: 25, 20000: 15, 30000: 5 })),
       employment: rng.weightedKey({ full_time: 68, part_time: 11, casual: 5, self_employed: 16 }),
       marketingOptIn: rng.chance(0.68),
       repaymentType: p.name === 'investor' && rng.chance(0.4) ? 'interest_only' : 'principal_and_interest',
@@ -292,29 +375,16 @@ export function generate(cfg) {
     stats.sessions += 1;
     // Amplitude's session_id is the session's start time in whole ms.
     const start = Math.round(at);
-    const s = {
-      v,
-      t: start,
-      id: start,
-      key: 'sess_' + start.toString(36) + v.rng.hex(6),
-      pageCounter: 0,
-      path: '',
-      ended: false,
-    };
+    const s = { v, t: start, id: start, key: 'sess_' + start.toString(36) + v.rng.hex(6), pageCounter: 0, path: '', rel: '', ended: false };
     const attribution = {};
     if (entry && entry.utm) {
       attribution.$set = Object.assign({}, entry.utm);
       attribution.$setOnce = Object.fromEntries(Object.entries(entry.utm).map(([k, val]) => ['initial_' + k, val]));
     }
     if (entry && entry.referrer) {
-      attribution.$set = Object.assign(attribution.$set || {}, {
-        referrer: entry.referrer,
-        referring_domain: new URL(entry.referrer).hostname,
-      });
-      attribution.$setOnce = Object.assign(attribution.$setOnce || {}, {
-        initial_referrer: entry.referrer,
-        initial_referring_domain: new URL(entry.referrer).hostname,
-      });
+      const host = new URL(entry.referrer).hostname;
+      attribution.$set = Object.assign(attribution.$set || {}, { referrer: entry.referrer, referring_domain: host });
+      attribution.$setOnce = Object.assign(attribution.$setOnce || {}, { initial_referrer: entry.referrer, initial_referring_domain: host });
     }
     emit(s, 'session_start', {}, Object.keys(attribution).length ? attribution : null);
     return s;
@@ -346,7 +416,12 @@ export function generate(cfg) {
   const wait = (s, a, b) => (s.t += s.v.rng.between(a, b) * MIN);
   const secs = (s, a, b) => (s.t += s.v.rng.between(a, b) * 1000);
 
+  // Links on the site are relative, so the href Navigation Clicked reports
+  // depends on how deep the current page is.
+  const relativeHref = (s, to) => '../'.repeat(s.rel.split('/').filter((x) => x && x !== 'index.html').length) + to;
+
   function page(s, path, query) {
+    s.rel = path;
     s.path = sitePath + (path === 'index.html' ? '' : path);
     s.pageCounter += 1;
     const url = base.origin + s.path;
@@ -363,8 +438,7 @@ export function generate(cfg) {
   }
 
   function productTitle(path) {
-    const handle = path.split('/').filter(Boolean).pop();
-    const p = PRODUCTS.get(handle);
+    const p = PRODUCTS.get(path.split('/').filter(Boolean).pop());
     return p ? p.title + ' – Laneway Bank' : 'Laneway Bank';
   }
 
@@ -389,36 +463,281 @@ export function generate(cfg) {
     secs(s, 1, 4);
   }
 
+  // Amplitude form autocapture. The site's forms have no id, name or
+  // action, so the destination is the page itself.
+  function form(s, kind) {
+    if (!B.formAutocapture) return;
+    emit(s, '[Amplitude] Form ' + kind, { '[Amplitude] Form Destination': base.origin + s.path });
+  }
+
   function end(s) {
     if (s.ended) return;
     s.ended = true;
     emit(s, 'session_end', {});
   }
 
-  function identify(v) {
+  function identity(v, extra) {
     v.userId = v.email;
-    return {
-      email: v.email,
-      first_name: v.first,
-      last_name: v.last,
-      marketing_opt_in: v.profile.marketingOptIn,
-      phone_provided: true,
-      existing_customer: v.channel.name === 'existing_customer',
-      has_home_loan: false,
-    };
+    return Object.assign(
+      {
+        email: v.email,
+        first_name: v.first,
+        last_name: v.last,
+        marketing_opt_in: v.profile.marketingOptIn,
+        existing_customer: v.channel.name === 'existing_customer',
+        has_home_loan: false,
+      },
+      extra
+    );
+  }
+
+  /* --- page actions, as the site fires them ------------------------------ */
+
+  function nav(s, label, to, location) {
+    track(s, 'Navigation Clicked', { label, destination: relativeHref(s, to), location: location || 'header' });
+    page(s, to);
+  }
+
+  function productPage(s, handle, via) {
+    const v = s.v;
+    const p = PRODUCTS.get(handle);
+    if (via && via.placement) {
+      track(s, 'Product Card Clicked', Object.assign({ placement: via.placement, position: via.position || 1 }, productProps(handle)));
+    }
+    page(s, productPath(p));
+    v.viewed = [handle].concat(v.viewed.filter((h) => h !== handle)).slice(0, 12);
+    track(s, 'Product Viewed', productProps(handle), { last_product_viewed: p.title, last_category_viewed: CATEGORY.get(p.category).title });
+    const recs = recommend(handle, v.viewed);
+    track(s, 'Recommendations Shown', { seed_product_id: handle, placement: 'product-recs', product_ids: recs.map((x) => x.handle) });
+    secs(s, 15, 120);
+    if (v.rng.chance(0.4)) track(s, 'Product Detail Read', productProps(handle));
+    return recs;
+  }
+
+  function listPage(s, category) {
+    const v = s.v;
+    const c = CATEGORY.get(category);
+    let list = catalog.products.filter((p) => p.category === category);
+    track(s, 'Product List Viewed', {
+      category: c.title,
+      category_handle: c.handle,
+      product_count: list.length,
+      product_ids: list.map((p) => p.handle),
+    });
+    secs(s, 8, 50);
+    if (category === 'home-loans' && v.rng.chance(B.filterOrSort)) {
+      if (v.rng.chance(0.55)) {
+        const sort = v.rng.weightedKey({ 'rate-asc': 55, 'comparison-asc': 25, 'fee-asc': 10, 'title-asc': 10 });
+        const key = { 'rate-asc': 'rate', 'comparison-asc': 'comparisonRate', 'fee-asc': 'fee', 'title-asc': 'title' }[sort];
+        list = list.slice().sort((a, b) =>
+          key === 'title' ? a.title.localeCompare(b.title) : key === 'fee' ? a.fees.annual - b.fees.annual : a[key] - b[key]
+        );
+        track(s, 'Product List Sorted', { category: c.title, sort_by: sort, results_count: list.length, product_ids: list.map((p) => p.handle) });
+      }
+      if (v.rng.chance(0.6)) {
+        const investor = v.persona.name === 'investor';
+        const purpose = v.rng.chance(0.7) ? [investor ? 'investor' : 'owner_occupier'] : [];
+        const rateType = v.rng.chance(0.4) ? [v.rng.chance(0.6) ? 'variable' : 'fixed'] : [];
+        const features = v.rng.chance(0.35) ? [v.profile.firstHomeBuyer && v.rng.chance(0.6) ? 'first_home_buyer' : 'offset'] : [];
+        const shown = list.filter(
+          (p) =>
+            (!purpose.length || purpose.includes(p.purpose)) &&
+            (!rateType.length || rateType.includes(p.rateType)) &&
+            (!features.includes('offset') || p.offset) &&
+            (!features.includes('first_home_buyer') || p.firstHomeBuyer)
+        );
+        track(s, 'Product List Filtered', {
+          category: c.title,
+          purpose,
+          rate_type: rateType,
+          features,
+          results_count: shown.length,
+          product_ids: shown.map((p) => p.handle),
+        });
+        if (shown.length) list = shown;
+      }
+    }
+    return list;
+  }
+
+  // Opens search, types a query (sometimes in two goes), maybe clicks a
+  // result. Returns the product it went to, if any.
+  function useSearch(s) {
+    const v = s.v;
+    track(s, 'Search Opened', {});
+    const query = v.rng.weightedKey(B.searchQueries);
+    // Typing pauses long enough mid-word for a partial query to log.
+    if (query.length > 5 && v.rng.chance(0.3)) {
+      const partial = query.slice(0, v.rng.int(3, query.length - 2));
+      const hits = search(partial);
+      track(s, 'Search Performed', { query: partial, results_count: hits.length, product_ids: hits.map((p) => p.handle) });
+    }
+    secs(s, 2, 8);
+    const hits = search(query);
+    track(s, 'Search Performed', { query, results_count: hits.length, product_ids: hits.map((p) => p.handle) });
+    if (hits.length && v.rng.chance(B.searchClick)) {
+      const position = v.rng.chance(0.7) ? 1 : v.rng.int(1, hits.length);
+      const hit = hits[position - 1];
+      track(s, 'Search Result Clicked', Object.assign({ query, position }, productProps(hit.handle)));
+      productPage(s, hit.handle);
+      return hit;
+    }
+    secs(s, 3, 15);
+    return null;
+  }
+
+  function borrowingCalculator(s) {
+    const v = s.v;
+    const pr = v.profile;
+    form(s, 'Started');
+    const runs = v.rng.chance(B.calculatorFiddle) ? v.rng.int(3, 7) : v.rng.int(1, 2);
+    let last = 0;
+    for (let i = 0; i < runs; i++) {
+      wait(s, 0.4, 2.5);
+      // A fiddler tries things: a pay rise, a partner, no expenses at all.
+      const silly = i > 0 && v.rng.chance(0.35);
+      const income = silly ? v.rng.pick([1000000, 30000, pr.income * 2, 250000]) : pr.income;
+      const couple = i > 0 && v.rng.chance(0.2) ? !pr.couple : pr.couple;
+      const expenses = silly && v.rng.chance(0.5) ? 0 : pr.expenses;
+      const power = finance.borrowingPower({
+        applicants: couple ? 2 : 1,
+        income,
+        partnerIncome: couple ? pr.partnerIncome || pr.income * 0.7 : 0,
+        otherIncome: pr.otherIncome,
+        dependants: pr.dependants,
+        expenses,
+        debts: pr.debts,
+        cardLimits: pr.cardLimits,
+        rate: 5.84,
+      });
+      const band = finance.incomeBand(income + (couple ? pr.partnerIncome : 0));
+      track(
+        s,
+        'Borrowing Power Calculated',
+        Object.assign(
+          {
+            applicant_count: couple ? 2 : 1,
+            dependants: pr.dependants,
+            income_band: band,
+            borrowing_power: power,
+            estimated_repayment: Math.round(finance.repayment(power, 5.84, 30, 'monthly')),
+          },
+          productProps('variable-home-loan')
+        ),
+        { borrowing_power: power, income_band: band }
+      );
+      last = power;
+    }
+    return last;
+  }
+
+  function repaymentsCalculator(s) {
+    const v = s.v;
+    form(s, 'Started');
+    const runs = v.rng.chance(B.calculatorFiddle) ? v.rng.int(3, 6) : v.rng.int(1, 2);
+    for (let i = 0; i < runs; i++) {
+      wait(s, 0.3, 2);
+      const handle = i === 0 ? v.profile.product : v.rng.pick(HOME_LOANS).handle;
+      const p = PRODUCTS.get(handle);
+      const amount = i === 0 ? Math.round(v.profile.loanAmount / 10000) * 10000 : v.rng.int(20, 200) * 10000;
+      const years = v.rng.weighted([{ y: 30, weight: 70 }, { y: 25, weight: 20 }, { y: 20, weight: 10 }]).y;
+      const frequency = v.rng.weightedKey({ monthly: 60, fortnightly: 30, weekly: 10 });
+      const type = p.interestOnlyRate && v.rng.chance(0.3) ? 'interest_only' : 'principal_and_interest';
+      const rate = type === 'interest_only' ? p.interestOnlyRate : p.rate;
+      track(
+        s,
+        'Repayments Calculated',
+        Object.assign(
+          {
+            loan_amount: amount,
+            loan_amount_band: bandOf(amount),
+            loan_term_years: years,
+            repayment_frequency: frequency,
+            repayment_type: type,
+            repayment: Math.round(finance.repayment(amount, rate, years, frequency, type)),
+          },
+          productProps(handle),
+          { interest_rate: rate }
+        )
+      );
+    }
+  }
+
+  // Accounts, savings, cards: browsed, occasionally registered interest in.
+  function otherProducts(s) {
+    const v = s.v;
+    const category = v.rng.pick(['everyday', 'savings', 'credit-cards']);
+    nav(s, CATEGORY.get(category).title, category + '/', 'mega');
+    const list = listPage(s, category);
+    const pick = v.rng.int(1, list.length);
+    productPage(s, list[pick - 1].handle, { placement: 'category-grid', position: pick });
+    if (v.rng.chance(0.12)) {
+      const p = list[pick - 1];
+      track(s, 'Product Interest Registered', productProps(p.handle), { interested_product: p.title });
+    }
+  }
+
+  // Rings a lender instead of finishing online.
+  function talkToLender(s, topic) {
+    const v = s.v;
+    nav(s, 'Talk to us', 'talk-to-us/');
+    secs(s, 10, 60);
+    const method = v.rng.weightedKey({ phone: 55, video: 25, mobile_lender: 20 });
+    if (v.rng.chance(0.6)) track(s, 'Contact Method Chosen', { contact_method: method });
+    if (!v.rng.chance(0.7)) return; // looked, didn't ask
+    form(s, 'Started');
+    wait(s, 0.5, 3);
+    form(s, 'Submitted');
+    const who = identity(v, { marketing_opt_in: true, lead_type: 'home_loan_enquiry', enquiry_topic: topic });
+    track(s, 'Lender Callback Requested', {
+      topic,
+      contact_method: method,
+      preferred_time: v.rng.weightedKey({ morning: 30, afternoon: 35, evening: 35 }),
+      message_length: v.rng.chance(0.5) ? v.rng.int(20, 400) : 0,
+    }, who);
+  }
+
+  // Footer rate updates: the push prompt comes first, inside the click.
+  function rateUpdates(s) {
+    const v = s.v;
+    const p = B.push;
+    if (v.rng.chance(p.prompted)) {
+      track(s, 'Push Permission Requested', { source: 'rate_updates' });
+      secs(s, 1, 6);
+      const r = v.rng.next();
+      if (r < p.granted) track(s, 'Push Permission Granted', { source: 'rate_updates' });
+      else if (r < p.granted + p.denied) track(s, 'Push Permission Denied', { source: 'rate_updates', permission: 'denied' });
+      else track(s, 'Push Permission Denied', { source: 'rate_updates', permission: 'default' });
+    }
+    form(s, 'Submitted');
+    v.profile.marketingOptIn = true;
+    track(s, 'Rate Updates Subscribed', { email: v.email, source: 'footer' }, identity(v, { marketing_opt_in: true }));
   }
 
   /* --- the first visit --------------------------------------------------- */
 
   function firstVisit(v, start) {
-    const entry = { utm: v.channel.utm, referrer: v.channel.referrer };
-    const s = session(v, start, entry);
-    if (v.channel.landing === 'landing/') return landingVisit(s, v);
-    if (v.channel.landing === 'account/') return customerVisit(s, v);
-    return browseVisit(s, v);
+    const s = session(v, start, { utm: v.channel.utm, referrer: v.channel.referrer });
+    if (v.channel.landing === 'landing/') return landingVisit(s);
+    if (v.channel.landing === 'account/') return customerVisit(s);
+    return browseVisit(s, 1);
   }
 
-  function landingVisit(s, v) {
+  // Bits of background any visit can pick up before leaving.
+  function wander(s) {
+    const v = s.v;
+    if (v.rng.chance(B.otherProducts)) otherProducts(s);
+    if (v.rng.chance(B.rateUpdates)) rateUpdates(s);
+    if (!v.userId && v.rng.chance(B.register)) {
+      nav(s, 'Internet banking', 'account/');
+      form(s, 'Submitted');
+      const who = identity(v);
+      track(s, 'Account Created', { email: v.email, method: 'email' }, who);
+    }
+  }
+
+  function landingVisit(s) {
+    const v = s.v;
     const { rng } = v;
     const utm = v.channel.utm || {};
     page(s, 'landing/', utm);
@@ -426,34 +745,45 @@ export function generate(cfg) {
       last_product_viewed: 'Package Home Loan',
       last_category_viewed: 'Home loans',
     });
+    if (rng.chance(B.bounce.landing)) {
+      secs(s, 3, 40);
+      end(s);
+      return 'bounced';
+    }
     secs(s, 15, 70);
     if (rng.chance(0.5)) {
-      const loan = Math.round(v.profile.loanAmount / 10000) * 10000;
-      const offset = rng.int(0, 30) * 5000;
-      const saved = finance.offsetSavings(loan, offset, PRODUCTS.get('package-home-loan').rate, 30);
-      const extra = (loan * (5.94 - 5.84)) / 100 + 395;
-      track(
-        s,
-        'Offset Savings Calculated',
-        Object.assign(
-          {
-            loan_amount: loan,
-            loan_amount_band: bandOf(loan),
-            offset_balance: offset,
-            interest_saved_first_year: Math.round(saved.firstYear),
-            interest_saved_total: Math.round(saved.interestSaved),
-            months_sooner: saved.monthsSooner,
-            package_beats_variable: saved.firstYear - extra >= 0,
-            page_type: 'landing',
-          },
-          utm,
-          productProps('package-home-loan')
-        ),
-        { estimated_offset_saving: Math.round(saved.firstYear), offset_balance: offset }
-      );
-      secs(s, 20, 90);
+      // Some slide the offset slider back and forth for a while.
+      const runs = rng.chance(B.calculatorFiddle) ? rng.int(3, 6) : 1;
+      form(s, 'Started');
+      for (let i = 0; i < runs; i++) {
+        const loan = i === 0 ? Math.round(v.profile.loanAmount / 10000) * 10000 : rng.int(20, 200) * 10000;
+        const offset = rng.int(0, 60) * 5000;
+        const saved = finance.offsetSavings(loan, offset, PRODUCTS.get('package-home-loan').rate, 30);
+        const extra = (loan * (5.94 - 5.84)) / 100 + 395;
+        track(
+          s,
+          'Offset Savings Calculated',
+          Object.assign(
+            {
+              loan_amount: loan,
+              loan_amount_band: bandOf(loan),
+              offset_balance: offset,
+              interest_saved_first_year: Math.round(saved.firstYear),
+              interest_saved_total: Math.round(saved.interestSaved),
+              months_sooner: saved.monthsSooner,
+              package_beats_variable: saved.firstYear - extra >= 0,
+              page_type: 'landing',
+            },
+            utm,
+            productProps('package-home-loan')
+          ),
+          { estimated_offset_saving: Math.round(saved.firstYear), offset_balance: offset }
+        );
+        secs(s, 5, 40);
+      }
     }
-    if (rng.chance(0.2)) {
+    const faqs = rng.chance(0.22) ? rng.int(1, 3) : 0;
+    for (let i = 0; i < faqs; i++) {
       const faq = rng.weighted([
         { weight: 30, q: 'What is an offset account?', n: 1 },
         { weight: 35, q: 'Is the $395 annual fee worth it?', n: 2 },
@@ -462,6 +792,7 @@ export function generate(cfg) {
         { weight: 10, q: 'How long does applying take?', n: 5 },
       ]);
       track(s, 'FAQ Opened', { question: faq.q, position: faq.n, page_type: 'landing' });
+      secs(s, 8, 40);
     }
     if (rng.chance(0.5)) track(s, 'Product Detail Read', Object.assign({ page_type: 'landing' }, productProps('package-home-loan')));
     if (rng.chance(0.14)) track(s, 'Landing CTA Clicked', Object.assign({ cta: 'hero_savings' }, utm));
@@ -473,97 +804,103 @@ export function generate(cfg) {
       const source = rng.weightedKey({ landing_hero: 44, landing_calculator: 26, landing_sticky: 18, landing_header: 7, landing_footer: 5 });
       return startApplication(s, v, source, utm, 'package-home-loan');
     }
-    if (rng.chance(0.15)) {
-      page(s, 'home-loans/');
-      productList(s);
+    if (rng.chance(0.04)) {
+      talkToLender(s, v.profile.purpose === 'refinance' ? 'refinance' : 'next_home');
+    } else if (rng.chance(0.15)) {
+      // The landing page has no menu: the logo is the way into the site.
+      page(s, 'index.html');
+      return browseVisit(s, 1, true);
     }
     end(s);
+    return 'browsed';
   }
 
-  function productList(s) {
-    track(s, 'Product List Viewed', {
-      category: 'Home loans',
-      category_handle: 'home-loans',
-      product_count: HOME_LOANS.length,
-      product_ids: HOME_LOANS.map((p) => p.handle),
-    });
-    secs(s, 10, 60);
-  }
-
-  function browseVisit(s, v) {
+  // A look around the site. `warmth` > 1 on return visits: more likely to
+  // apply this time.
+  function browseVisit(s, warmth, arrived) {
+    const v = s.v;
     const { rng } = v;
-    page(s, 'index.html');
+    if (!arrived) page(s, 'index.html');
+    if (!arrived && rng.chance(B.bounce.home)) {
+      secs(s, 3, 30);
+      end(s);
+      return 'bounced';
+    }
     secs(s, 5, 40);
     let source = null;
-    if (rng.chance(0.65)) {
-      page(s, 'home-loans/');
-      productList(s);
-      const looks = rng.int(1, 2);
-      for (let i = 0; i < looks; i++) {
-        const handle = i === 0 ? v.profile.product : rng.pick(HOME_LOANS).handle;
-        page(s, 'home-loans/' + handle + '/');
-        track(s, 'Product Viewed', productProps(handle), {
-          last_product_viewed: PRODUCTS.get(handle).title,
-          last_category_viewed: 'Home loans',
-        });
-        secs(s, 20, 120);
-        if (rng.chance(0.4)) track(s, 'Product Detail Read', productProps(handle));
+    if (rng.chance(B.search)) {
+      const hit = useSearch(s);
+      if (hit && hit.category === 'home-loans') source = 'product_page';
+    }
+    if (rng.chance(0.62)) {
+      // From the home page: the featured cards, or the menu.
+      if (rng.chance(0.3)) {
+        const featured = catalog.products.filter((p) => p.featured);
+        const position = rng.int(1, featured.length);
+        productPage(s, featured[position - 1].handle, { placement: 'home-featured', position });
+      } else {
+        nav(s, 'Home loans', 'home-loans/');
+        const list = listPage(s, 'home-loans');
+        const looks = rng.int(1, 3);
+        for (let i = 0; i < looks; i++) {
+          const handle = i === 0 && list.some((p) => p.handle === v.profile.product) ? v.profile.product : rng.pick(list).handle;
+          const position = Math.max(1, list.findIndex((p) => p.handle === handle) + 1);
+          const recs = productPage(s, handle, { placement: i === 0 ? 'category-grid' : 'product-recs', position });
+          if (i + 1 < looks && rng.chance(0.4)) {
+            productPage(s, recs[0].handle, { placement: 'product-recs', position: 1 });
+            break;
+          }
+        }
       }
-      source = rng.chance(0.7) ? 'product_page' : 'header';
+      source = rng.chance(0.75) ? 'product_page' : 'header';
     }
     if (rng.chance(0.3)) {
-      page(s, 'calculators/borrowing-power/');
-      wait(s, 1, 4);
-      const pr = v.profile;
-      const power = finance.borrowingPower({
-        applicants: pr.couple ? 2 : 1,
-        income: pr.income,
-        partnerIncome: pr.partnerIncome,
-        otherIncome: pr.otherIncome,
-        dependants: pr.dependants,
-        expenses: pr.expenses,
-        debts: pr.debts,
-        cardLimits: pr.cardLimits,
-        rate: 5.84,
-      });
-      const band = finance.incomeBand(pr.income + pr.partnerIncome);
-      track(
-        s,
-        'Borrowing Power Calculated',
-        Object.assign(
-          {
-            applicant_count: pr.couple ? 2 : 1,
-            dependants: Number(pr.dependants),
-            income_band: band,
-            borrowing_power: power,
-            estimated_repayment: Math.round(finance.repayment(power, 5.84, 30, 'monthly')),
-          },
-          productProps('variable-home-loan')
-        ),
-        { borrowing_power: power, income_band: band }
-      );
+      nav(s, 'Calculators', 'calculators/borrowing-power/');
+      borrowingCalculator(s);
       source = 'borrowing_power_calculator';
     }
-    const startP = cfg.funnel.browseStart * v.channel.startFactor * v.intent * (source ? 1.6 : 0.5);
-    if (rng.chance(startP)) return startApplication(s, v, source || 'header', {}, source === 'product_page' ? v.profile.product : null);
+    if (rng.chance(B.repaymentsCalculator)) {
+      nav(s, 'Repayments calculator', 'calculators/repayments/', 'mega');
+      repaymentsCalculator(s);
+      source = source || 'repayments_calculator';
+    }
+    if (rng.chance(0.03)) nav(s, 'About', 'pages/about/');
+
+    const startP = cfg.funnel.browseStart * v.channel.startFactor * v.intent * warmth * (source ? 1.6 : 0.5);
+    if (rng.chance(startP)) {
+      return startApplication(s, v, source || 'header', v.channel.utm && s.pageCounter <= 2 ? v.channel.utm : {}, source === 'product_page' ? v.profile.product : null);
+    }
+    if (rng.chance(B.talkToLender.browser)) talkToLender(s, v.profile.firstHomeBuyer ? 'first_home' : 'next_home');
+    wander(s);
     end(s);
+    return 'browsed';
   }
 
-  function customerVisit(s, v) {
+  function customerVisit(s) {
+    const v = s.v;
     const { rng } = v;
     page(s, 'account/');
-    const props = identify(v);
-    props.existing_customer = true;
-    track(s, 'Signed In', { email: v.email, method: 'email' }, props);
+    form(s, 'Submitted');
+    const who = identity(v, { existing_customer: true, has_home_loan: rng.chance(0.3) });
+    track(s, 'Signed In', { email: v.email, method: 'email' }, who);
     wait(s, 1, 5);
-    if (rng.chance(0.5)) {
-      const p = rng.pick(catalog.products.filter((x) => x.category !== 'home-loans'));
-      page(s, p.category + '/' + p.handle + '/');
-      track(s, 'Product Viewed', productProps(p.handle), { last_product_viewed: p.title, last_category_viewed: p.category });
-      if (rng.chance(0.15)) track(s, 'Product Interest Registered', productProps(p.handle), { interested_product: p.title });
+    const c = B.customer;
+    if (rng.chance(c.unsubscribe)) {
+      track(s, 'Email Subscription Stopped', { source: 'internet_banking' }, { marketing_opt_in: false });
+    } else if (!v.profile.marketingOptIn && rng.chance(c.subscribe)) {
+      track(s, 'Email Subscription Started', { source: 'internet_banking' }, { marketing_opt_in: true });
     }
-    if (rng.chance(cfg.funnel.browseStart * v.channel.startFactor * 2)) return startApplication(s, v, 'header', {}, null);
+    if (rng.chance(0.5)) otherProducts(s);
+    if (rng.chance(cfg.funnel.browseStart * v.channel.startFactor * 2)) {
+      nav(s, 'Apply now', 'apply/');
+      return startApplication(s, v, 'header', {}, null, true);
+    }
+    if (rng.chance(c.signOut)) {
+      page(s, 'account/');
+      track(s, 'Signed Out', { email: v.email });
+    }
     end(s);
+    return 'browsed';
   }
 
   /* --- the application --------------------------------------------------- */
@@ -592,9 +929,9 @@ export function generate(cfg) {
     };
   }
 
-  function startApplication(s, v, source, campaign, preProduct) {
+  function startApplication(s, v, source, campaign, preProduct, onPage, ease) {
     v.app = {
-      id: 'LB' + (100000 + (hash(`${cfg.seed}:app:${v.index}`) % 900000)),
+      id: 'LB' + (100000 + (hash(`${cfg.seed}:app:${v.index}:${v.seq}`) % 900000)),
       startedAt: s.t,
       updatedAt: s.t,
       source,
@@ -603,7 +940,7 @@ export function generate(cfg) {
       submitted: false,
     };
     const query = Object.assign({ source }, preProduct ? { product: preProduct } : {}, campaign);
-    page(s, 'apply/', query);
+    if (!onPage) page(s, 'apply/', query);
     track(
       s,
       'Application Started',
@@ -616,12 +953,11 @@ export function generate(cfg) {
           application_resume_url: base.origin + sitePath + 'apply/',
         },
         progressProps(0),
-        preProduct
-          ? { application_product: PRODUCTS.get(preProduct).title, application_product_id: preProduct }
-          : {}
+        preProduct ? { application_product: PRODUCTS.get(preProduct).title, application_product_id: preProduct } : {}
       )
     );
-    return steps(s, v, 0, 1);
+    form(s, 'Started');
+    return steps(s, v, 0, ease || 1);
   }
 
   // Chance of finishing a step. `ease` < 1 raises it, for people who came
@@ -636,18 +972,30 @@ export function generate(cfg) {
 
   function steps(s, v, from, ease) {
     const { rng } = v;
+    const speed = v.speedRunner ? 0.15 : 1;
     for (let i = from; i < STEPS.length; i++) {
       const key = STEPS[i];
-      const [a, b] = cfg.funnel.stepMinutes[key];
+      const [a, b] = cfg.funnel.stepMinutes[key].map((m) => m * speed);
       if (!rng.chance(stepChance(v, key, ease))) {
-        // Gives up on this step: lingers, then leaves.
+        // Gives up on this step: lingers, then leaves. Some of them ring
+        // a lender on the way out.
         const h = cfg.funnel.hesitationFactor;
         wait(s, a * h * 0.5, b * h);
         v.app.step = i;
         v.app.updatedAt = s.t;
         v.app.abandonedAt = s.t;
+        if (i >= 2 && rng.chance(B.talkToLender.abandoner)) talkToLender(s, 'my_application');
         end(s);
         return 'abandoned';
+      }
+      // Wanders off with the tab open: the next click is a new session.
+      if (rng.chance(B.idleMidApplication)) {
+        const path = s.path;
+        const rel = s.rel;
+        end(s);
+        s = session(v, s.t + rng.between(...B.idleMinutes) * MIN, null);
+        s.path = path;
+        s.rel = rel;
       }
       wait(s, a, b);
       if (i === STEPS.length - 1) {
@@ -657,6 +1005,15 @@ export function generate(cfg) {
       stage(s, v, i);
       v.app.step = i + 1;
       v.app.updatedAt = s.t;
+      // Goes back to check the last step, changes something, carries on:
+      // both stage events fire again, as they do on the site.
+      if (i >= 1 && i < 5 && rng.chance(B.stepBack)) {
+        wait(s, 0.3, 2);
+        if (i === 1) v.profile.deposit = Math.round(v.profile.deposit * rng.between(0.85, 1.2) / 1000) * 1000;
+        stage(s, v, i - 1);
+        wait(s, 0.3, 2);
+        stage(s, v, i);
+      }
     }
     return 'submitted';
   }
@@ -664,18 +1021,19 @@ export function generate(cfg) {
   // The stage events, as logStage() in src/assets/js/app.js sends them.
   function stage(s, v, i) {
     const pr = v.profile;
+    if (pr.purpose !== 'refinance') pr.loanAmount = pr.value - pr.deposit;
     const fig = figures(v);
     const id = { application_id: v.app.id };
     const progress = progressProps(i + 1);
     if (i === 0) {
-      const who = identify(v);
+      const who = identity(v, { phone_provided: true, first_home_buyer: pr.firstHomeBuyer });
       track(s, 'Applicant Details Entered', Object.assign({}, id, {
         applicant_count: pr.couple ? 2 : 1,
         first_home_buyer: pr.firstHomeBuyer,
         email_provided: true,
         phone_provided: true,
         marketing_opt_in: pr.marketingOptIn,
-      }), Object.assign(who, { first_home_buyer: pr.firstHomeBuyer }, progress));
+      }), Object.assign(who, progress));
     } else if (i === 1) {
       track(s, 'Property Details Entered', Object.assign({}, id, {
         loan_purpose: pr.purpose,
@@ -700,7 +1058,7 @@ export function generate(cfg) {
       }), Object.assign({ income_band: band, employment_type: pr.employment }, progress));
     } else if (i === 3) {
       track(s, 'Expenses Entered', Object.assign({}, id, {
-        dependants: Number(pr.dependants),
+        dependants: pr.dependants,
         has_other_debts: pr.debts > 0,
         borrowing_power: fig.power,
         within_borrowing_power: pr.loanAmount <= fig.power,
@@ -712,10 +1070,7 @@ export function generate(cfg) {
         loan_term_years: pr.term,
         repayment_frequency: pr.frequency,
         estimated_repayment: Math.round(fig.repayment),
-      }), Object.assign({
-        application_product: fig.product.title,
-        application_product_id: pr.product,
-      }, progress));
+      }), Object.assign({ application_product: fig.product.title, application_product_id: pr.product }, progress));
     }
   }
 
@@ -762,11 +1117,14 @@ export function generate(cfg) {
       application_product_id: pr.product,
       documents_outstanding: docs.length,
     }));
+    form(s, 'Submitted');
     page(s, 'apply/submitted/', { id: v.app.id });
     v.app.docs = docs;
     v.app.uploaded = [];
     const { rng } = v;
     if (rng.chance(cfg.documents.uploadSameSession)) upload(s, v, rng.int(1, docs.length));
+    // Referred applicants often want to talk it through.
+    if (decision === 'referred_to_lender' && rng.chance(0.18)) talkToLender(s, 'my_application');
     end(s);
     if (v.app.uploaded.length < docs.length && rng.chance(cfg.documents.uploadLater)) {
       const later = session(v, s.t + rng.skewed(...cfg.documents.laterHours) * HOUR, { utm: null, referrer: null });
@@ -801,12 +1159,28 @@ export function generate(cfg) {
     return steps(s, v, v.app.step, ease);
   }
 
+  // Back, but on another device: the saved application isn't there, so
+  // they start again from step 1 under the same email.
+  function restartElsewhere(v, at, utm, ease) {
+    switchDevice(v);
+    v.userId = null; // anonymous on the new device until step 1
+    const s = session(v, at, { utm, referrer: utm ? null : 'https://www.google.com/' });
+    if (utm) {
+      page(s, 'apply/', utm);
+    } else {
+      page(s, 'index.html');
+      secs(s, 5, 20);
+      nav(s, 'Apply now', 'apply/');
+    }
+    return startApplication(s, v, utm ? 'email_link' : 'header', utm || {}, v.profile.product, true, ease);
+  }
+
   // Braze Currents events: on the user, outside any session.
   function brazeEvent(v, type, at, extra) {
     if (at > endMs) return;
     events.push({
       event_type: type,
-      user_id: v.userId,
+      user_id: v.email,
       time: Math.round(at),
       session_id: -1,
       insert_id: `ldg-${cfg.seed}-${v.index}-${v.seq++}`,
@@ -859,9 +1233,8 @@ export function generate(cfg) {
 
     // Once someone has been through the campaign (emailed or held out),
     // abandoning again doesn't put them through it a second time.
-    const eligible =
-      !app.inCohort && v.userId && (app.step === 2 || app.step === 3) && v.profile.loanAmount >= b.minLoan;
-    const recent = app.abandonedAt >= launchMs - b.lookbackDays * 24 * HOUR;
+    const eligible = !app.inCohort && v.userId && (app.step === 2 || app.step === 3) && v.profile.loanAmount >= b.minLoan;
+    const recent = app.abandonedAt >= launchMs - b.lookbackDays * DAY;
     let sendAt = eligible && recent ? sendSlot(app.abandonedAt + rng.between(...b.delayHours) * HOUR, rng) : null;
     if (sendAt && natural && natural < sendAt) sendAt = null; // came back before the email
     if (sendAt && sendAt > endMs) sendAt = null;
@@ -883,11 +1256,16 @@ export function generate(cfg) {
           }
         }
         if (back && !(natural && natural < back)) {
+          // Opened on the phone, started on the laptop (or the reverse).
+          if (rng.chance(B.emailOnOtherDevice)) return restartElsewhere(v, back, utm, b.resumeEase);
           return resume(v, back, utm, b.resumeEase);
         }
       }
     }
-    if (natural && natural <= endMs) return resume(v, natural, null, d.resumeEase);
+    if (natural && natural <= endMs) {
+      if (rng.chance(B.deviceSwitch)) return restartElsewhere(v, natural, null, d.resumeEase);
+      return resume(v, natural, null, d.resumeEase);
+    }
     return 'abandoned';
   }
 
@@ -898,7 +1276,7 @@ export function generate(cfg) {
     const t = cfg.traffic;
     const d = new Date(date + 'T00:00:00Z');
     const weekend = d.getUTCDay() === 0 || d.getUTCDay() === 6;
-    const weeks = (d - startDay) / (7 * 24 * HOUR);
+    const weeks = (d - startDay) / (7 * DAY);
     const burst = t.bursts.filter((x) => date >= x.from && date <= x.to).reduce((f, x) => f * x.factor, 1);
     const dayRng = new Rng(hash(`${cfg.seed}:day:${date}`));
     const count = Math.round(
@@ -907,15 +1285,28 @@ export function generate(cfg) {
     for (let i = 0; i < count; i++) {
       const v = visitor(index++);
       stats.visitors += 1;
-      const hourIdx = v.rng.weighted(t.hourWeights.map((w, h) => ({ h, weight: w }))).h;
-      const start = clock.at(date, hourIdx + v.rng.next());
-      let outcome = firstVisit(v, start);
-      // One more chance to come back after abandoning again on a return.
+      const hourOf = () => v.rng.weighted(t.hourWeights.map((w, h) => ({ h, weight: w }))).h;
+      let outcome = firstVisit(v, clock.at(date, hourOf() + v.rng.next()));
+
+      // Browsers who didn't apply coming back to look again, warmer each
+      // time. A bounce sometimes comes back too.
+      let visits = 1;
+      while ((outcome === 'browsed' || outcome === 'bounced') && visits < 4 && v.rng.chance(B.returnToBrowse / visits)) {
+        const later = clock.dateOf(clock.at(date, 12) + v.rng.skewed(...B.returnDays) * DAY);
+        const at = clock.at(later, hourOf() + v.rng.next());
+        if (at > endMs) break;
+        visits += 1;
+        const back = v.rng.chance(0.6) ? cfg.channels.find((c) => c.name === 'direct') : cfg.channels.find((c) => c.name === 'organic_search');
+        const s = session(v, at, { utm: null, referrer: back.referrer });
+        outcome = browseVisit(s, Math.pow(B.returnWarmth, visits - 1));
+      }
+
+      // Abandoners: maybe back on their own, maybe brought back by Braze.
       let tries = 0;
       while (outcome === 'abandoned' && v.app && !v.app.submitted && tries++ < 2) {
         const before = v.app.abandonedAt;
         outcome = afterAbandoning(v);
-        if (v.app.abandonedAt === before) break;
+        if (v.app.abandonedAt === before && outcome === 'abandoned') break;
       }
     }
   }

@@ -134,6 +134,64 @@ export default {
     resumeEase: 0.55,
   },
 
+  /* --- Everything around the journey --------------------------------- */
+
+  // The background that makes the data look like a real site: people who
+  // leave straight away, people who browse and come back, and people who
+  // do odd things. Chances are per visit unless the name says otherwise.
+  behaviour: {
+    // Leave after the first page. The landing page still fires
+    // Product Viewed on load, so a landing bounce has that too.
+    bounce: { landing: 0.3, home: 0.36 },
+
+    // Visitors who didn't start an application coming back to look again,
+    // days later, a bit more likely to apply each time.
+    returnToBrowse: 0.24,
+    returnDays: [1, 12],
+    returnWarmth: 1.6,
+
+    // Search: how often, what people type (junk and typos included, which
+    // return nothing), and how often they click a result.
+    search: 0.13,
+    searchClick: 0.55,
+    searchQueries: {
+      offset: 14, package: 10, 'first home': 10, 'fixed rate': 9, refinance: 7, calculator: 6, investor: 5,
+      'interest only': 4, 'term deposit': 5, savings: 6, 'credit card': 5, rewards: 3, green: 2,
+      pakage: 2, 'hoem loan': 2, 'car loan': 3, 'personal loan': 3, bsb: 2, login: 3, 'lost card': 2, bitcoin: 1, asdf: 1,
+    },
+
+    filterOrSort: 0.28, // on the home loans list
+    repaymentsCalculator: 0.16,
+    calculatorFiddle: 0.12, // keep changing inputs: several calculations, some silly
+    otherProducts: 0.12, // wander into accounts, savings or cards
+
+    // Ringing a lender instead of (or as well as) applying.
+    talkToLender: { browser: 0.035, abandoner: 0.07 },
+
+    // Footer sign-up, and the push prompt it brings up.
+    rateUpdates: 0.025,
+    push: { prompted: 0.85, granted: 0.32, denied: 0.38 },
+
+    register: 0.015, // create an internet banking login
+
+    // Odd things people do mid-application:
+    stepBack: 0.07, // go back a step and redo it (the stage event fires twice)
+    idleMidApplication: 0.06, // leave the tab open past the 30-minute session timeout
+    idleMinutes: [35, 240],
+    speedRunner: 0.04, // click straight through on the defaults
+    // Come back on a different device, where the saved application isn't,
+    // so a second application starts under the same email.
+    deviceSwitch: 0.22, // of those who come back by themselves
+    emailOnOtherDevice: 0.15, // of those who click a reminder
+
+    // Existing customers in internet banking.
+    customer: { signOut: 0.3, unsubscribe: 0.03, subscribe: 0.04 },
+
+    // Amplitude's form autocapture ([Amplitude] Form Started / Submitted),
+    // on because the site turns formInteractions on.
+    formAutocapture: true,
+  },
+
   /* --- After submitting ---------------------------------------------- */
 
   documents: {
@@ -162,11 +220,11 @@ export default {
     controlGroup: 0.1,
     delivered: 0.985,
     opened: 0.52,
-    clicked: 0.3, // of those who open
+    clicked: 0.36, // of those who open
     // Chance a click becomes a resumed application, and how much easier
     // the steps feel for someone who came back from the email.
     resumeAfterClick: 0.85,
-    resumeEase: 0.45,
+    resumeEase: 0.4,
     // A second email for those who didn't click, this many hours after the
     // first. Set to null for one email only.
     secondEmailHours: 72,

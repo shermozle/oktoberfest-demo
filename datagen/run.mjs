@@ -28,10 +28,16 @@ const META = OUT + '/meta.json';
 const SENT = OUT + '/sent.json';
 
 const [command, ...rest] = process.argv.slice(2);
-const flag = (name) => rest.includes('--' + name);
+// `npm run data:send --confirm` (no `--` before the flag) hands the flag to
+// npm, which passes it on only as npm_config_confirm. Accept that too, so
+// the command does what it looks like it does.
+const fromNpm = (name) => process.env['npm_config_' + name];
+const flag = (name) => rest.includes('--' + name) || fromNpm(name) === 'true';
 const option = (name) => {
   const i = rest.indexOf('--' + name);
-  return i === -1 ? null : rest[i + 1];
+  if (i !== -1) return rest[i + 1];
+  const v = fromNpm(name);
+  return v && v !== 'true' ? v : null;
 };
 
 // Changes to the settings or the model change the data, which matters for a
@@ -101,7 +107,6 @@ function report(events) {
   ];
   const b = cfg.braze.events;
   const apps = new Map();
-  const appOfUser = new Map();
   const deviceOf = new Map();
   const counts = {};
   const perDay = {};
@@ -119,17 +124,8 @@ function report(events) {
         apps.set(p.application_id, { stages: new Set(), device: deviceOf.get(e.device_id), channel: p.utm_source || 'none' });
       const a = apps.get(p.application_id);
       a.stages.add(e.event_type);
-      if (e.user_id) appOfUser.set(e.user_id, p.application_id);
       if (e.event_type === 'Application Resumed') a[p.utm_source === 'braze' ? 'resumedFromEmail' : 'resumedOnOwn'] = true;
       if (e.event_type === 'Application Submitted') a.submittedAt = e.time;
-    }
-    if (p.source === 'braze' && e.user_id) {
-      const a = apps.get(appOfUser.get(e.user_id));
-      if (!a) continue;
-      if (e.event_type === b.sent) a.emailedAt = a.emailedAt || e.time;
-      if (e.event_type === b.opened) a.opened = true;
-      if (e.event_type === b.clicked) a.clicked = true;
-      if (e.event_type === 'Campaign Control Group Entered') a.controlAt = e.time;
     }
   }
 
@@ -163,16 +159,31 @@ function report(events) {
     console.log(`  ${name.padEnd(14)} started ${n(c.started).padStart(6)}   submitted ${pct(c.submitted, c.started).padStart(6)}`);
   console.log(`  (landing page visitors: ${n(landingVisitors.size)}, starting: ${pct(all.filter((a) => a.channel !== 'none').length, landingVisitors.size)})`);
 
-  const emailed = all.filter((a) => a.emailedAt);
-  const control = all.filter((a) => a.controlAt);
-  const won = (list, since) => list.filter((a) => a.submittedAt && a.submittedAt > since(a)).length;
-  console.log(`\nBRAZE: ${cfg.braze.campaign}, from ${cfg.braze.launch}`);
+  // Per person, not per application: a reminder clicked on another device
+  // starts a second application under the same email.
+  const people = new Map();
+  for (const e of events) {
+    if (!e.user_id) continue;
+    const p = people.get(e.user_id) || {};
+    const props = e.event_properties || {};
+    if (e.event_type === b.sent && !p.emailedAt) p.emailedAt = e.time;
+    if (e.event_type === b.opened) p.opened = true;
+    if (e.event_type === b.clicked) p.clicked = true;
+    if (e.event_type === 'Campaign Control Group Entered') p.controlAt = e.time;
+    if (props.utm_source === 'braze' && /Application (Resumed|Started)/.test(e.event_type)) p.backFromEmail = true;
+    if (e.event_type === 'Application Submitted') p.submittedAt = e.time;
+    people.set(e.user_id, p);
+  }
+  const emailed = [...people.values()].filter((p) => p.emailedAt);
+  const control = [...people.values()].filter((p) => p.controlAt);
+  const won = (list, since) => list.filter((p) => p.submittedAt && p.submittedAt > since(p)).length;
+  console.log(`\nBRAZE: ${cfg.braze.campaign}, from ${cfg.braze.launch} (people)`);
   console.log(`  cohort entered       ${n(emailed.length + control.length)}  (${n(control.length)} held out as control)`);
-  console.log(`  opened               ${pct(emailed.filter((a) => a.opened).length, emailed.length)}`);
-  console.log(`  clicked              ${pct(emailed.filter((a) => a.clicked).length, emailed.length)}`);
-  console.log(`  resumed from email   ${n(emailed.filter((a) => a.resumedFromEmail).length)}`);
-  console.log(`  submitted, emailed   ${pct(won(emailed, (a) => a.emailedAt), emailed.length)}`);
-  console.log(`  submitted, control   ${pct(won(control, (a) => a.controlAt), control.length)}   ← the lift is the gap`);
+  console.log(`  opened               ${pct(emailed.filter((p) => p.opened).length, emailed.length)}`);
+  console.log(`  clicked              ${pct(emailed.filter((p) => p.clicked).length, emailed.length)}`);
+  console.log(`  back from email      ${n(emailed.filter((p) => p.backFromEmail).length)}`);
+  console.log(`  submitted, emailed   ${pct(won(emailed, (p) => p.emailedAt), emailed.length)}`);
+  console.log(`  submitted, control   ${pct(won(control, (p) => p.controlAt), control.length)}   ← the lift is the gap`);
 
   const dayCounts = Object.values(perDay);
   console.log('\nVOLUME');
