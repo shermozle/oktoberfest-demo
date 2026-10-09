@@ -27,7 +27,7 @@ bank.
 | Pages | Home, 4 category pages, 13 product pages, borrowing power and repayments calculators, the application, the application outcome, internet banking, talk to a lender, about, 404 |
 | Working | Filter and sort home loans, both calculators, the application with save and resume, instant decision, document checklist, internet banking sign-in with persona accounts, live search, recommendations, recently viewed, rate update sign-up, lender callback form |
 | Landing page | `/landing/`: a Package Home Loan page for paid traffic, with an offset savings calculator. Pass UTM parameters and they follow the visitor into the application. |
-| Demo script | [DEMO.md](DEMO.md): the high-value application abandoner story, with the Amplitude cohort, the Braze campaign and a starter reminder email in `braze/` |
+| Demo script | [DEMO-SCRIPT.md](DEMO-SCRIPT.md): the presenter script for the Amplitude half, with the handovers to and from Braze. [DEMO.md](DEMO.md): the background runbook, with a starter reminder email in `braze/` |
 | Instrumented | Amplitude Browser SDK 2 + Session Replay, Braze Web SDK, and an on-page event stream showing every call. See [TRACKING.md](TRACKING.md). |
 
 ## Run it locally

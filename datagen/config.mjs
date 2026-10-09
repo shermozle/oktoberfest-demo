@@ -242,6 +242,99 @@ export default {
     },
   },
 
+  /* --- The First Home Loan Canvas ----------------------------------- */
+
+  // Akshin's Braze journey, as history: first home buyers who stop at step 3
+  // or 4 enter a Canvas triggered from Amplitude's event stream. Email
+  // first; when they come back, a welcome-back modal; no click on the
+  // email, an SMS the next day, where replies go to the conversational
+  // agent and on to a lender. 15% are held out as a control.
+  //
+  // This is a layer on top of the data above: it only adds events, with
+  // their own ids, so it can be switched on after the rest has been sent.
+  canvas: {
+    enabled: true,
+    name: 'First Home Loan Win-Back',
+    utmCampaign: 'first_home_loan_win_back',
+    // Real-time trigger, so only abandonments from launch on enter.
+    launch: '2026-09-29',
+    entryDelayHours: [0.5, 2], // event stream to Braze, then the entry wait
+    controlGroup: 0.15,
+    emailDelayHours: [12, 20], // the Canvas's delay before the first email
+    email: { delivered: 0.985, opened: 0.56, clicked: 0.4 }, // clicked: of those who open
+    smsAfterHours: 24,
+    sms: { delivered: 0.97, clicked: 0.24, replied: 0.1 }, // replied: of those who don't click
+    agent: { backAfterHandoff: 0.65, backHours: [3, 30] },
+    inApp: { clicked: 0.5 },
+    resumeAfterClick: 0.88,
+    resumeEase: 0.35,
+    // Coming back unprompted, in both arms, so the control has a baseline.
+    naturalReturn: 0.22,
+    naturalReturnHours: [4, 140],
+    steps: {
+      email: 'Email: Finish your first home loan application',
+      inApp: 'In-app: Welcome back modal',
+      sms: 'SMS: Finish on your phone',
+    },
+    // Braze exports to Amplitude with an [Appboy] prefix. CHECK THESE
+    // against the first real events from Braze's Amplitude export and
+    // correct them here before sending: synthetic and real events need the
+    // same names to land in the same charts.
+    events: {
+      entered: '[Appboy] Canvas Entered',
+      converted: '[Appboy] Canvas Conversion',
+      emailSent: '[Appboy] Email Sent',
+      emailDelivered: '[Appboy] Email Delivered',
+      emailOpened: '[Appboy] Email Opened',
+      emailClicked: '[Appboy] Email Clicked',
+      inAppViewed: '[Appboy] In-App Message Viewed',
+      inAppClicked: '[Appboy] In-App Message Clicked',
+      smsSent: '[Appboy] SMS Sent',
+      smsDelivered: '[Appboy] SMS Delivered',
+      smsClicked: '[Appboy] SMS Short Link Clicked',
+      smsInbound: '[Appboy] SMS Inbound Received',
+    },
+  },
+
+  /* --- Darren Whitlock -------------------------------------------------- */
+
+  // The user Akshin's demo is built around. His timeline is scripted
+  // relative to demoDate: browsing nine days before, abandoning at step 4
+  // six days before, then the email, the SMS conversation, and finishing
+  // three days before the demo. The email must be his Braze external id
+  // (from Akshin's profile JSON), so Braze's events land on the same user.
+  darren: {
+    demoDate: '2026-10-16',
+    email: 'darren.whitlock@example.com',
+    firstName: 'Darren',
+    lastName: 'Whitlock',
+    applicationId: 'LB480650',
+    // A $480k loan on a $600k place in Wagga.
+    profile: {
+      couple: false,
+      firstHomeBuyer: true,
+      purpose: 'buy_home',
+      stage: 'found',
+      value: 600000,
+      deposit: 120000,
+      balance: 0,
+      loanAmount: 480000,
+      income: 108000,
+      partnerIncome: 0,
+      otherIncome: 0,
+      dependants: 0,
+      expenses: 2100,
+      debts: 0,
+      cardLimits: 5000,
+      employment: 'full_time',
+      marketingOptIn: true,
+      repaymentType: 'principal_and_interest',
+      term: 30,
+      frequency: 'fortnightly',
+      product: 'first-home-loan',
+    },
+  },
+
   /* --- Sending -------------------------------------------------------- */
 
   amplitude: {

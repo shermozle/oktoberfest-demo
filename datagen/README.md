@@ -90,19 +90,49 @@ decision) come from the site's own `finance.js` and `catalog.json`, so a
 synthetic application is approved or referred exactly as a real one would
 be.
 
+## The Braze Canvas and Darren
+
+Two layers sit on top of the base data, for the Braze half of the demo
+(see [DEMO-SCRIPT.md](../DEMO-SCRIPT.md)):
+
+- **The First Home Loan Canvas** (`canvas` in the config). First home
+  buyers who stop at step 3 or 4 after the launch date enter a Braze
+  Canvas: an email, a welcome-back in-app modal when they return, an SMS
+  for those who don't click, and replies handed to the conversational
+  agent. 15% are a control group. Braze's own events arrive the way its
+  Amplitude export sends them, with the `[Appboy]` prefix, carrying
+  `canvas_name`, `canvas_step_name` and `canvas_variation_name`. The report
+  shows the Canvas against its control.
+- **Darren Whitlock** (`darren` in the config), the user Akshin's demo is
+  built around. His whole journey is scripted relative to `demoDate`:
+  browsing, abandoning a First Home Loan at step 4 on his phone, the email,
+  the SMS conversation, then finishing. Set `darren.email` to his Braze
+  external id so Braze's live events land on the same user.
+
+Both only ever add events, with their own ids. Turning them on, or changing
+their settings, never changes an event that's already been sent.
+
 ## Sending
 
 `send` posts to Amplitude's Batch API in batches of 1,000, using the
 project key in `src/assets/js/config.js` unless `AMPLITUDE_API_KEY` is
-set (and `AMPLITUDE_SERVER_ZONE=EU` for an EU project). It records its
-progress in `datagen/out/sent.json`, so running it again carries on where
-it stopped instead of repeating. Every event has a fixed `insert_id`, so
-Amplitude also drops any repeat sent within 7 days.
+set (and `AMPLITUDE_SERVER_ZONE=EU` for an EU project).
 
-Once some data has been sent, don't change the settings and send the rest:
-the two halves would describe different people. The sender refuses unless
-you pass `--force`. To start again, clear the project's data in Amplitude,
-delete `datagen/out/sent.json`, generate and send.
+It records the id of every event it sends in `datagen/out/sent-ids.txt`,
+and only ever sends events that aren't in it. So running it again carries
+on where it stopped, and a later generate that adds events (switching on
+the Canvas, say) sends just the new ones. Every event also has a fixed
+`insert_id`, so Amplitude drops any repeat sent within 7 days.
+
+It also keeps a fingerprint of everything already sent
+(`datagen/out/sent-hash.txt`). If a settings change would alter an event
+that's already in Amplitude, rather than only add new ones, it refuses to
+send: the two would no longer tell the same story. Undo the change, or
+pass `--force` if you really mean it. Settings that only add (the Canvas,
+Darren) are always safe.
+
+To start again from scratch, clear the project's data in Amplitude, delete
+`datagen/out/sent-ids.txt` and `sent-hash.txt`, generate and send.
 
 ## Before you send
 
@@ -111,12 +141,15 @@ delete `datagen/out/sent.json`, generate and send.
   Destination`, since the site's forms have no id or name. Compare with a
   real one in the project, or set `behaviour.formAutocapture` to false to
   leave them out.
-- **Braze event names.** Synthetic email events are named `Email Sent`,
-  `Email Delivered`, `Email Opened`, `Email Clicked` and
-  `Campaign Control Group Entered`. Check those against what Braze Currents
-  actually sends into the project (send yourself one real email), and
-  change `braze.events` in the config to match, so synthetic and real
-  events land under the same names.
+- **Braze event names.** The Canvas layer's events use `canvas.events` in
+  the config (`[Appboy] Email Sent` and so on). Check them against the
+  first real events from Braze's Amplitude export and correct them before
+  sending. The older campaign below uses `braze.events`.
+- **The older email campaign** (`braze` in the config) is already in
+  Amplitude, under `Email Sent`, `Email Opened` and so on, without the
+  prefix. Leave its settings alone: changing them alters events that have
+  been sent, and the sender will refuse. Charts for the Canvas filter on
+  `canvas_name`, which keeps it out of the way.
 - **Session replays can't be generated.** Record some yourself on the live
   site, abandoning at step 3 or 4, for the replay part of the demo.
 - **It's around 255,000 events.** Check that suits the project's event

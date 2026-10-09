@@ -67,7 +67,7 @@ function photo(base, img, opts) {
 
 // Photos used outside the catalogue.
 const PHOTO = {
-  hero: { name: 'record-player', alt: 'A woman with red hair dancing beside a record player, surrounded by plants', position: '55% 50%' },
+  hero: { name: 'home-sweet-home', alt: 'A couple holding a Home Sweet Home sign outside their front door', position: '50% 30%' },
   movingIn: { name: 'moving-in-boxes', alt: 'A couple carrying boxes into a timber A-frame house', position: '50% 40%' },
   movingInDoor: { name: 'moving-in-door', alt: 'A couple with moving boxes unlocking the door of a timber house', position: '50% 22%' },
   hallway: { name: 'boxes-hallway', alt: 'A couple carrying moving boxes through their new front door', position: '50% 28%' },

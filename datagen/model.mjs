@@ -397,7 +397,7 @@ export function generate(cfg) {
       device_id: v.deviceId,
       time: Math.round(at || s.t),
       session_id: s.id,
-      insert_id: `ldg-${cfg.seed}-${v.index}-${v.seq++}`,
+      insert_id: eventId(v),
       platform: 'Web',
       os_name: v.device.os_name,
       os_version: v.device.os_version,
@@ -412,6 +412,11 @@ export function generate(cfg) {
     if (userProps) e.user_properties = userProps;
     if (e.time <= endMs) events.push(e);
   }
+
+  // Events added on top of data that's already been sent (the Canvas
+  // layer, Darren) take ids in their own namespace, so the ids of
+  // everything already sent never move.
+  const eventId = (v) => `ldg-${cfg.seed}-${v.index}-${v.idPrefix ? v.idPrefix + '-' : ''}${v.seq++}`;
 
   const wait = (s, a, b) => (s.t += s.v.rng.between(a, b) * MIN);
   const secs = (s, a, b) => (s.t += s.v.rng.between(a, b) * 1000);
@@ -931,7 +936,7 @@ export function generate(cfg) {
 
   function startApplication(s, v, source, campaign, preProduct, onPage, ease) {
     v.app = {
-      id: 'LB' + (100000 + (hash(`${cfg.seed}:app:${v.index}:${v.seq}`) % 900000)),
+      id: 'LB' + (100000 + (hash(`${cfg.seed}:app:${v.idPrefix ? v.idPrefix + ':' : ''}${v.index}:${v.seq}`) % 900000)),
       startedAt: s.t,
       updatedAt: s.t,
       source,
@@ -1091,6 +1096,7 @@ export function generate(cfg) {
     const decision = reasons.length ? 'referred_to_lender' : 'conditionally_approved';
     const docs = documentsFor(v);
     v.app.submitted = true;
+    v.app.submittedAt = s.t;
     track(s, 'Application Submitted', Object.assign({
       application_id: v.app.id,
       source: v.app.source,
@@ -1183,7 +1189,7 @@ export function generate(cfg) {
       user_id: v.email,
       time: Math.round(at),
       session_id: -1,
-      insert_id: `ldg-${cfg.seed}-${v.index}-${v.seq++}`,
+      insert_id: eventId(v),
       event_properties: Object.assign({ campaign_name: cfg.braze.campaign, source: 'braze' }, extra),
     });
   }
@@ -1269,6 +1275,316 @@ export function generate(cfg) {
     return 'abandoned';
   }
 
+  /* --- the First Home Loan Canvas (Akshin's Braze journey) -------------- */
+
+  // A layer on top of everything above. It runs after a visitor's own
+  // story is finished, on its own random stream and its own event ids, so
+  // switching it on adds events without changing any that were already
+  // generated (or sent).
+  const C = cfg.canvas;
+  const canvasLaunch = C && clock.at(C.launch, 0);
+
+  function layer(v, name, fn) {
+    const saved = { rng: v.rng, seq: v.seq, prefix: v.idPrefix };
+    v.rng = new Rng(hash(`${cfg.seed}:${name}:${v.index}`));
+    v.seq = 0;
+    v.idPrefix = name;
+    try {
+      return fn();
+    } finally {
+      Object.assign(v, { rng: saved.rng, seq: saved.seq, idPrefix: saved.prefix });
+    }
+  }
+
+  // Braze's own events as its Amplitude export (Currents) sends them: on the
+  // user, outside any site session.
+  function currents(v, key, at, step, extra) {
+    if (at > endMs) return;
+    events.push({
+      event_type: C.events[key],
+      user_id: v.email,
+      time: Math.round(at),
+      session_id: -1,
+      insert_id: eventId(v),
+      event_properties: Object.assign(
+        {
+          canvas_name: C.name,
+          canvas_variation_name: v.app.control ? 'Control' : 'Variant 1',
+          source: 'braze',
+        },
+        step ? { canvas_step_name: step } : {},
+        extra
+      ),
+    });
+  }
+
+  // Braze sends between 8am and 8pm local.
+  function sendWindow(t, rng) {
+    const h = clock.hourOf(t);
+    if (h >= 8 && h < 20) return t;
+    const date = clock.dateOf(h >= 20 ? t + 6 * HOUR : t);
+    return clock.at(date, 8 + rng.next() * 2);
+  }
+
+  const UTM_CANVAS = (medium, content) => ({
+    utm_source: 'braze',
+    utm_medium: medium,
+    utm_campaign: C.utmCampaign,
+    utm_content: content,
+  });
+
+  // Back on the site from a message: the application resumes, Braze's
+  // welcome-back modal shows (the site logs In-App Message Shown, Braze logs
+  // its own view and click), and they carry on.
+  function backFromMessage(v, at, utm) {
+    if (at > endMs) return 'abandoned';
+    if (v.rng.chance(B.emailOnOtherDevice)) return restartElsewhere(v, at, utm, C.resumeEase);
+    const s = session(v, at, { utm, referrer: null });
+    page(s, 'apply/', utm);
+    track(s, 'Application Resumed', Object.assign({
+      application_id: v.app.id,
+      step: STEPS[v.app.step],
+      step_number: v.app.step + 1,
+      minutes_since_saved: Math.round((at - v.app.updatedAt) / MIN),
+    }, utm), { application_last_resumed_at: new Date(at).toISOString() });
+    secs(s, 2, 6);
+    track(s, 'In-App Message Shown', { message_id: null, source: 'braze' });
+    currents(v, 'inAppViewed', s.t, C.steps.inApp);
+    if (v.rng.chance(C.inApp.clicked)) {
+      secs(s, 3, 15);
+      currents(v, 'inAppClicked', s.t, C.steps.inApp);
+    }
+    return steps(s, v, v.app.step, C.resumeEase);
+  }
+
+  function canvasJourney(v) {
+    const { rng } = v;
+    const app = v.app;
+    const enterAt = app.abandonedAt + rng.between(...C.entryDelayHours) * HOUR;
+    if (enterAt > endMs) return;
+    app.canvas = true;
+    app.control = rng.chance(C.controlGroup);
+    currents(v, 'entered', enterAt, null, { in_control_group: app.control });
+
+    // Someone in either arm may still come back by themselves.
+    const natural = rng.chance(C.naturalReturn) ? enterAt + rng.skewed(...C.naturalReturnHours) * HOUR : null;
+    let back = null;
+    let utm = null;
+
+    if (!app.control) {
+      const emailAt = sendWindow(enterAt + rng.between(...C.emailDelayHours) * HOUR, rng);
+      if (!(natural && natural < emailAt)) {
+        currents(v, 'emailSent', emailAt, C.steps.email);
+        if (rng.chance(C.email.delivered)) {
+          currents(v, 'emailDelivered', emailAt + rng.between(0.2, 2) * MIN, C.steps.email);
+          if (rng.chance(C.email.opened)) {
+            const opened = emailAt + rng.skewed(3, 480) * MIN;
+            currents(v, 'emailOpened', opened, C.steps.email);
+            if (rng.chance(C.email.clicked)) {
+              const clicked = opened + rng.between(0.3, 4) * MIN;
+              currents(v, 'emailClicked', clicked, C.steps.email, { url: base.origin + sitePath + 'apply/' });
+              if (rng.chance(C.resumeAfterClick)) {
+                back = clicked + rng.between(0.1, 0.6) * MIN;
+                utm = UTM_CANVAS('email', 'finish_application');
+              }
+            }
+          }
+        }
+        // No click on the email: SMS the next day. A few reply, and the
+        // conversational agent hands them to a lender.
+        if (!back) {
+          const smsAt = sendWindow(emailAt + C.smsAfterHours * HOUR, rng);
+          if (smsAt <= endMs && !(natural && natural < smsAt)) {
+            currents(v, 'smsSent', smsAt, C.steps.sms);
+            if (rng.chance(C.sms.delivered)) {
+              currents(v, 'smsDelivered', smsAt + rng.between(0.1, 1) * MIN, C.steps.sms);
+              if (rng.chance(C.sms.clicked)) {
+                const clicked = smsAt + rng.skewed(1, 240) * MIN;
+                currents(v, 'smsClicked', clicked, C.steps.sms);
+                if (rng.chance(C.resumeAfterClick)) {
+                  back = clicked + rng.between(0.1, 0.6) * MIN;
+                  utm = UTM_CANVAS('sms', 'finish_application');
+                }
+              } else if (rng.chance(C.sms.replied)) {
+                const replied = smsAt + rng.skewed(2, 180) * MIN;
+                currents(v, 'smsInbound', replied, C.steps.sms, { message_category: rng.pick(['question_rates', 'question_application', 'question_documents']) });
+                if (rng.chance(C.agent.backAfterHandoff)) {
+                  back = replied + rng.between(...C.agent.backHours) * HOUR;
+                  utm = UTM_CANVAS('sms', 'agent_handoff');
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    let outcome = 'abandoned';
+    if (back && !(natural && natural < back)) outcome = backFromMessage(v, back, utm);
+    else if (natural && natural <= endMs) outcome = resume(v, natural, null, cfg.dropouts.resumeEase);
+    if (outcome === 'submitted' && v.app.submittedAt) currents(v, 'converted', v.app.submittedAt + rng.between(1, 30) * 1000, null);
+  }
+
+  function canvasEligible(v) {
+    const app = v.app;
+    return (
+      C && C.enabled && app && !app.submitted && !app.inCohort && v.userId &&
+      v.profile.firstHomeBuyer && (app.step === 2 || app.step === 3) &&
+      app.abandonedAt >= canvasLaunch
+    );
+  }
+
+  /* --- Darren Whitlock --------------------------------------------------- */
+
+  // The user Akshin's Braze journey is built around: a first home buyer who
+  // stopped at step 4 of a First Home Loan application on his phone, three
+  // steps from the end. His timeline is scripted relative to the demo date
+  // so that, on the day, his history shows every message and the finished
+  // application.
+  function darren() {
+    const D = cfg.darren;
+    const index = 9000001;
+    const rng = new Rng(hash(`${cfg.seed}:darren`));
+    const v = {
+      index,
+      rng,
+      channel: cfg.channels.find((c) => c.name === 'organic_search'),
+      mobile: true,
+      device: cfg.devices.mobile[0],
+      place: { city: 'Wagga Wagga', region: 'New South Wales', state: 'NSW' },
+      persona: cfg.personas.find((p) => p.name === 'first_home_buyer'),
+      deviceId: rng.uuid(),
+      userId: null,
+      intent: 1,
+      first: D.firstName,
+      last: D.lastName,
+      email: D.email,
+      seq: 0,
+      idPrefix: 'darren',
+      app: null,
+      viewed: [],
+      speedRunner: false,
+    };
+    v.profile = Object.assign(profile(v), D.profile);
+    const day = (n, h) => clock.at(clock.dateOf(clock.at(D.demoDate, 12) + n * DAY), h);
+
+    // 1. Finds Laneway through search, reads about the First Home Loan, runs
+    //    the borrowing power calculator, leaves.
+    let s = session(v, day(-9, 19.6), { utm: null, referrer: 'https://www.google.com/' });
+    page(s, 'index.html');
+    secs(s, 10, 30);
+    nav(s, 'Home loans', 'home-loans/');
+    listPage(s, 'home-loans');
+    productPage(s, 'first-home-loan', { placement: 'category-grid', position: 5 });
+    nav(s, 'Calculators', 'calculators/borrowing-power/');
+    borrowingCalculator(s);
+    end(s);
+
+    // 2. Comes back on his phone and starts applying. Gets through About
+    //    you, the property and his income, then stalls on expenses.
+    s = session(v, day(-6, 20.25), { utm: null, referrer: null });
+    page(s, 'index.html');
+    productPage(s, 'first-home-loan', { placement: 'home-featured', position: 3 });
+    v.app = null;
+    const enter = { source: 'product_page' };
+    v.app = {
+      id: D.applicationId,
+      startedAt: s.t,
+      updatedAt: s.t,
+      source: enter.source,
+      campaign: {},
+      step: 0,
+      submitted: false,
+    };
+    page(s, 'apply/', { source: 'product_page', product: 'first-home-loan' });
+    track(s, 'Application Started', Object.assign({ application_id: v.app.id, source: 'product_page' }, productProps('first-home-loan')),
+      Object.assign({
+        application_status: 'started',
+        application_id: v.app.id,
+        application_started_at: new Date(s.t).toISOString(),
+        application_resume_url: base.origin + sitePath + 'apply/',
+        application_product: 'First Home Loan',
+        application_product_id: 'first-home-loan',
+      }, progressProps(0)));
+    form(s, 'Started');
+    for (let i = 0; i < 3; i++) {
+      wait(s, ...cfg.funnel.stepMinutes[STEPS[i]]);
+      stage(s, v, i);
+      v.app.step = i + 1;
+    }
+    wait(s, 9, 14); // stares at the expenses screen, then puts the phone down
+    v.app.updatedAt = s.t;
+    v.app.abandonedAt = s.t;
+    end(s);
+
+    // 3. The Canvas: enters an hour later; the email is opened but not
+    //    clicked; the SMS next morning gets a reply, the agent answers his
+    //    question about rates and hands him to a lender.
+    const C2 = C.steps;
+    const at = (n, h) => day(n, h);
+    v.app.control = false;
+    currents(v, 'entered', at(-6, 21.4), null, { in_control_group: false });
+    currents(v, 'emailSent', at(-5, 10.05), C2.email);
+    currents(v, 'emailDelivered', at(-5, 10.07), C2.email);
+    currents(v, 'emailOpened', at(-5, 12.7), C2.email);
+    currents(v, 'smsSent', at(-4, 10.0), C2.sms);
+    currents(v, 'smsDelivered', at(-4, 10.01), C2.sms);
+    currents(v, 'smsInbound', at(-4, 10.3), C2.sms, { message_category: 'question_application' });
+    currents(v, 'smsInbound', at(-4, 10.38), C2.sms, { message_category: 'question_rates' });
+    currents(v, 'smsInbound', at(-4, 10.45), C2.sms, { message_category: 'request_human' });
+    currents(v, 'smsClicked', at(-3, 19.1), C2.sms);
+
+    // 4. Taps the link in the SMS that evening: the application is where
+    //    he left it, the welcome-back modal shows, and he finishes.
+    const utm = UTM_CANVAS('sms', 'agent_handoff');
+    s = session(v, at(-3, 19.12), { utm, referrer: null });
+    page(s, 'apply/', utm);
+    track(s, 'Application Resumed', Object.assign({
+      application_id: v.app.id,
+      step: STEPS[v.app.step],
+      step_number: v.app.step + 1,
+      minutes_since_saved: Math.round((s.t - v.app.updatedAt) / MIN),
+    }, utm), { application_last_resumed_at: new Date(s.t).toISOString() });
+    secs(s, 3, 5);
+    track(s, 'In-App Message Shown', { message_id: null, source: 'braze' });
+    currents(v, 'inAppViewed', s.t, C2.inApp);
+    secs(s, 6, 10);
+    currents(v, 'inAppClicked', s.t, C2.inApp);
+    for (let i = 3; i < 5; i++) {
+      wait(s, ...cfg.funnel.stepMinutes[STEPS[i]]);
+      stage(s, v, i);
+      v.app.step = i + 1;
+    }
+    wait(s, 1.5, 3);
+    v.profile.product = 'first-home-loan';
+    const before = v.app.submittedAt;
+    submitScripted(s, v);
+    if (v.app.submittedAt !== before) currents(v, 'converted', v.app.submittedAt + 12000, null);
+
+    // 5. Uploads the rest of his documents the next day.
+    if (v.app.uploaded.length < v.app.docs.length) {
+      s = session(v, at(-2, 12.5), { utm: null, referrer: null });
+      page(s, 'apply/submitted/', { id: v.app.id });
+      upload(s, v, v.app.docs.length);
+      end(s);
+    }
+  }
+
+  // submit() with Darren's documents fixed: some uploaded straight away,
+  // the rest the next day (step 5 below).
+  function submitScripted(s, v) {
+    const saved = cfg.documents.uploadSameSession;
+    const savedLater = cfg.documents.uploadLater;
+    cfg.documents.uploadSameSession = 1;
+    cfg.documents.uploadLater = 0;
+    try {
+      submit(s, v);
+    } finally {
+      cfg.documents.uploadSameSession = saved;
+      cfg.documents.uploadLater = savedLater;
+    }
+  }
+
   /* --- every day ----------------------------------------------------------- */
 
   let index = 0;
@@ -1308,8 +1624,12 @@ export function generate(cfg) {
         outcome = afterAbandoning(v);
         if (v.app.abandonedAt === before && outcome === 'abandoned') break;
       }
+
+      if (canvasEligible(v)) layer(v, 'cv', () => canvasJourney(v));
     }
   }
+
+  if (C && C.enabled && cfg.darren && cfg.darren.demoDate) darren();
 
   events.sort((a, b) => a.time - b.time || (a.insert_id < b.insert_id ? -1 : 1));
   return { events, stats };

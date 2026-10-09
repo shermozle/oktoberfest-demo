@@ -1,5 +1,8 @@
 # Demo: winning back high-value home loan applications
 
+The presenter script, with the handovers to and from Braze, is
+[DEMO-SCRIPT.md](DEMO-SCRIPT.md). This file is the background runbook.
+
 The story: paid traffic to the Package Home Loan landing page isn't
 converting. Amplitude shows where applications stall, Braze wins the
 stalled ones back with a reminder that knows exactly what's left, and
@@ -47,14 +50,14 @@ people stalling on the income and expenses screens.
    `Property Details Entered` → `Income Entered` → `Expenses Entered` →
    `Loan Selected` → `Application Submitted`. Group by `utm_campaign` to
    show it's the paid landing traffic.
-2. **Cohort: "High Value Application Abandoners".** Users who:
-   - performed `Property Details Entered` in the last 30 days,
-   - did not perform `Expenses Entered` since,
-   - have `loan_amount` ≥ 750,000,
-   - have `phone_provided` = true and `application_status` = `started`.
-
-   Add `application_product_id` = `package-home-loan` to narrow it to the
-   highest-margin loan.
+2. **Cohort: "High Value Application Abandoners".** First home buyers,
+   our highest lifetime value group, who stalled at the financial steps.
+   Users who:
+   - have `first_home_buyer` = true,
+   - have `application_status` = `started` and `application_step` = income
+     or expenses,
+   - performed `Property Details Entered` in the last 30 days and did not
+     perform `Application Submitted`.
 3. **Sync the cohort to Braze** (Audiences → the cohort → Sync → Braze,
    hourly). It arrives as a Braze cohort filter.
 
@@ -63,18 +66,21 @@ people stalling on the income and expenses screens.
 1. **Currents to Amplitude** must be on, sending message engagement
    (sends, opens, clicks). User ids already match: both tools use the email
    as the user id and share Braze's device id.
-2. **Campaign:** email, audience = the synced cohort, re-eligible after a
-   week. Optionally add an SMS variant: every abandoner has a phone number
-   in Braze.
+2. **Canvas: "First Home Loan Win-Back"**, triggered by the event stream
+   from Amplitude and targeted at the synced cohort: an email, a
+   welcome-back in-app modal when they return, and an SMS for anyone who
+   doesn't click, with replies going to the conversational agent. Akshin
+   builds this live; see [DEMO-SCRIPT.md](DEMO-SCRIPT.md).
 3. **Template:** start from
    [braze/abandoned-application-email.html](braze/abandoned-application-email.html),
    then restyle or rewrite it with Braze's AI tools in the demo. It lists
    `application_info_needed` (only the steps they haven't done), changes its
    pitch by `application_product_id`, aborts if the application is already
    submitted, and links to `application_resume_url` with
-   `utm_source=braze&utm_medium=email&utm_campaign=high_value_application_abandoners`.
-4. **Control group:** give the campaign a 10% control group, so the lift
-   in Amplitude is measured, not assumed.
+   `utm_source=braze&utm_medium=email&utm_campaign=first_home_loan_win_back`
+   (`utm_medium=sms` on the SMS link).
+4. **Control group:** 15%, so the lift in Amplitude is measured, not
+   assumed.
 
 ## Running it
 
