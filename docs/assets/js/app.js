@@ -1062,6 +1062,17 @@
 
     let current = draft.step || 0;
 
+    // A demo persona with a portrait (Darren) sees himself beside his
+    // application rather than the stock couple.
+    const who = store.getCustomer();
+    const photo = $('.apply-summary__photo img');
+    if (who && who.avatar && photo) {
+      photo.removeAttribute('srcset');
+      photo.src = url('assets/img/homes/' + who.avatar + '-portrait.webp');
+      photo.alt = who.firstName || '';
+      photo.style.objectPosition = '50% 30%';
+    }
+
     // The loan radios are drawn by renderChoices, so a product chosen before
     // they exist (from ?product= or a restored draft) is held here.
     let chosenProduct = draft.fields.product || null;
@@ -1541,13 +1552,41 @@
       const draft = store.getDraft();
       const apps = store.getApplications();
       const accounts = customer.accounts || [];
+      // Demo personas can carry a portrait and recent transactions.
+      const portrait = customer.avatar
+        ? '<img class="account-portrait" src="' +
+          url('assets/img/homes/' + customer.avatar + '-portrait.webp') +
+          '" alt="' +
+          escapeHtml(customer.firstName || '') +
+          '" width="64" height="64">'
+        : '';
+      const transactions = (list) =>
+        list && list.length
+          ? '<ul class="transactions">' +
+            list
+              .map(
+                (t) =>
+                  '<li><span>' +
+                  escapeHtml(t[0]) +
+                  '</span><span class="' +
+                  (t[1] < 0 ? 'muted' : 'credit') +
+                  '">' +
+                  (t[1] < 0 ? '−' : '+') +
+                  store.money(Math.abs(t[1])) +
+                  '</span></li>'
+              )
+              .join('') +
+            '</ul>'
+          : '';
       root.innerHTML =
-        '<h1 style="margin-bottom:6px">' +
+        '<div class="account-head">' +
+        portrait +
+        '<div><h1 style="margin-bottom:6px">' +
         escapeHtml(customer.firstName ? 'Hi, ' + customer.firstName : 'Internet banking') +
         '</h1>' +
-        '<p class="muted" style="margin-bottom:28px">' +
+        '<p class="muted" style="margin:0">' +
         escapeHtml(customer.email) +
-        '</p>' +
+        '</p></div></div>' +
         '<h2 style="margin:0 0 12px;font-size:18px">Your accounts</h2>' +
         (accounts.length
           ? accounts
@@ -1555,13 +1594,16 @@
                 (a) =>
                   '<div class="panel-card"><div class="panel-card__head"><strong>' +
                   escapeHtml(a.name) +
+                  (a.nickname ? '<span class="account-nickname">' + escapeHtml(a.nickname) + '</span>' : '') +
                   '</strong><span' +
                   (a.balance < 0 ? ' class="muted"' : '') +
                   '>' +
                   store.money(a.balance) +
                   '</span></div><div class="panel-card__items"><div>' +
                   escapeHtml(a.number) +
-                  '</div></div></div>'
+                  '</div></div>' +
+                  transactions(a.transactions) +
+                  '</div>'
               )
               .join('')
           : '<p class="muted">No accounts yet. <a class="link-underline" href="' +

@@ -1468,14 +1468,26 @@ export function generate(cfg) {
     v.profile = Object.assign(profile(v), D.profile);
     const day = (n, h) => clock.at(clock.dateOf(clock.at(D.demoDate, 12) + n * DAY), h);
 
-    // 1. Finds Laneway through search, reads about the First Home Loan, runs
-    //    the borrowing power calculator, leaves.
-    let s = session(v, day(-9, 19.6), { utm: null, referrer: 'https://www.google.com/' });
-    page(s, 'index.html');
+    // 1. Hears an ad on a podcast and visits. Searches the bank's site for
+    //    beard oil, then craft beer (nothing, both times), then finally
+    //    "first home": reads about the First Home Loan, runs the borrowing
+    //    power calculator, leaves.
+    const podcast = D.arrival;
+    let s = session(v, day(-9, 19.6), { utm: podcast, referrer: null });
+    page(s, 'index.html', podcast);
     secs(s, 10, 30);
-    nav(s, 'Home loans', 'home-loans/');
-    listPage(s, 'home-loans');
-    productPage(s, 'first-home-loan', { placement: 'category-grid', position: 5 });
+    track(s, 'Search Opened', {});
+    for (const query of D.searches) {
+      const hits = search(query);
+      secs(s, 3, 9);
+      track(s, 'Search Performed', { query, results_count: hits.length, product_ids: hits.map((p) => p.handle) });
+      if (hits.some((p) => p.handle === 'first-home-loan')) {
+        const position = hits.findIndex((p) => p.handle === 'first-home-loan') + 1;
+        track(s, 'Search Result Clicked', Object.assign({ query, position }, productProps('first-home-loan')));
+        productPage(s, 'first-home-loan');
+        break;
+      }
+    }
     nav(s, 'Calculators', 'calculators/borrowing-power/');
     borrowingCalculator(s);
     end(s);

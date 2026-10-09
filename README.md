@@ -81,8 +81,9 @@ Bottom right, or press `` ` ``. Three tabs:
   say so.
 - **Controls**: switch between three personas (a first home buyer, a
   customer refinancing from another bank, an investor with an existing
-  Laneway home loan), seed a high-value application stopped at step 3 or
-  discard the one in progress, and "start fresh": a new device id in both
+  Laneway home loan), "be Darren" (the site as Akshin's hipster applicant
+  sees it, presentation only) or discard the application in progress, and
+  "start fresh": a new device id in both
   tools with everything saved in the browser wiped, as if it had never
   visited.
 - **State**: the current identity on both sides, including the ids that bridge

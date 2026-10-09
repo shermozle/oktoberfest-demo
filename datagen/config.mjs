@@ -309,6 +309,11 @@ export default {
     firstName: 'Darren',
     lastName: 'Whitlock',
     applicationId: 'LB480650',
+    // He's a hipster. He arrives from an ad on a (made-up) podcast, and
+    // searches the bank's site for these, in order, before finding the
+    // First Home Loan.
+    arrival: { utm_source: 'the_sourdough_hour', utm_medium: 'podcast', utm_campaign: 'first_home_buyers' },
+    searches: ['beard oil', 'craft beer', 'first home'],
     // A $480k loan on a $600k place in Wagga.
     profile: {
       couple: false,

@@ -7,20 +7,21 @@ The shape of the whole demo:
 
 | | Who | What | About |
 |---|---|---|---|
-| 1 | Amplitude | Laneway Bank, the drop-off, why, and the cohort | 6 min |
+| 1 | Amplitude | Laneway Bank, Darren, the drop-off, why, and the cohort | 7 min |
 | 2 | Braze (Akshin) | The Canvas built by AI, Darren's messages, the agent | 9 min |
 | 3 | Amplitude | Did it work? The lift, the channels, Darren's story | 4 min |
 
 **Site:** <https://shermozle.github.io/oktoberfest-demo/>
 **Landing page:** <https://shermozle.github.io/oktoberfest-demo/landing/>
 **Amplitude dashboard:** _Laneway Bank: Oktoberfest demo_ (built in prep, below)
+**Application funnel:** <https://app.amplitude.com/analytics/braze/chart/wk5p199x?linkingDashboardId=gsrgzl0t&sharingId=N5saheX->
 
 Lines in quotes are what to say. Indented notes are what to click. Numbers
 are approximate: say what's on screen.
 
 ---
 
-## Part 1: Amplitude (about 6 minutes)
+## Part 1: Amplitude (about 7 minutes)
 
 ### 1. Meet Laneway Bank (45 seconds)
 
@@ -37,16 +38,34 @@ with a 100% offset account."
 moves it, Amplitude records it, so we know which visitors are seriously
 weighing up a loan and which are just browsing."
 
-> Click **Apply in about 20 minutes**. Show step 1, then close the tab.
+### 2. Meet Darren (1 minute)
+
+> Click the person icon, top right: internet banking, signed in as Darren.
+
+"Let's follow one applicant. This is Darren. Darren's a first home buyer.
+Darren is also, as his transactions make clear, a hipster: craft beer,
+cedar and bergamot beard oil, oat flat whites, vinyl, and a sourdough
+starter on a monthly subscription. But look at the Bonus Saver: a hundred
+and twenty grand, nicknamed 'House deposit (do not touch)'. Darren is
+serious."
+
+> Click the application icon (the page with the dot) to open his
+> application.
 
 "Applying takes six steps. Step one asks for an email and a mobile, so from
-here on we know who they are. Hold on to that: it matters in a minute."
+there on we know who he is. Hold on to that: it matters in a minute. Darren
+got through About you, the property and his income. Then he hit Your
+expenses. Given those transactions, you can see why he paused. He never
+came back."
 
-### 2. The problem (1 minute)
+> Don't fill anything in. Switch to Amplitude.
 
-> Switch to Amplitude. Open the dashboard, chart **Application funnel**.
+### 3. The problem (1 minute)
 
-"Here's the last month of applications. Steps 1 and 2 are fine: about 87% and
+> In Amplitude, open the dashboard, chart
+> [**Application funnel**](https://app.amplitude.com/analytics/braze/chart/wk5p199x?linkingDashboardId=gsrgzl0t&sharingId=N5saheX-).
+
+"Darren isn't alone. Here's the last month of applications. Steps 1 and 2 are fine: about 87% and
 86% get through. Then look at step 3, Your income: only about 59% make it.
 And step 4, Your expenses, loses another third. After that, almost everyone
 who's still with us finishes."
@@ -58,7 +77,7 @@ who's still with us finishes."
 "And it's worse on a phone. On mobile, only about 54% get past the income
 step, against 66% on desktop."
 
-### 3. Asking why with Amplitude AI (1.5 minutes)
+### 4. Asking why with Amplitude AI (1.5 minutes)
 
 > Open Amplitude's AI assistant and type the first prompt.
 
@@ -79,7 +98,7 @@ them."
 > If the assistant offers a chart, click through to it. If it takes a while,
 > keep talking about the next step while it works.
 
-### 4. Watching it happen: session replay (1 minute)
+### 5. Watching it happen: session replay (1 minute)
 
 > Open the saved replay **Mobile, stops at Your income**. Play from the step 3
 > screen.
@@ -89,7 +108,7 @@ phone at the income step: they scroll, start typing, go back up, look at the
 fields again... and they're gone. Payslip not handy, figure not to hand, lost
 momentum."
 
-### 5. The opportunity: we already know who they are (45 seconds)
+### 6. The opportunity: we already know who they are (45 seconds)
 
 > Back to the funnel. Click the bar for **Expenses Entered** to see the users
 > who didn't get there, or open the cohort directly.
@@ -98,7 +117,7 @@ momentum."
 their email and mobile at step 1. These aren't anonymous visitors. We know
 exactly who they are, how far they got, and what's left."
 
-### 6. Building the high-value cohort and sending it to Braze (1 minute)
+### 7. Building the high-value cohort and sending it to Braze (1 minute)
 
 > Open the cohort **High Value Application Abandoners**.
 
@@ -157,19 +176,21 @@ Akshin hands back with:
 
 ## Part 3: Amplitude, the hand back (about 4 minutes)
 
-### 7. Darren's story (1.5 minutes)
+### 8. Darren's story (1.5 minutes)
 
 > Open **User Look-Up** and search for Darren.
 
-"Let's start with Darren. Here he is in Amplitude, and the first thing you'll
-notice at the top: he finished. Application submitted, conditionally
+"Remember Darren, stuck on Your expenses? Here he is in Amplitude, and the
+first thing you'll notice at the top: he finished. Application submitted, conditionally
 approved, documents uploaded. So how did he get there?"
 
 > Scroll down through his timeline, oldest at the bottom.
 
-"Read it from the bottom up. Nine days ago he found us through search, read
-about the First Home Loan and ran the borrowing power calculator. Six days
-ago, on his phone, he got through steps 1, 2 and 3, sat on the expenses
+"Read it from the bottom up. Nine days ago he heard our ad on a podcast
+called The Sourdough Hour. The first thing he did on our site was search
+for beard oil. No results. Then craft beer. No results. Then, finally,
+'first home'. He read about the First Home Loan and ran the borrowing power
+calculator. Six days ago, on his phone, he got through steps 1, 2 and 3, sat on the expenses
 screen for ten minutes, and left. Three steps from the end."
 
 "Within the hour he entered Akshin's Canvas. Next morning, the email: opened,
@@ -179,7 +200,7 @@ to a lender. The next evening he tapped the link in the SMS, landed back
 exactly where he left off, saw the welcome-back modal, and finished. Every
 Braze event, in Darren's timeline, right next to what he did on the site."
 
-### 8. Did the Canvas work? (1.5 minutes)
+### 9. Did the Canvas work? (1.5 minutes)
 
 > Open chart **Canvas: submitted, Canvas vs control**.
 
@@ -195,9 +216,9 @@ work. The email brings back the people who were nearly there. The SMS
 catches the ones the email missed: about half of everyone who came back did
 it from a text message."
 
-### 9. Close (1 minute)
+### 10. Close (1 minute)
 
-> Back to the **Application funnel** chart.
+> Back to the [**Application funnel**](https://app.amplitude.com/analytics/braze/chart/wk5p199x?linkingDashboardId=gsrgzl0t&sharingId=N5saheX-) chart.
 
 "So that's the loop. Amplitude found where people were dropping out and why.
 Braze reached them, by email, on the site, by SMS, and with an agent when
@@ -236,7 +257,8 @@ Each with its own message, because each is stuck for a different reason."
 
 Build a dashboard, **Laneway Bank: Oktoberfest demo**, with:
 
-- [ ] **Application funnel:** Application Started → Applicant Details
+- [x] **[Application funnel](https://app.amplitude.com/analytics/braze/chart/wk5p199x?linkingDashboardId=gsrgzl0t&sharingId=N5saheX-)** (built):
+  Application Started → Applicant Details
   Entered → Property Details Entered → Income Entered → Expenses Entered →
   Loan Selected → Application Submitted. Last 30 days. A second version
   segmented by device type (mobile, desktop).
@@ -275,7 +297,12 @@ Build a dashboard, **Laneway Bank: Oktoberfest demo**, with:
 - [ ] Open tabs, in order: the landing page; the Amplitude dashboard; the AI
   assistant; the saved replay; the cohort; Darren in User Look-Up; the two
   Canvas charts.
-- [ ] Event stream panel hidden on the site (press `` ` `` if it's open).
+- [ ] On the site, open the event stream (`` ` ``), Controls tab, click
+  **be Darren**, then press `` ` `` again to hide it. The site now shows
+  Darren's internet banking and his application paused at step 4. This is
+  presentation only: nothing done as him reaches his real user in Amplitude
+  or Braze, so his Part 3 timeline stays clean.
+- [ ] Afterwards: Controls tab, **start fresh**.
 - [ ] If the AI assistant is slow, the funnel chart and the replay tell the
   same story without it.
 
@@ -283,8 +310,9 @@ Build a dashboard, **Laneway Bank: Oktoberfest demo**, with:
 
 ## Things that could trip you up
 
-- **Darren is already finished** by demo day, so keep him out of Part 1. He's
-  the reveal in Part 3.
+- **Darren is already finished in Amplitude** by demo day. In Part 1 show him
+  only on the site; don't open him in Amplitude until Part 3, where finishing
+  is the reveal.
 - **An older email campaign is also in the data** (from early October, sent
   to anyone borrowing over $750k). Its events have no `[Appboy]` prefix. The
   Canvas charts filter on `canvas_name`, so it stays out of the way; just

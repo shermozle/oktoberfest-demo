@@ -1658,6 +1658,54 @@ fieldset.field > legend {
   margin-bottom: 12px;
 }
 
+.account-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.account-portrait {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+
+.account-nickname {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.transactions {
+  display: grid;
+  margin: 12px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+  font-size: 13px;
+}
+
+.transactions li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.transactions li span:last-child {
+  flex: none;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.transactions .credit {
+  color: var(--ok);
+}
+
 .panel-card__items {
   display: grid;
   gap: 8px;

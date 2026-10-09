@@ -119,8 +119,10 @@ people stalling on the income and expenses screens.
 
   The event stream (bottom right, or `` ` ``) shows the progress attributes
   going to Braze.
-- **One click instead:** the event stream's Controls tab has
-  "high-value abandoner: Package, $840k, stopped at step 3".
+- **Show Darren instead:** the event stream's Controls tab has "be
+  Darren", which shows the site as Darren sees it: his hipster internet
+  banking and his First Home Loan application paused at step 4. It's
+  presentation only and sends nothing to his real user.
 - **Close the loop:** open the reminder email in the same browser and click
   "Finish my application". The draft is still there, and
   `Application Resumed` fires with `utm_source=braze`.
