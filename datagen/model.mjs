@@ -482,14 +482,14 @@ export function generate(cfg) {
   }
 
   function identity(v, extra) {
-    v.userId = v.email;
+    v.userId = v.fixedUserId || v.email;
     return Object.assign(
       {
         email: v.email,
         first_name: v.first,
         last_name: v.last,
         marketing_opt_in: v.profile.marketingOptIn,
-        existing_customer: v.channel.name === 'existing_customer',
+        existing_customer: v.existingCustomer != null ? v.existingCustomer : v.channel.name === 'existing_customer',
         has_home_loan: false,
       },
       extra
@@ -1302,7 +1302,7 @@ export function generate(cfg) {
     if (at > endMs) return;
     events.push({
       event_type: C.events[key],
-      user_id: v.email,
+      user_id: v.fixedUserId || v.email,
       time: Math.round(at),
       session_id: -1,
       insert_id: eventId(v),
@@ -1443,6 +1443,7 @@ export function generate(cfg) {
   // application.
   function darren() {
     const D = cfg.darren;
+    const W = D.when;
     const index = 9000001;
     const rng = new Rng(hash(`${cfg.seed}:darren`));
     const v = {
@@ -1451,10 +1452,12 @@ export function generate(cfg) {
       channel: cfg.channels.find((c) => c.name === 'organic_search'),
       mobile: true,
       device: cfg.devices.mobile[0],
-      place: { city: 'Wagga Wagga', region: 'New South Wales', state: 'NSW' },
+      place: D.place,
       persona: cfg.personas.find((p) => p.name === 'first_home_buyer'),
       deviceId: rng.uuid(),
       userId: null,
+      fixedUserId: D.userId,
+      existingCustomer: true,
       intent: 1,
       first: D.firstName,
       last: D.lastName,
@@ -1466,14 +1469,15 @@ export function generate(cfg) {
       speedRunner: false,
     };
     v.profile = Object.assign(profile(v), D.profile);
-    const day = (n, h) => clock.at(clock.dateOf(clock.at(D.demoDate, 12) + n * DAY), h);
+    // '2026-09-23T20:15' in the site's local time.
+    const at = (when) => clock.at(when.slice(0, 10), Number(when.slice(11, 13)) + Number(when.slice(14, 16)) / 60);
 
     // 1. Hears an ad on a podcast and visits. Searches the bank's site for
     //    beard oil, then craft beer (nothing, both times), then finally
     //    "first home": reads about the First Home Loan, runs the borrowing
     //    power calculator, leaves.
     const podcast = D.arrival;
-    let s = session(v, day(-9, 19.6), { utm: podcast, referrer: null });
+    let s = session(v, at(W.firstVisit), { utm: podcast, referrer: null });
     page(s, 'index.html', podcast);
     secs(s, 10, 30);
     track(s, 'Search Opened', {});
@@ -1493,17 +1497,17 @@ export function generate(cfg) {
     end(s);
 
     // 2. Comes back on his phone and starts applying. Gets through About
-    //    you, the property and his income, then stalls on expenses.
-    s = session(v, day(-6, 20.25), { utm: null, referrer: null });
+    //    you, the property and his income, then stalls on expenses and
+    //    leaves at W.abandoned.
+    s = session(v, at(W.applied) - 2 * MIN, { utm: null, referrer: null });
     page(s, 'index.html');
     productPage(s, 'first-home-loan', { placement: 'home-featured', position: 3 });
-    v.app = null;
-    const enter = { source: 'product_page' };
+    s.t = Math.max(s.t, at(W.applied));
     v.app = {
       id: D.applicationId,
       startedAt: s.t,
       updatedAt: s.t,
-      source: enter.source,
+      source: 'product_page',
       campaign: {},
       step: 0,
       submitted: false,
@@ -1519,37 +1523,38 @@ export function generate(cfg) {
         application_product_id: 'first-home-loan',
       }, progressProps(0)));
     form(s, 'Started');
+    // Three steps, spread across the time before he gives up.
+    const gap = (at(W.abandoned) - s.t) / 4;
     for (let i = 0; i < 3; i++) {
-      wait(s, ...cfg.funnel.stepMinutes[STEPS[i]]);
+      s.t += gap * (i === 2 ? 0.8 : 1);
       stage(s, v, i);
       v.app.step = i + 1;
     }
-    wait(s, 9, 14); // stares at the expenses screen, then puts the phone down
+    s.t = at(W.abandoned); // stares at the expenses screen, then puts the phone down
     v.app.updatedAt = s.t;
     v.app.abandonedAt = s.t;
     end(s);
 
-    // 3. The Canvas: enters an hour later; the email is opened but not
-    //    clicked; the SMS next morning gets a reply, the agent answers his
-    //    question about rates and hands him to a lender.
+    // 3. The Canvas: the email is opened but not clicked; the SMS the day
+    //    after gets replies, the agent answers his question about rates and
+    //    hands him to a lender.
     const C2 = C.steps;
-    const at = (n, h) => day(n, h);
     v.app.control = false;
-    currents(v, 'entered', at(-6, 21.4), null, { in_control_group: false });
-    currents(v, 'emailSent', at(-5, 10.05), C2.email);
-    currents(v, 'emailDelivered', at(-5, 10.07), C2.email);
-    currents(v, 'emailOpened', at(-5, 12.7), C2.email);
-    currents(v, 'smsSent', at(-4, 10.0), C2.sms);
-    currents(v, 'smsDelivered', at(-4, 10.01), C2.sms);
-    currents(v, 'smsInbound', at(-4, 10.3), C2.sms, { message_category: 'question_application' });
-    currents(v, 'smsInbound', at(-4, 10.38), C2.sms, { message_category: 'question_rates' });
-    currents(v, 'smsInbound', at(-4, 10.45), C2.sms, { message_category: 'request_human' });
-    currents(v, 'smsClicked', at(-3, 19.1), C2.sms);
+    currents(v, 'entered', at(W.canvasEntered), null, { in_control_group: false });
+    currents(v, 'emailSent', at(W.email), C2.email);
+    currents(v, 'emailDelivered', at(W.email) + 90000, C2.email);
+    currents(v, 'emailOpened', at(W.emailOpened), C2.email);
+    currents(v, 'smsSent', at(W.sms), C2.sms);
+    currents(v, 'smsDelivered', at(W.sms) + 40000, C2.sms);
+    const replies = ['question_application', 'question_rates', 'request_human'];
+    W.smsReplies.forEach((when, i) => currents(v, 'smsInbound', at(when), C2.sms, { message_category: replies[i] || 'other' }));
+    currents(v, 'smsClicked', at(W.back) - 60000, C2.sms);
 
-    // 4. Taps the link in the SMS that evening: the application is where
-    //    he left it, the welcome-back modal shows, and he finishes.
+    // 4. After talking to a lender, taps the link in the SMS: the
+    //    application is where he left it, the welcome-back modal shows, and
+    //    he finishes.
     const utm = UTM_CANVAS('sms', 'agent_handoff');
-    s = session(v, at(-3, 19.12), { utm, referrer: null });
+    s = session(v, at(W.back), { utm, referrer: null });
     page(s, 'apply/', utm);
     track(s, 'Application Resumed', Object.assign({
       application_id: v.app.id,
@@ -1575,7 +1580,7 @@ export function generate(cfg) {
 
     // 5. Uploads the rest of his documents the next day.
     if (v.app.uploaded.length < v.app.docs.length) {
-      s = session(v, at(-2, 12.5), { utm: null, referrer: null });
+      s = session(v, at(W.documents), { utm: null, referrer: null });
       page(s, 'apply/submitted/', { id: v.app.id });
       upload(s, v, v.app.docs.length);
       end(s);
@@ -1641,7 +1646,7 @@ export function generate(cfg) {
     }
   }
 
-  if (C && C.enabled && cfg.darren && cfg.darren.demoDate) darren();
+  if (C && C.enabled && cfg.darren && cfg.darren.when) darren();
 
   events.sort((a, b) => a.time - b.time || (a.insert_id < b.insert_id ? -1 : 1));
   return { events, stats };

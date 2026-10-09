@@ -106,8 +106,10 @@ Two layers sit on top of the base data, for the Braze half of the demo
 - **Darren Whitlock** (`darren` in the config), the user Akshin's demo is
   built around. His whole journey is scripted relative to `demoDate`:
   browsing, abandoning a First Home Loan at step 4 on his phone, the email,
-  the SMS conversation, then finishing. Set `darren.email` to his Braze
-  external id so Braze's live events land on the same user.
+  the SMS conversation, then finishing.
+
+No real Braze data flows into Amplitude for this demo, so these two layers
+are the whole Braze side of the story.
 
 Both only ever add events, with their own ids. Turning them on, or changing
 their settings, never changes an event that's already been sent.
@@ -142,9 +144,8 @@ To start again from scratch, clear the project's data in Amplitude, delete
   real one in the project, or set `behaviour.formAutocapture` to false to
   leave them out.
 - **Braze event names.** The Canvas layer's events use `canvas.events` in
-  the config (`[Appboy] Email Sent` and so on). Check them against the
-  first real events from Braze's Amplitude export and correct them before
-  sending. The older campaign below uses `braze.events`.
+  the config (`[Appboy] Email Sent` and so on), named the way Braze's
+  Amplitude export names them.
 - **The older email campaign** (`braze` in the config) is already in
   Amplitude, under `Email Sent`, `Email Opened` and so on, without the
   prefix. Leave its settings alone: changing them alters events that have

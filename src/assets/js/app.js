@@ -2199,6 +2199,19 @@
   }
 
   function start() {
+    // Links for the presenter, so nobody has to open the event stream on
+    // stage: ?demo=darren becomes Darren (presentation only) and
+    // ?demo=reset wipes the browser clean. Either way the address is
+    // cleaned up afterwards, so a reload doesn't do it again.
+    const demo = query.get('demo');
+    const tools = window.LanewayDevtools;
+    if (demo && tools) {
+      const clean = location.pathname + location.hash;
+      if (demo === 'darren') tools.becomeDarren();
+      if (demo === 'reset') tools.startFresh();
+      location.replace(clean);
+      return;
+    }
     track.init();
     boot();
   }

@@ -91,6 +91,10 @@ Bottom right, or press `` ` ``. Three tabs:
 
 Turn the whole thing off with `SHOW_DEV_DRAWER: false` for a clean site.
 
+Two links do the presenter's set-up without opening the drawer:
+`…/account/?demo=darren` becomes Darren (presentation only) and lands on
+his internet banking, and `…/?demo=reset` wipes the browser clean.
+
 ## How the two tools connect
 
 `src/assets/js/tracking.js` is the only place either SDK is touched. One
