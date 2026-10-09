@@ -33,7 +33,7 @@
       label: 'Priya — first home buyer',
       customer: {
         email: 'priya.raman@example.com',
-        phone: '+61491570156',
+        phone: '+61491570006',
         firstName: 'Priya',
         lastName: 'Raman',
         persona: 'first_home_buyer',
@@ -90,7 +90,7 @@
   const DARREN = {
     demoOnly: true,
     email: 'darren.whitlock@example.com',
-    phone: '+61491570110',
+    phone: '+61491570156',
     firstName: 'Darren',
     lastName: 'Whitlock',
     persona: 'first_home_buyer',
@@ -117,11 +117,54 @@
         name: 'Bonus Saver',
         nickname: 'House deposit (do not touch)',
         number: 'BSB 063-114 · 2650 4801',
-        balance: 121640.0,
+        balance: 82450.0,
         transactions: [['Monthly deposit (fewer IPAs this month)', 1200.0]],
       },
     ],
   };
+
+  // Darren as the presenter shows him: signed in, with his First Home Loan
+  // application three steps from the end. Presentation only, so nothing is
+  // sent: his real history in Amplitude comes from datagen.
+  function becomeDarren() {
+    const customer = store.signIn(Object.assign({ source: 'demo_control' }, DARREN));
+    track.identify(customer); // not sent: presentation-only
+    const draft = store.startDraft({
+      id: 'app_lwb_0001',
+      source: 'product_page',
+      step: 3,
+      fields: {
+        email: customer.email,
+        phone: '0491 570 156',
+        firstName: 'Darren',
+        lastName: 'Whitlock',
+        applicants: '1',
+        firstHomeBuyer: 'yes',
+        marketingOptIn: true,
+        loanPurpose: 'buy_home',
+        propertyStage: 'found',
+        propertyValue: '560000',
+        deposit: '80000',
+        state: 'NSW',
+        postcode: '2650',
+        employment: 'full_time',
+        income: '98000',
+        otherIncome: '0',
+        product: 'first-home-loan',
+      },
+    });
+    // Saved three minutes ago, so it already reads as abandoned.
+    draft.updatedAt = new Date(Date.now() - 180000).toISOString();
+    store.saveDraft(draft, true);
+    if (window.LanewayApp) window.LanewayApp.reboot();
+  }
+
+  // As if this browser had never visited: new device id in both tools, and
+  // everything the site saved gone.
+  function startFresh() {
+    track.freshStart();
+    store.resetAll();
+  }
 
   /* --- markup ------------------------------------------------------------- */
 
@@ -393,45 +436,9 @@
     });
 
     $('[data-dev-seed-application]', drawer).addEventListener('click', function () {
-      // Darren Whitlock: the user Akshin's Braze journey is built around,
-      // three steps from the end of a First Home Loan application.
-      const customer = store.signIn(Object.assign({ source: 'demo_control' }, DARREN));
-      track.identify(customer); // not sent: presentation-only
-
-      const draft = store.startDraft({
-        id: 'LB480650',
-        source: 'product_page',
-        step: 3,
-        fields: {
-          email: customer.email,
-          phone: '0491 570 110',
-          firstName: 'Darren',
-          lastName: 'Whitlock',
-          applicants: '1',
-          firstHomeBuyer: 'yes',
-          marketingOptIn: true,
-          loanPurpose: 'buy_home',
-          propertyStage: 'found',
-          propertyValue: '600000',
-          deposit: '120000',
-          state: 'NSW',
-          postcode: '2650',
-          employment: 'full_time',
-          income: '108000',
-          otherIncome: '0',
-          product: 'first-home-loan',
-        },
-      });
-      // Saved three minutes ago, so it already reads as abandoned.
-      draft.updatedAt = new Date(Date.now() - 180000).toISOString();
-      store.saveDraft(draft, true);
-
-      // Nothing sent: on stage this is a picture of Darren's application,
-      // not a new one. His real history comes from datagen and Braze.
-      const app = window.LanewayApp;
+      becomeDarren();
       renderState();
-      if (app) app.reboot();
-      if (app) app.toast('Now applying as Darren. Three steps to go.');
+      if (window.LanewayApp) window.LanewayApp.toast('Now applying as Darren. Three steps to go.');
       if (document.body.dataset.page === 'apply' || document.body.dataset.page === 'account') location.reload();
     });
 
@@ -444,8 +451,7 @@
     });
 
     $('[data-dev-reset]', drawer).addEventListener('click', function () {
-      track.freshStart();
-      store.resetAll();
+      startFresh();
       location.href = (window.LANEWAY_BASE || '') + 'index.html';
     });
 
@@ -552,5 +558,5 @@
     if (store.getPrefs().devDrawerOpen) open();
   }
 
-  window.LanewayDevtools = { mount, open, close, toggle, PERSONAS };
+  window.LanewayDevtools = { mount, open, close, toggle, PERSONAS, becomeDarren, startFresh };
 })();

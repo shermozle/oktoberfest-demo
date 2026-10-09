@@ -221,10 +221,10 @@ function report(events) {
     console.log(`  submitted, Canvas    ${share(treated, (p) => p.submitted)}`);
     console.log(`  submitted, control   ${share(held, (p) => p.submitted)}   ← the lift is the gap`);
     const D = cfg.darren;
-    if (D && D.demoDate) {
-      const mine = events.filter((e) => e.user_id === D.email || (e.insert_id || '').includes('-darren-'));
+    if (D && D.when) {
+      const mine = events.filter((e) => (e.insert_id || '').includes('-darren-'));
       const steps = mine.filter((e) => e.user_id && e.event_type !== '[Amplitude] Page Viewed').map((e) => `${localDate(e.time).slice(5)} ${e.event_type}`);
-      console.log(`\nDARREN (${D.email}, demo ${D.demoDate}): ${n(mine.length)} events`);
+      console.log(`\nDARREN (${D.userId}, ${D.email}): ${n(mine.length)} events`);
       console.log('  ' + steps.join('\n  '));
     }
   }

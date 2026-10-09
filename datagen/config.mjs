@@ -232,8 +232,8 @@ export default {
     secondClicked: 0.3,
 
     // How Braze Currents events are named when they arrive in Amplitude.
-    // CHECK THESE against one real send before sending synthetic data, so
-    // synthetic and real events land under the same names.
+    // Already in Amplitude under these names: leave them as they are, or
+    // the sender will refuse (changing them alters events already sent).
     events: {
       sent: 'Email Sent',
       delivered: 'Email Delivered',
@@ -257,7 +257,7 @@ export default {
     name: 'First Home Loan Win-Back',
     utmCampaign: 'first_home_loan_win_back',
     // Real-time trigger, so only abandonments from launch on enter.
-    launch: '2026-09-29',
+    launch: '2026-09-22',
     entryDelayHours: [0.5, 2], // event stream to Braze, then the entry wait
     controlGroup: 0.15,
     emailDelayHours: [12, 20], // the Canvas's delay before the first email
@@ -276,10 +276,9 @@ export default {
       inApp: 'In-app: Welcome back modal',
       sms: 'SMS: Finish on your phone',
     },
-    // Braze exports to Amplitude with an [Appboy] prefix. CHECK THESE
-    // against the first real events from Braze's Amplitude export and
-    // correct them here before sending: synthetic and real events need the
-    // same names to land in the same charts.
+    // Named the way Braze's Amplitude export (Currents) names them, with its
+    // [Appboy] prefix. No real Braze data flows into Amplitude for this
+    // demo: these synthetic events are the whole Braze side.
     events: {
       entered: '[Appboy] Canvas Entered',
       converted: '[Appboy] Canvas Conversion',
@@ -298,33 +297,48 @@ export default {
 
   /* --- Darren Whitlock -------------------------------------------------- */
 
-  // The user Akshin's demo is built around. His timeline is scripted
-  // relative to demoDate: browsing nine days before, abandoning at step 4
-  // six days before, then the email, the SMS conversation, and finishing
-  // three days before the demo. The email must be his Braze external id
-  // (from Akshin's profile JSON), so Braze's events land on the same user.
+  // The hipster Akshin's Braze demo is built around, matched to Akshin's
+  // Braze profile (darren_whitlock.json): external id lwb_001, Sydney, an
+  // existing customer with an everyday account and a saver, $80k deposit,
+  // $480k First Home Loan, viewed it and ran the calculator on 9 September,
+  // started and abandoned on 23 September. His "logged in on iOS" at 7:48am
+  // on 5 October is when he comes back and finishes. No real Braze data
+  // flows in, so this is his whole story in Amplitude.
   darren: {
-    demoDate: '2026-10-16',
+    userId: 'lwb_001',
     email: 'darren.whitlock@example.com',
     firstName: 'Darren',
     lastName: 'Whitlock',
-    applicationId: 'LB480650',
-    // He's a hipster. He arrives from an ad on a (made-up) podcast, and
-    // searches the bank's site for these, in order, before finding the
-    // First Home Loan.
+    applicationId: 'app_lwb_0001',
+    place: { city: 'Sydney', region: 'New South Wales', state: 'NSW' },
+    // He arrives from an ad on a (made-up) podcast, and searches the bank's
+    // site for these, in order, before finding the First Home Loan.
     arrival: { utm_source: 'the_sourdough_hour', utm_medium: 'podcast', utm_campaign: 'first_home_buyers' },
     searches: ['beard oil', 'craft beer', 'first home'],
-    // A $480k loan on a $600k place in Wagga.
+    // Local times (Australia/Melbourne and Sydney share a clock).
+    when: {
+      firstVisit: '2026-09-09T19:40',
+      applied: '2026-09-23T20:15',
+      abandoned: '2026-09-23T20:31',
+      canvasEntered: '2026-09-23T21:10',
+      email: '2026-09-24T10:05',
+      emailOpened: '2026-09-24T12:40',
+      sms: '2026-09-25T10:00',
+      smsReplies: ['2026-09-25T10:18', '2026-09-25T10:25', '2026-09-25T10:31'],
+      back: '2026-10-05T07:48',
+      documents: '2026-10-06T12:30',
+    },
+    // A $480k loan on a $560k place in Wagga.
     profile: {
       couple: false,
       firstHomeBuyer: true,
       purpose: 'buy_home',
       stage: 'found',
-      value: 600000,
-      deposit: 120000,
+      value: 560000,
+      deposit: 80000,
       balance: 0,
       loanAmount: 480000,
-      income: 108000,
+      income: 98000,
       partnerIncome: 0,
       otherIncome: 0,
       dependants: 0,
