@@ -134,6 +134,64 @@ export default {
     resumeEase: 0.55,
   },
 
+  /* --- Everything around the journey --------------------------------- */
+
+  // The background that makes the data look like a real site: people who
+  // leave straight away, people who browse and come back, and people who
+  // do odd things. Chances are per visit unless the name says otherwise.
+  behaviour: {
+    // Leave after the first page. The landing page still fires
+    // Product Viewed on load, so a landing bounce has that too.
+    bounce: { landing: 0.3, home: 0.36 },
+
+    // Visitors who didn't start an application coming back to look again,
+    // days later, a bit more likely to apply each time.
+    returnToBrowse: 0.24,
+    returnDays: [1, 12],
+    returnWarmth: 1.6,
+
+    // Search: how often, what people type (junk and typos included, which
+    // return nothing), and how often they click a result.
+    search: 0.13,
+    searchClick: 0.55,
+    searchQueries: {
+      offset: 14, package: 10, 'first home': 10, 'fixed rate': 9, refinance: 7, calculator: 6, investor: 5,
+      'interest only': 4, 'term deposit': 5, savings: 6, 'credit card': 5, rewards: 3, green: 2,
+      pakage: 2, 'hoem loan': 2, 'car loan': 3, 'personal loan': 3, bsb: 2, login: 3, 'lost card': 2, bitcoin: 1, asdf: 1,
+    },
+
+    filterOrSort: 0.28, // on the home loans list
+    repaymentsCalculator: 0.16,
+    calculatorFiddle: 0.12, // keep changing inputs: several calculations, some silly
+    otherProducts: 0.12, // wander into accounts, savings or cards
+
+    // Ringing a lender instead of (or as well as) applying.
+    talkToLender: { browser: 0.035, abandoner: 0.07 },
+
+    // Footer sign-up, and the push prompt it brings up.
+    rateUpdates: 0.025,
+    push: { prompted: 0.85, granted: 0.32, denied: 0.38 },
+
+    register: 0.015, // create an internet banking login
+
+    // Odd things people do mid-application:
+    stepBack: 0.07, // go back a step and redo it (the stage event fires twice)
+    idleMidApplication: 0.06, // leave the tab open past the 30-minute session timeout
+    idleMinutes: [35, 240],
+    speedRunner: 0.04, // click straight through on the defaults
+    // Come back on a different device, where the saved application isn't,
+    // so a second application starts under the same email.
+    deviceSwitch: 0.22, // of those who come back by themselves
+    emailOnOtherDevice: 0.15, // of those who click a reminder
+
+    // Existing customers in internet banking.
+    customer: { signOut: 0.3, unsubscribe: 0.03, subscribe: 0.04 },
+
+    // Amplitude's form autocapture ([Amplitude] Form Started / Submitted),
+    // on because the site turns formInteractions on.
+    formAutocapture: true,
+  },
+
   /* --- After submitting ---------------------------------------------- */
 
   documents: {
@@ -162,11 +220,11 @@ export default {
     controlGroup: 0.1,
     delivered: 0.985,
     opened: 0.52,
-    clicked: 0.3, // of those who open
+    clicked: 0.36, // of those who open
     // Chance a click becomes a resumed application, and how much easier
     // the steps feel for someone who came back from the email.
     resumeAfterClick: 0.85,
-    resumeEase: 0.45,
+    resumeEase: 0.4,
     // A second email for those who didn't click, this many hours after the
     // first. Set to null for one email only.
     secondEmailHours: 72,
@@ -181,6 +239,104 @@ export default {
       delivered: 'Email Delivered',
       opened: 'Email Opened',
       clicked: 'Email Clicked',
+    },
+  },
+
+  /* --- The First Home Loan Canvas ----------------------------------- */
+
+  // Akshin's Braze journey, as history: first home buyers who stop at step 3
+  // or 4 enter a Canvas triggered from Amplitude's event stream. Email
+  // first; when they come back, a welcome-back modal; no click on the
+  // email, an SMS the next day, where replies go to the conversational
+  // agent and on to a lender. 15% are held out as a control.
+  //
+  // This is a layer on top of the data above: it only adds events, with
+  // their own ids, so it can be switched on after the rest has been sent.
+  canvas: {
+    enabled: true,
+    name: 'First Home Loan Win-Back',
+    utmCampaign: 'first_home_loan_win_back',
+    // Real-time trigger, so only abandonments from launch on enter.
+    launch: '2026-09-29',
+    entryDelayHours: [0.5, 2], // event stream to Braze, then the entry wait
+    controlGroup: 0.15,
+    emailDelayHours: [12, 20], // the Canvas's delay before the first email
+    email: { delivered: 0.985, opened: 0.56, clicked: 0.4 }, // clicked: of those who open
+    smsAfterHours: 24,
+    sms: { delivered: 0.97, clicked: 0.24, replied: 0.1 }, // replied: of those who don't click
+    agent: { backAfterHandoff: 0.65, backHours: [3, 30] },
+    inApp: { clicked: 0.5 },
+    resumeAfterClick: 0.88,
+    resumeEase: 0.35,
+    // Coming back unprompted, in both arms, so the control has a baseline.
+    naturalReturn: 0.22,
+    naturalReturnHours: [4, 140],
+    steps: {
+      email: 'Email: Finish your first home loan application',
+      inApp: 'In-app: Welcome back modal',
+      sms: 'SMS: Finish on your phone',
+    },
+    // Braze exports to Amplitude with an [Appboy] prefix. CHECK THESE
+    // against the first real events from Braze's Amplitude export and
+    // correct them here before sending: synthetic and real events need the
+    // same names to land in the same charts.
+    events: {
+      entered: '[Appboy] Canvas Entered',
+      converted: '[Appboy] Canvas Conversion',
+      emailSent: '[Appboy] Email Sent',
+      emailDelivered: '[Appboy] Email Delivered',
+      emailOpened: '[Appboy] Email Opened',
+      emailClicked: '[Appboy] Email Clicked',
+      inAppViewed: '[Appboy] In-App Message Viewed',
+      inAppClicked: '[Appboy] In-App Message Clicked',
+      smsSent: '[Appboy] SMS Sent',
+      smsDelivered: '[Appboy] SMS Delivered',
+      smsClicked: '[Appboy] SMS Short Link Clicked',
+      smsInbound: '[Appboy] SMS Inbound Received',
+    },
+  },
+
+  /* --- Darren Whitlock -------------------------------------------------- */
+
+  // The user Akshin's demo is built around. His timeline is scripted
+  // relative to demoDate: browsing nine days before, abandoning at step 4
+  // six days before, then the email, the SMS conversation, and finishing
+  // three days before the demo. The email must be his Braze external id
+  // (from Akshin's profile JSON), so Braze's events land on the same user.
+  darren: {
+    demoDate: '2026-10-16',
+    email: 'darren.whitlock@example.com',
+    firstName: 'Darren',
+    lastName: 'Whitlock',
+    applicationId: 'LB480650',
+    // He's a hipster. He arrives from an ad on a (made-up) podcast, and
+    // searches the bank's site for these, in order, before finding the
+    // First Home Loan.
+    arrival: { utm_source: 'the_sourdough_hour', utm_medium: 'podcast', utm_campaign: 'first_home_buyers' },
+    searches: ['beard oil', 'craft beer', 'first home'],
+    // A $480k loan on a $600k place in Wagga.
+    profile: {
+      couple: false,
+      firstHomeBuyer: true,
+      purpose: 'buy_home',
+      stage: 'found',
+      value: 600000,
+      deposit: 120000,
+      balance: 0,
+      loanAmount: 480000,
+      income: 108000,
+      partnerIncome: 0,
+      otherIncome: 0,
+      dependants: 0,
+      expenses: 2100,
+      debts: 0,
+      cardLimits: 5000,
+      employment: 'full_time',
+      marketingOptIn: true,
+      repaymentType: 'principal_and_interest',
+      term: 30,
+      frequency: 'fortnightly',
+      product: 'first-home-loan',
     },
   },
 

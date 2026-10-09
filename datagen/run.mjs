@@ -9,29 +9,35 @@
    send options:
      --until 2026-10-01      only events up to the end of this local day
                              (default: the whole generated range)
-     --force                 send even though the generated data has changed
-                             since an earlier partial send
 
    Output goes to datagen/out/ (git-ignored): events.ndjson, one event per
-   line in Amplitude's HTTP API shape, and sent.json, which records how far
-   a send has got so a re-run carries on rather than repeating.
+   line in Amplitude's HTTP API shape, and sent-ids.txt, the id of every
+   event already sent. send only sends what isn't in sent-ids.txt, so a
+   re-run carries on, and a generate that adds events sends just those.
    ========================================================================== */
 
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync, existsSync, createWriteStream } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, createWriteStream, appendFileSync } from 'node:fs';
 import cfg from './config.mjs';
 import { generate, siteConfig } from './model.mjs';
 
 const OUT = 'datagen/out';
 const EVENTS = OUT + '/events.ndjson';
 const META = OUT + '/meta.json';
-const SENT = OUT + '/sent.json';
+const SENT_IDS = OUT + '/sent-ids.txt';
+const SENT_HASH = OUT + '/sent-hash.txt';
 
 const [command, ...rest] = process.argv.slice(2);
-const flag = (name) => rest.includes('--' + name);
+// `npm run data:send --confirm` (no `--` before the flag) hands the flag to
+// npm, which passes it on only as npm_config_confirm. Accept that too, so
+// the command does what it looks like it does.
+const fromNpm = (name) => process.env['npm_config_' + name];
+const flag = (name) => rest.includes('--' + name) || fromNpm(name) === 'true';
 const option = (name) => {
   const i = rest.indexOf('--' + name);
-  return i === -1 ? null : rest[i + 1];
+  if (i !== -1) return rest[i + 1];
+  const v = fromNpm(name);
+  return v && v !== 'true' ? v : null;
 };
 
 // Changes to the settings or the model change the data, which matters for a
@@ -101,7 +107,6 @@ function report(events) {
   ];
   const b = cfg.braze.events;
   const apps = new Map();
-  const appOfUser = new Map();
   const deviceOf = new Map();
   const counts = {};
   const perDay = {};
@@ -119,17 +124,8 @@ function report(events) {
         apps.set(p.application_id, { stages: new Set(), device: deviceOf.get(e.device_id), channel: p.utm_source || 'none' });
       const a = apps.get(p.application_id);
       a.stages.add(e.event_type);
-      if (e.user_id) appOfUser.set(e.user_id, p.application_id);
       if (e.event_type === 'Application Resumed') a[p.utm_source === 'braze' ? 'resumedFromEmail' : 'resumedOnOwn'] = true;
       if (e.event_type === 'Application Submitted') a.submittedAt = e.time;
-    }
-    if (p.source === 'braze' && e.user_id) {
-      const a = apps.get(appOfUser.get(e.user_id));
-      if (!a) continue;
-      if (e.event_type === b.sent) a.emailedAt = a.emailedAt || e.time;
-      if (e.event_type === b.opened) a.opened = true;
-      if (e.event_type === b.clicked) a.clicked = true;
-      if (e.event_type === 'Campaign Control Group Entered') a.controlAt = e.time;
     }
   }
 
@@ -163,16 +159,75 @@ function report(events) {
     console.log(`  ${name.padEnd(14)} started ${n(c.started).padStart(6)}   submitted ${pct(c.submitted, c.started).padStart(6)}`);
   console.log(`  (landing page visitors: ${n(landingVisitors.size)}, starting: ${pct(all.filter((a) => a.channel !== 'none').length, landingVisitors.size)})`);
 
-  const emailed = all.filter((a) => a.emailedAt);
-  const control = all.filter((a) => a.controlAt);
-  const won = (list, since) => list.filter((a) => a.submittedAt && a.submittedAt > since(a)).length;
-  console.log(`\nBRAZE: ${cfg.braze.campaign}, from ${cfg.braze.launch}`);
+  // Per person, not per application: a reminder clicked on another device
+  // starts a second application under the same email.
+  const people = new Map();
+  for (const e of events) {
+    if (!e.user_id) continue;
+    const p = people.get(e.user_id) || {};
+    const props = e.event_properties || {};
+    if (e.event_type === b.sent && !p.emailedAt) p.emailedAt = e.time;
+    if (e.event_type === b.opened) p.opened = true;
+    if (e.event_type === b.clicked) p.clicked = true;
+    if (e.event_type === 'Campaign Control Group Entered') p.controlAt = e.time;
+    if (props.utm_source === 'braze' && /Application (Resumed|Started)/.test(e.event_type)) p.backFromEmail = true;
+    if (e.event_type === 'Application Submitted') p.submittedAt = e.time;
+    people.set(e.user_id, p);
+  }
+  const emailed = [...people.values()].filter((p) => p.emailedAt);
+  const control = [...people.values()].filter((p) => p.controlAt);
+  const won = (list, since) => list.filter((p) => p.submittedAt && p.submittedAt > since(p)).length;
+  console.log(`\nBRAZE: ${cfg.braze.campaign}, from ${cfg.braze.launch} (people)`);
   console.log(`  cohort entered       ${n(emailed.length + control.length)}  (${n(control.length)} held out as control)`);
-  console.log(`  opened               ${pct(emailed.filter((a) => a.opened).length, emailed.length)}`);
-  console.log(`  clicked              ${pct(emailed.filter((a) => a.clicked).length, emailed.length)}`);
-  console.log(`  resumed from email   ${n(emailed.filter((a) => a.resumedFromEmail).length)}`);
-  console.log(`  submitted, emailed   ${pct(won(emailed, (a) => a.emailedAt), emailed.length)}`);
-  console.log(`  submitted, control   ${pct(won(control, (a) => a.controlAt), control.length)}   ← the lift is the gap`);
+  console.log(`  opened               ${pct(emailed.filter((p) => p.opened).length, emailed.length)}`);
+  console.log(`  clicked              ${pct(emailed.filter((p) => p.clicked).length, emailed.length)}`);
+  console.log(`  back from email      ${n(emailed.filter((p) => p.backFromEmail).length)}`);
+  console.log(`  submitted, emailed   ${pct(won(emailed, (p) => p.emailedAt), emailed.length)}`);
+  console.log(`  submitted, control   ${pct(won(control, (p) => p.controlAt), control.length)}   ← the lift is the gap`);
+
+  if (cfg.canvas && cfg.canvas.enabled) {
+    const C = cfg.canvas;
+    const E = C.events;
+    const byUser = new Map();
+    for (const e of events) {
+      if (!e.user_id) continue;
+      const p = byUser.get(e.user_id) || {};
+      const props = e.event_properties || {};
+      if (e.event_type === E.entered && props.canvas_name === C.name) {
+        p.enteredAt = p.enteredAt || e.time;
+        p.control = props.in_control_group;
+      }
+      if (p.enteredAt) {
+        if (e.event_type === E.emailOpened) p.opened = true;
+        if (e.event_type === E.emailClicked) p.emailClick = true;
+        if (e.event_type === E.smsSent) p.sms = true;
+        if (e.event_type === E.smsClicked) p.smsClick = true;
+        if (e.event_type === E.smsInbound) p.replied = true;
+        if (e.event_type === E.inAppViewed) p.inApp = true;
+        if (props.utm_campaign === C.utmCampaign && /Application (Resumed|Started)/.test(e.event_type)) p.back = true;
+        if (e.event_type === 'Application Submitted' && e.time > p.enteredAt) p.submitted = true;
+      }
+      byUser.set(e.user_id, p);
+    }
+    const all = [...byUser.values()].filter((p) => p.enteredAt);
+    const treated = all.filter((p) => !p.control);
+    const held = all.filter((p) => p.control);
+    const share = (list, f) => pct(list.filter(f).length, list.length);
+    console.log(`\nCANVAS: ${C.name}, from ${C.launch} (first home buyers stopped at step 3 or 4)`);
+    console.log(`  entered              ${n(all.length)}  (${n(held.length)} control)`);
+    console.log(`  email opened         ${share(treated, (p) => p.opened)}   clicked ${share(treated, (p) => p.emailClick)}`);
+    console.log(`  sent an SMS          ${share(treated, (p) => p.sms)}   clicked ${share(treated, (p) => p.smsClick)}   replied ${share(treated, (p) => p.replied)}`);
+    console.log(`  back via a message   ${n(treated.filter((p) => p.back).length)}  (saw the in-app modal: ${n(treated.filter((p) => p.inApp).length)})`);
+    console.log(`  submitted, Canvas    ${share(treated, (p) => p.submitted)}`);
+    console.log(`  submitted, control   ${share(held, (p) => p.submitted)}   ← the lift is the gap`);
+    const D = cfg.darren;
+    if (D && D.demoDate) {
+      const mine = events.filter((e) => e.user_id === D.email || (e.insert_id || '').includes('-darren-'));
+      const steps = mine.filter((e) => e.user_id && e.event_type !== '[Amplitude] Page Viewed').map((e) => `${localDate(e.time).slice(5)} ${e.event_type}`);
+      console.log(`\nDARREN (${D.email}, demo ${D.demoDate}): ${n(mine.length)} events`);
+      console.log('  ' + steps.join('\n  '));
+    }
+  }
 
   const dayCounts = Object.values(perDay);
   console.log('\nVOLUME');
@@ -187,52 +242,66 @@ function report(events) {
 async function runSend() {
   const events = readEvents();
   const meta = JSON.parse(readFileSync(META, 'utf8'));
-  const state = existsSync(SENT) ? JSON.parse(readFileSync(SENT, 'utf8')) : { sent: 0, fingerprint: meta.fingerprint };
-
   if (meta.fingerprint !== fingerprint()) {
     console.error('Settings or model have changed since the last generate. Run generate first.');
     process.exit(1);
   }
-  if (state.sent > 0 && state.fingerprint !== meta.fingerprint && !flag('force')) {
-    console.error(
-      `${n(state.sent)} events from an earlier version of the data have already been sent.\n` +
-        'Sending this version would mix the two. Use --force to carry on anyway, or delete\n' +
-        `${SENT} if the earlier send went to a project you've since cleared.`
-    );
-    process.exit(1);
+
+  // What's been sent is recorded by event id, so a later generate that adds
+  // events (the Canvas layer, Darren) sends only the new ones. Anything
+  // already sent must come out of the generator unchanged: the model keeps
+  // added events in their own id namespace for exactly that reason.
+  const sent = existsSync(SENT_IDS)
+    ? new Set(readFileSync(SENT_IDS, 'utf8').split('\n').filter(Boolean))
+    : new Set();
+  // Guard: the events already sent must come out of this build exactly as
+  // they were sent. A setting that changes them (rather than adding new
+  // ones) would leave Amplitude holding a different story from this file.
+  const sentNow = (list) =>
+    createHash('sha1')
+      .update(list.filter((e) => sent.has(e.insert_id)).map((e) => JSON.stringify(e)).join('\n'))
+      .digest('hex');
+  if (sent.size && existsSync(SENT_HASH)) {
+    const was = readFileSync(SENT_HASH, 'utf8').trim();
+    if (sentNow(events) !== was && !flag('force')) {
+      console.error(
+        'Events that have already been sent come out of this build differently.\n' +
+          'A setting or model change altered existing events instead of only adding new ones.\n' +
+          'Undo that change, or pass --force if you really mean to send this build.'
+      );
+      process.exit(1);
+    }
   }
 
   const until = option('until');
-  const limit = until ? new Date(until + 'T00:00:00Z').getTime() + 38 * 3600e3 : Infinity; // generous; filtered by local date below
-  const due = events.filter((e, i) => i >= state.sent && e.time <= limit && (!until || localDate(e.time) <= until));
+  const due = events.filter((e) => !sent.has(e.insert_id) && (!until || localDate(e.time) <= until));
   const apiKey = process.env.AMPLITUDE_API_KEY || siteConfig.AMPLITUDE_API_KEY;
   const zone = (process.env.AMPLITUDE_SERVER_ZONE || cfg.amplitude.serverZone).toUpperCase();
   const endpoint = zone === 'EU' ? 'https://api.eu.amplitude.com/batch' : 'https://api2.amplitude.com/batch';
 
   console.log(`Endpoint:   ${endpoint}`);
   console.log(`API key:    ${apiKey.slice(0, 6)}…${apiKey.slice(-4)} (${process.env.AMPLITUDE_API_KEY ? 'AMPLITUDE_API_KEY' : 'src/assets/js/config.js'})`);
-  console.log(`Already sent: ${n(state.sent)} of ${n(events.length)}`);
+  console.log(`Already sent: ${n(sent.size)} · in this build: ${n(events.length)}`);
   if (!due.length) return console.log('Nothing to send.');
+  const types = {};
+  for (const e of due) types[e.event_type] = (types[e.event_type] || 0) + 1;
   console.log(`To send:    ${n(due.length)} events, ${new Date(due[0].time).toISOString()} to ${new Date(due[due.length - 1].time).toISOString()}`);
+  console.log('            ' + Object.entries(types).sort((x, y) => y[1] - x[1]).map(([k, v]) => `${k} ${n(v)}`).join(' · '));
   console.log(`Batches:    ${Math.ceil(due.length / cfg.amplitude.batchSize)} of up to ${cfg.amplitude.batchSize}`);
 
   if (!flag('confirm')) {
     console.log('\nDry run: nothing sent. First event:\n' + JSON.stringify(due[0], null, 2));
-    console.log('\nAdd --confirm to send.');
+    console.log('\nAdd --confirm to send (npm run data:send -- --confirm).');
     return;
   }
 
-  const start = events.indexOf(due[0]);
-  if (start !== state.sent) throw new Error('internal: send cursor out of step');
   for (let i = 0; i < due.length; i += cfg.amplitude.batchSize) {
     const batch = due.slice(i, i + cfg.amplitude.batchSize);
     await post(endpoint, apiKey, batch);
-    state.sent += batch.length;
-    state.fingerprint = meta.fingerprint;
-    state.lastSentAt = new Date().toISOString();
-    state.sentThrough = new Date(batch[batch.length - 1].time).toISOString();
-    writeFileSync(SENT, JSON.stringify(state, null, 2) + '\n');
-    process.stdout.write(`\r  sent ${n(state.sent)} / ${n(events.length)}`);
+    appendFileSync(SENT_IDS, batch.map((e) => e.insert_id).join('\n') + '\n');
+    batch.forEach((e) => sent.add(e.insert_id));
+    writeFileSync(SENT_HASH, sentNow(events) + '\n');
+    process.stdout.write(`\r  sent ${n(i + batch.length)} / ${n(due.length)}`);
     await sleep(cfg.amplitude.pauseMs);
   }
   console.log('\nDone.');

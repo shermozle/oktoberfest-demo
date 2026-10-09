@@ -318,9 +318,10 @@ needed.
 3. **Stop at step 3 and leave.** Reload, or come back later:
    `Application Resumed` fires, and the draft is exactly as it was. Braze has
    `application_status: started`, `application_step: income` and the list of
-   what's left in `application_info_needed`. "High-value abandoner" in the
-   Controls tab sets this up in one click. The full storyline is in
-   [DEMO.md](DEMO.md).
+   what's left in `application_info_needed`. The full storyline is in
+   [DEMO-SCRIPT.md](DEMO-SCRIPT.md).
+   "Be Darren" in the Controls tab shows Darren's paused application on the
+   site but, being presentation only, sends nothing to his real user.
 4. **Submit two ways.** Enter an email and mobile and click straight through
    with the defaults, and it's conditionally approved; raise the property
    value or drop the income and it's referred to a lender. The decision is

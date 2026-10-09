@@ -82,6 +82,47 @@
     },
   ];
 
+  // Darren Whitlock, the hipster in Akshin's Braze demo, as the presenter
+  // shows him on the site. Presentation-only (demoOnly): nothing done as
+  // him here is tied to his real user in Amplitude or Braze, whose history
+  // (from datagen, and Akshin's live Braze profile) is the reveal at the
+  // end of the demo. Every business in his transactions is invented.
+  const DARREN = {
+    demoOnly: true,
+    email: 'darren.whitlock@example.com',
+    phone: '+61491570110',
+    firstName: 'Darren',
+    lastName: 'Whitlock',
+    persona: 'first_home_buyer',
+    avatar: 'darren',
+    marketingOptIn: true,
+    existingCustomer: true,
+    hasHomeLoan: false,
+    accounts: [
+      {
+        name: 'Everyday Account',
+        number: 'BSB 063-114 · 2650 4800',
+        balance: 1284.2,
+        transactions: [
+          ['Hop Theory Brewing Co, Collingwood', -36.5],
+          ['Wax & Whisker beard oil, cedar and bergamot', -42.0],
+          ['Oat & Ember, oat flat white', -6.2],
+          ['Dead Wax Records, Fitzroy', -54.99],
+          ['Sourdough Society, monthly starter subscription', -18.0],
+          ['Fixed Gear Co, chain tune-up', -45.0],
+          ['Kombucha on Tap, Brunswick', -9.5],
+        ],
+      },
+      {
+        name: 'Bonus Saver',
+        nickname: 'House deposit (do not touch)',
+        number: 'BSB 063-114 · 2650 4801',
+        balance: 121640.0,
+        transactions: [['Monthly deposit (fewer IPAs this month)', 1200.0]],
+      },
+    ],
+  };
+
   /* --- markup ------------------------------------------------------------- */
 
   function drawerHtml() {
@@ -122,9 +163,9 @@
           '</div>'
         : '') +
       '<div class="dev-section"><h4>Application</h4>' +
-      '<button class="dev-btn" data-dev-seed-application>high-value abandoner: Package, $840k, stopped at step 3</button>' +
+      '<button class="dev-btn dev-btn--primary" data-dev-seed-application>be Darren: First Home Loan, $480k, stopped at step 4</button>' +
       '<button class="dev-btn" data-dev-clear-application>discard the application in progress</button>' +
-      '<p class="dev-note">Identifies the visitor (as Alex Nguyen if nobody is signed in) and saves an application that stopped at step 3, Your income, three minutes ago. Braze gets the same attributes a real abandoner would, including <code>application_info_needed</code>, so the reminder campaign can be shown on it straight away.</p>' +
+      '<p class="dev-note">Shows the site as Darren Whitlock, the hipster in Akshin\'s Braze demo, sees it: his First Home Loan application stopped at step 4, Your expenses, and internet banking that shows where the money goes. Presentation only: nothing is sent to Darren\'s real user in Amplitude or Braze. Use <em>start fresh</em> afterwards.</p>' +
       '</div>' +
       '<div class="dev-section"><h4>Reset</h4>' +
       '<button class="dev-btn dev-btn--primary" data-dev-reset>start fresh: new device id, nothing saved</button>' +
@@ -352,79 +393,46 @@
     });
 
     $('[data-dev-seed-application]', drawer).addEventListener('click', function () {
-      // The demo's high-value abandoner: a Package Home Loan application,
-      // identified by email and mobile, that stopped at step 3 (income).
-      let customer = store.getCustomer();
-      if (!customer || !customer.email) {
-        customer = store.signIn({
-          email: 'alex.nguyen@example.com',
-          phone: '+61491570159',
-          firstName: 'Alex',
-          lastName: 'Nguyen',
-          persona: 'high_value_abandoner',
-          marketingOptIn: true,
-          source: 'demo_control',
-        });
-      } else if (!customer.phone) {
-        customer = store.signIn(Object.assign({}, customer, { phone: '+61491570159' }));
-      }
-      track.identify(customer);
+      // Darren Whitlock: the user Akshin's Braze journey is built around,
+      // three steps from the end of a First Home Loan application.
+      const customer = store.signIn(Object.assign({ source: 'demo_control' }, DARREN));
+      track.identify(customer); // not sent: presentation-only
 
-      const loanAmount = 840000;
       const draft = store.startDraft({
-        source: 'landing_hero',
-        campaign: { utm_source: 'google', utm_medium: 'cpc', utm_campaign: 'package_offset' },
-        step: 2,
+        id: 'LB480650',
+        source: 'product_page',
+        step: 3,
         fields: {
           email: customer.email,
-          phone: customer.phone,
-          firstName: customer.firstName || '',
-          lastName: customer.lastName || '',
-          applicants: '2',
-          firstHomeBuyer: 'no',
+          phone: '0491 570 110',
+          firstName: 'Darren',
+          lastName: 'Whitlock',
+          applicants: '1',
+          firstHomeBuyer: 'yes',
           marketingOptIn: true,
           loanPurpose: 'buy_home',
           propertyStage: 'found',
-          propertyValue: '1050000',
-          deposit: '210000',
-          state: 'VIC',
-          postcode: '3068',
-          product: 'package-home-loan',
+          propertyValue: '600000',
+          deposit: '120000',
+          state: 'NSW',
+          postcode: '2650',
+          employment: 'full_time',
+          income: '108000',
+          otherIncome: '0',
+          product: 'first-home-loan',
         },
       });
       // Saved three minutes ago, so it already reads as abandoned.
       draft.updatedAt = new Date(Date.now() - 180000).toISOString();
       store.saveDraft(draft, true);
 
-      track.track('Application Seeded', {
-        source: 'demo_control',
-        application_id: draft.id,
-        step: 'income',
-        loan_amount: loanAmount,
-        product_id: 'package-home-loan',
-      });
+      // Nothing sent: on stage this is a picture of Darren's application,
+      // not a new one. His real history comes from datagen and Braze.
       const app = window.LanewayApp;
-      track.setUserProperties(
-        Object.assign(
-          {
-            application_status: 'started',
-            application_id: draft.id,
-            application_started_at: draft.startedAt,
-            application_product: 'Package Home Loan',
-            application_product_id: 'package-home-loan',
-            application_resume_url: new URL((window.LANEWAY_BASE || '') + 'apply/', location.href).href,
-            loan_purpose: 'buy_home',
-            loan_amount: loanAmount,
-            loan_amount_band: '$750k–$1m',
-            lvr: 80,
-          },
-          app ? app.progressProps(2) : { application_step: 'income' }
-        )
-      );
       renderState();
       if (app) app.reboot();
-      if (window.LanewayApp) window.LanewayApp.toast('Seeded: ' + (customer.firstName || customer.email) + ', stopped at step 3');
-      if (document.body.dataset.page === 'apply') location.reload();
+      if (app) app.toast('Now applying as Darren. Three steps to go.');
+      if (document.body.dataset.page === 'apply' || document.body.dataset.page === 'account') location.reload();
     });
 
     $('[data-dev-clear-application]', drawer).addEventListener('click', function () {

@@ -36,6 +36,13 @@ PHOTOS = {
 
 SIZES = (1600, 800)
 
+# Square portraits cut from a photo, as fractions of its width and height:
+# (left, top, size as a fraction of width). Written at 800px.
+PORTRAITS = {
+    # Darren Whitlock: the man in the flat cap, in the dome.
+    'darren': ('pexels-samet-korkmaz-267675092-14898901.jpg', 0.535, 0.415, 0.27),
+}
+
 OUT.mkdir(parents=True, exist_ok=True)
 for source, name in PHOTOS.items():
     with Image.open(SRC / source) as im:
@@ -47,3 +54,13 @@ for source, name in PHOTOS.items():
             path = OUT / f'{name}-{w}.webp'
             copy.save(path, 'WEBP', quality=78, method=6)
             print(f'{path}  {copy.width}x{copy.height}  {path.stat().st_size // 1024}KB')
+
+for name, (source, left, top, size) in PORTRAITS.items():
+    with Image.open(SRC / source) as im:
+        im = (ImageOps.exif_transpose(im) or im).convert('RGB')
+        side = round(im.width * size)
+        x, y = round(im.width * left), round(im.height * top)
+        face = im.crop((x, y, x + side, y + side)).resize((800, 800), Image.Resampling.LANCZOS)
+        path = OUT / f'{name}-portrait.webp'
+        face.save(path, 'WEBP', quality=82, method=6)
+        print(f'{path}  800x800  {path.stat().st_size // 1024}KB')

@@ -44,8 +44,13 @@
   // instead of setting an id Amplitude would refuse.
   const AMPLITUDE_MIN_ID_LENGTH = 5;
 
+  //
+  // A presentation-only persona (customer.demoOnly, the "be Darren" demo
+  // control) gets no user id at all: the presenter can show his accounts
+  // and application on stage without anything landing on the real Darren
+  // in Amplitude or Braze, whose history is the reveal later in the demo.
   const userIdFor = (customer) =>
-    customer && customer.email && customer.email.length >= AMPLITUDE_MIN_ID_LENGTH
+    customer && !customer.demoOnly && customer.email && customer.email.length >= AMPLITUDE_MIN_ID_LENGTH
       ? customer.email
       : null;
 
@@ -402,6 +407,10 @@
   function applyIdentityToBraze() {
     const customer = store.getCustomer();
     if (!customer) return;
+    if (customer.demoOnly) {
+      record('braze', 'identity not sent', { persona: customer.firstName }, 'Presentation-only persona: kept off the real user');
+      return;
+    }
     const attrs = customerAttributes(customer);
     // The same id Amplitude uses as user_id. Currents stamps every Braze
     // event with the external id as its Amplitude user_id, so the two must
@@ -459,6 +468,10 @@
   }
 
   function identify(customer) {
+    if (customer.demoOnly) {
+      record('amplitude', 'identify not sent', { persona: customer.firstName }, 'Presentation-only persona: kept off the real user');
+      return;
+    }
     const attrs = customerAttributes(customer);
     const userId = userIdFor(customer);
 
