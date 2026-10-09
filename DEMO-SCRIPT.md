@@ -25,14 +25,16 @@ are approximate: say what's on screen.
 
 ### 1. Meet Laneway Bank (45 seconds)
 
-> Open the landing page in the browser.
+> Open the [landing page](https://shermozle.github.io/oktoberfest-demo/landing/) in the browser where you clicked
+> **be Darren** (see "On the day").
 
 "This is Laneway Bank. It's a Melbourne bank for people who'd rather pay off
 a house than talk to a branch manager about it. The page you're looking at is
 where our paid campaigns land: the Package Home Loan, our best-margin loan,
 with a 100% offset account."
 
-> Scroll once to the offset calculator and move the "Kept in offset" slider.
+> Scroll to the [offset calculator](https://shermozle.github.io/oktoberfest-demo/landing/#savings) and move the "Kept in offset"
+> slider.
 
 "The calculator shows what your savings would save you. Every time someone
 moves it, Amplitude records it, so we know which visitors are seriously
@@ -40,7 +42,8 @@ weighing up a loan and which are just browsing."
 
 ### 2. Meet Darren (1 minute)
 
-> Click the person icon, top right: internet banking, signed in as Darren.
+> Click the person icon, top right: [internet banking](https://shermozle.github.io/oktoberfest-demo/account/), signed in as
+> Darren.
 
 "Let's follow one applicant. This is Darren. Darren's a first home buyer.
 Darren is also, as his transactions make clear, a hipster: craft beer,
@@ -49,8 +52,8 @@ starter on a monthly subscription. But look at the Bonus Saver: a hundred
 and twenty grand, nicknamed 'House deposit (do not touch)'. Darren is
 serious."
 
-> Click the application icon (the page with the dot) to open his
-> application.
+> Click the application icon (the page with the dot) to open
+> [his application](https://shermozle.github.io/oktoberfest-demo/apply/), paused at step 4.
 
 "Applying takes six steps. Step one asks for an email and a mobile, so from
 there on we know who he is. Hold on to that: it matters in a minute. Darren
@@ -297,7 +300,7 @@ Build a dashboard, **Laneway Bank: Oktoberfest demo**, with:
 - [ ] Open tabs, in order: the landing page; the Amplitude dashboard; the AI
   assistant; the saved replay; the cohort; Darren in User Look-Up; the two
   Canvas charts.
-- [ ] On the site, open the event stream (`` ` ``), Controls tab, click
+- [ ] On [the site](https://shermozle.github.io/oktoberfest-demo/), open the event stream (`` ` ``), Controls tab, click
   **be Darren**, then press `` ` `` again to hide it. The site now shows
   Darren's internet banking and his application paused at step 4. This is
   presentation only: nothing done as him reaches his real user in Amplitude
