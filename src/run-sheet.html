@@ -202,6 +202,7 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
     <li><span>Check tab 2 says <strong>"Hi, Darren"</strong> with his transactions. If it doesn't, open tab 2's link again.</span></li>
     <li><span>Check tab 4 shows Amplitude's home page with the Global Agent box, and tab 4b shows the finished answer.</span></li>
     <li><span>Check tab 5's replay plays, then pause it at the start.</span></li>
+    <li><span>Check tab 7 shows Darren's activity. Don't scroll it yet.</span></li>
     <li><span>Go back to tab 1. You're ready.</span></li>
   </ol>
 
@@ -214,9 +215,9 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
     <li class="backup"><span><strong>4b. Backup: the Global Agent's answer, already run</strong> · <a href="https://app.amplitude.com/agents/braze/session/70dae759-59f9-4112-a9dc-e06d812867a9/thread/583e66ca-cf3c-4ce1-8f10-c1e498482213">Agent thread</a><br><span class="note">Only if the live answer in tab 4 is slow.</span></span></li>
     <li><span><strong>Session replay: someone stalling at Your income</strong> · <a href="https://app.amplitude.com/analytics/braze/session-replay/project/863610/search/replay?sessionReplayId=7de68c67-a0d0-3c07-b0e1-f5a80dc3a351/1791688498364">Amplitude replay</a></span></li>
     <li><span><strong>Funnel by loan type, for the cohort</strong> · <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x/edit/hnvfhnw6?linkingDashboardId=gsrgzl0t">Amplitude chart</a></span></li>
-    <li><span><strong>Darren in User Look-Up</strong> (user <code>lwb_001</code>) · <span class="todo">link to come from Simon</span></span></li>
-    <li><span><strong>Chart, "Canvas vs control"</strong> · <span class="todo">link to come from Simon</span></span></li>
-    <li><span><strong>Chart, "What brought them back"</strong> · <span class="todo">link to come from Simon</span></span></li>
+    <li><span><strong>Darren in User Look-Up</strong> (user <code>lwb_001</code>) · <a href="https://app.amplitude.com/analytics/braze/project/863610/search/amplitude_id%3D1737997665254/activity?_source=user%20lookup">Amplitude user activity</a></span></li>
+    <li><span><strong>Chart, "Canvas vs control"</strong> · <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x/edit/t2r6gm5g">Amplitude chart</a></span></li>
+    <li><span><strong>Chart, "What brought them back"</strong> · <span class="todo">link to come from Simon</span><br><span class="note">If this tab never arrives, skip the tab 9 beat; the numbers are in the line below.</span></span></li>
   </ol>
 </section>
 
@@ -325,7 +326,7 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
     <p class="click"><span>Click tab 8.</span></p>
     <p class="say">"One person's a story. Here's everyone. Of the first home buyers in the journey, about 29% have gone on to submit. Braze held back a control group who got no messages: only about 13% of them came back by themselves. The journey more than doubled the number who finished."</p>
     <p class="click"><span>Click tab 9.</span></p>
-    <p class="say">"And because Braze sends its events here, we can see which channel did the work: about half came back from the email, and half from the text message."</p>
+    <p class="say">"And because Braze sends its events here, we can see which channel did the work. About half came back from the email and half from the text message, and of the people each one brought back, about six in ten finished their application within a day."</p>
   </div>
 
   <div class="beat">
@@ -357,13 +358,11 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
   <div class="group">
     <h3>Done</h3>
     <label class="check"><input type="checkbox" id="s-send" checked><span>Data sent to Amplitude, including the First Home Loan Win-Back history and Darren (<code>lwb_001</code>).</span></label>
-    <label class="check"><input type="checkbox" id="s-tabs16" checked><span>Tabs 1 to 6, including the Global Agent backup (4b), the replay and the loan-type funnel.</span></label>
+    <label class="check"><input type="checkbox" id="s-tabs16" checked><span>Tabs 1 to 8, including the Global Agent backup (4b), the replay, the loan-type funnel, Darren and Canvas vs control.</span></label>
   </div>
   <div class="group">
     <h3>Still to do</h3>
-    <label class="check"><input type="checkbox" id="s-darren"><span><strong>Tab 7, Darren:</strong> User Look-Up for user id <code>lwb_001</code>. Send the link.</span></label>
-    <label class="check"><input type="checkbox" id="s-lift"><span><strong>Tab 8, "Canvas vs control":</strong> funnel <code>[Appboy] Canvas Entered</code> (canvas_name = First Home Loan Win-Back) → Application Submitted within 7 days, grouped by <code>canvas_variation_name</code>. Send the link.</span></label>
-    <label class="check"><input type="checkbox" id="s-channel"><span><strong>Tab 9, "What brought them back":</strong> Application Resumed where <code>utm_campaign</code> = first_home_loan_win_back, grouped by <code>utm_medium</code>. Send the link.</span></label>
+    <label class="check"><input type="checkbox" id="s-channel"><span><strong>Tab 9, "What brought them back":</strong> a funnel, <code>Application Resumed</code> where <code>utm_campaign</code> = first_home_loan_win_back → <code>Application Submitted</code>, conversion within 1 day, grouped by <code>utm_medium</code> (email, sms). Expect about 42 → 25 for email and 41 → 24 for SMS. Don't group <code>Application Submitted</code> by <code>utm_medium</code> on its own: it keeps the UTMs from when the application started, not the message that brought them back. Simpler alternative: <code>[Appboy] Email Clicked</code>, <code>[Appboy] SMS Short Link Clicked</code> and <code>[Appboy] In-App Message Clicked</code> side by side. Send the link.</span></label>
     <label class="check"><input type="checkbox" id="s-name"><span>Tell Akshin: call the Canvas <strong>First Home Loan Win-Back</strong>; in his Darren profile use rate <strong>5.74%</strong> (comparison <strong>5.77%</strong>) and <code>step_reached: "expenses"</code>, <code>steps_completed: 3</code>, <code>total_steps: 6</code>.</span></label>
     <label class="check"><input type="checkbox" id="s-share"><span>Send Tom and Akshin this page's link.</span></label>
   </div>
