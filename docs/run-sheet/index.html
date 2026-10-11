@@ -161,6 +161,10 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
 .tabs .site::before { background: var(--braze); color: #fff; }
 .tabs a { word-break: break-all; }
 .todo { color: var(--ink-soft); font-style: italic; }
+.setup { margin: 0 0 18px; padding-left: 22px; display: grid; gap: 8px; font-size: 15px; }
+.setup li::marker { font-weight: 700; color: var(--ink-soft); }
+.tabs li.backup { margin-left: 40px; grid-template-columns: 1fr; }
+.tabs li.backup::before { display: none; }
 .chip { font-size: 12px; font-weight: 700; border-radius: 6px; padding: 2px 8px; background: var(--paper); color: var(--ink); white-space: nowrap; }
 .typed { font-family: var(--mono); font-size: 14px; background: var(--paper); border-radius: 8px; padding: 10px 14px; }
 .note { font-size: 14px; color: var(--ink-soft); }
@@ -191,18 +195,28 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
 </section>
 
 <section class="part">
-  <div class="part-head"><span class="who" style="color:var(--ink-soft)">Before you start · 5 minutes</span><h2>Open these tabs</h2></div>
-  <p>One Chrome window, in this order. Tab 1 sets Darren up in this browser, so open it first and use this same window for everything. Make sure you're signed in to Amplitude.</p>
+  <div class="part-head"><span class="who" style="color:var(--ink-soft)">Before you start · 10 minutes</span><h2>Set up</h2></div>
+  <ol class="setup">
+    <li><span>Open a fresh Chrome window and sign in to Amplitude (the <strong>braze</strong> organisation).</span></li>
+    <li><span>Open the tabs below in that window, in order, one tab each. Use this same window for the whole demo.</span></li>
+    <li><span>Check tab 2 says <strong>"Hi, Darren"</strong> with his transactions. If it doesn't, open tab 2's link again.</span></li>
+    <li><span>Check tab 4 shows Amplitude's home page with the Global Agent box, and tab 4b shows the finished answer.</span></li>
+    <li><span>Check tab 5's replay plays, then pause it at the start.</span></li>
+    <li><span>Go back to tab 1. You're ready.</span></li>
+  </ol>
+
+  <div class="part-head"><span class="who" style="color:var(--ink-soft)">The tabs</span></div>
   <ol class="tabs">
-    <li class="site"><span><strong>Darren set-up</strong> · <a href="https://shermozle.github.io/oktoberfest-demo/account/?demo=darren">https://shermozle.github.io/oktoberfest-demo/account/?demo=darren</a><br><span class="note">Lands on "Hi, Darren". This is the site tab for Part 1.</span></span></li>
     <li class="site"><span><strong>Landing page</strong> · <a href="https://shermozle.github.io/oktoberfest-demo/landing/">https://shermozle.github.io/oktoberfest-demo/landing/</a></span></li>
+    <li class="site"><span><strong>Darren's internet banking</strong> · <a href="https://shermozle.github.io/oktoberfest-demo/account/?demo=darren">https://shermozle.github.io/oktoberfest-demo/account/?demo=darren</a><br><span class="note">Opening this link is what sets Darren up in your browser. It lands on "Hi, Darren".</span></span></li>
     <li><span><strong>Application funnel</strong> · <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x?linkingDashboardId=gsrgzl0t&amp;sharingId=N5saheX-">Amplitude chart</a></span></li>
-    <li><span><strong>AI assistant</strong> · <span class="todo">link from Simon</span></span></li>
-    <li><span><strong>Replay, "Mobile, stops at Your income"</strong> · <span class="todo">link from Simon</span></span></li>
-    <li><span><strong>Cohort, "High Value Application Abandoners"</strong> · <span class="todo">link from Simon</span></span></li>
-    <li><span><strong>Darren in User Look-Up</strong> (user <code>lwb_001</code>) · <span class="todo">link from Simon</span></span></li>
-    <li><span><strong>Chart, "Canvas vs control"</strong> · <span class="todo">link from Simon</span></span></li>
-    <li><span><strong>Chart, "What brought them back"</strong> · <span class="todo">link from Simon</span></span></li>
+    <li><span><strong>Amplitude home, for the Global Agent</strong> · <a href="https://app.amplitude.com/analytics/braze/home">Amplitude home</a></span></li>
+    <li class="backup"><span><strong>4b. Backup: the Global Agent's answer, already run</strong> · <a href="https://app.amplitude.com/agents/braze/session/70dae759-59f9-4112-a9dc-e06d812867a9/thread/583e66ca-cf3c-4ce1-8f10-c1e498482213">Agent thread</a><br><span class="note">Only if the live answer in tab 4 is slow.</span></span></li>
+    <li><span><strong>Session replay: someone stalling at Your income</strong> · <a href="https://app.amplitude.com/analytics/braze/session-replay/project/863610/search/replay?sessionReplayId=7de68c67-a0d0-3c07-b0e1-f5a80dc3a351/1791688498364">Amplitude replay</a></span></li>
+    <li><span><strong>Funnel by loan type, for the cohort</strong> · <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x/edit/hnvfhnw6?linkingDashboardId=gsrgzl0t">Amplitude chart</a></span></li>
+    <li><span><strong>Darren in User Look-Up</strong> (user <code>lwb_001</code>) · <span class="todo">link to come from Simon</span></span></li>
+    <li><span><strong>Chart, "Canvas vs control"</strong> · <span class="todo">link to come from Simon</span></span></li>
+    <li><span><strong>Chart, "What brought them back"</strong> · <span class="todo">link to come from Simon</span></span></li>
   </ol>
 </section>
 
@@ -210,16 +224,16 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
   <div class="part-head"><span class="who">Part 1 · Tom · about 7 minutes</span><h2>Find the leak</h2></div>
 
   <div class="beat">
-    <h3>Laneway Bank <span class="time"><span class="chip">tab 2</span> 45 s</span></h3>
-    <p class="click"><span>Click tab 2, the landing page.</span></p>
+    <h3>Laneway Bank <span class="time"><span class="chip">tab 1</span> 45 s</span></h3>
+    <p class="click"><span>Tab 1, the landing page.</span></p>
     <p class="say">"This is Laneway Bank. It's a Melbourne bank for people who'd rather pay off a house than talk to a branch manager about it. This page is where our paid campaigns land."</p>
     <p class="click"><span>Click "See what you'd save" and drag the <strong>Kept in offset</strong> slider.</span></p>
     <p class="say">"Everything a visitor does here goes to Amplitude, so we know who's seriously weighing up a loan and who's just browsing."</p>
   </div>
 
   <div class="beat">
-    <h3>Meet Darren <span class="time"><span class="chip">tab 1</span> 1 min</span></h3>
-    <p class="click"><span>Click tab 1, Darren's internet banking.</span></p>
+    <h3>Meet Darren <span class="time"><span class="chip">tab 2</span> 1 min</span></h3>
+    <p class="click"><span>Tab 2, Darren's internet banking.</span></p>
     <p class="say">"Let's follow one applicant. This is Darren. Darren's a first home buyer. Darren is also, as his transactions make clear, a hipster: craft beer, cedar and bergamot beard oil, oat flat whites, vinyl, and a sourdough starter on a monthly subscription. But look at the saver: eighty-two grand, nicknamed 'House deposit (do not touch)'. Darren is serious."</p>
     <p class="click"><span>Click the page icon with the dot, top right, to open his application. Don't type anything.</span></p>
     <p class="say">"Applying takes six steps. Step one asks for an email and a mobile, so from there on we know who he is. Hold on to that. Darren got through About you, the property and his income. Then he hit Your expenses. Given those transactions, you can see why he paused. He never came back."</p>
@@ -227,34 +241,37 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
 
   <div class="beat">
     <h3>Where people drop out <span class="time"><span class="chip">tab 3</span> 1 min</span></h3>
-    <p class="click"><span>Click tab 3, the Application funnel.</span></p>
+    <p class="click"><span>Tab 3, the Application funnel.</span></p>
     <p class="say">"Darren isn't alone. Here's the last month of applications. Steps 1 and 2 are fine: nearly nine in ten get through. Then step 3, Your income: only about 59% make it. Step 4, Your expenses, loses another third. After that, almost everyone finishes. So the leak is in the middle: the financial information."</p>
     <p class="say">"And it's worse on a phone: about 55% get past the income step on mobile, against 66% on desktop."</p>
   </div>
 
   <div class="beat">
-    <h3>Asking why <span class="time"><span class="chip">tab 4</span> 1.5 min</span></h3>
-    <p class="click"><span>Click tab 4 and type:</span></p>
+    <h3>Asking why <span class="time"><span class="chip">tab 4</span> 1 min</span></h3>
+    <p class="click"><span>Tab 4. In the Global Agent box, type:</span></p>
     <p class="typed">Where are people dropping out of the home loan application, and which groups drop out most?</p>
     <p class="say">"It's found the same cliff at steps 3 and 4, and that phones and paid social traffic do worst."</p>
-    <p class="click"><span>Type:</span></p>
-    <p class="typed">What do people who stop at Your income do before they leave?</p>
-    <p class="say">"They linger on that screen for minutes, then go. They're trying, and something stops them."</p>
-    <p class="note">If the answer is slow, keep talking and move on to the replay; it makes the same point.</p>
+    <p class="note">If the answer is slow, switch to tab 4b: the same question, already answered.</p>
+    <p class="say">"So why there? Look at what those two steps ask for. Your income, your living expenses, your other loan repayments, your credit card limits. We're asking people to tally up a bunch of numbers they don't usually have to remember. So they linger, realise they'd have to go and find it all, and decide to put it off until later. Later rarely comes."</p>
   </div>
 
   <div class="beat">
-    <h3>Watching it happen <span class="time"><span class="chip">tab 5</span> 1 min</span></h3>
-    <p class="click"><span>Click tab 5 and press play.</span></p>
-    <p class="say">"Numbers tell us where. Session Replay shows us why. Someone on their phone at the income step: they scroll, start typing, go back up, look again, and they're gone."</p>
+    <h3>Watching it happen <span class="time"><span class="chip">tab 3 → tab 5</span> 1.5 min</span></h3>
+    <p class="click"><span>Back to tab 3. Click the bar for <strong>Income Entered</strong>, the people who dropped off before it, and choose to see their session replays.</span></p>
+    <p class="say">"We don't have to guess. Every one of those drop-offs has a session replay. Let's watch one."</p>
+    <p class="click"><span>Tab 5 has one ready. Switch to it and press play.</span></p>
+    <p class="say">"Here's someone on their phone at the income step. They scroll, start typing a figure, go back up, look at the fields again... and they're gone. Exactly what we just described: they'd have to go and find the numbers, so they'll do it later."</p>
   </div>
 
   <div class="beat">
-    <h3>We know who they are <span class="time"><span class="chip">tab 6</span> 2 min</span></h3>
-    <p class="click"><span>Click tab 6, the cohort.</span></p>
-    <p class="say">"Everyone who stops at step 3 or 4 has already given us their email and mobile. We know who they are, how far they got, and what's left."</p>
-    <p class="say">"We start with our highest-value group: first home buyers. A first home loan usually brings their everyday banking, savings and credit card with it for twenty years or more. So this cohort is first home buyers who stopped at income or expenses and haven't come back. Each one carries their progress: the steps done, what's still needed, the loan, the amount."</p>
-    <p class="say">"This cohort syncs to Braze every hour, and their events stream to Braze in real time. The moment someone stalls, Braze knows."</p>
+    <h3>The cohort, sent to Braze <span class="time"><span class="chip">tab 6</span> 2 min</span></h3>
+    <p class="click"><span>Tab 6, the same funnel, filtered by <strong>Loan type</strong>.</span></p>
+    <p class="say">"Everyone who stops at step 3 or 4 has already given us their email and mobile. We know who they are, how far they got, and what's left. So let's do something about it."</p>
+    <p class="say">"We'll start with our highest-value group: the First Home Loan. A first home loan usually brings the customer's everyday banking, savings and credit card with it for twenty years or more."</p>
+    <p class="click"><span>Set the Loan type filter to <strong>First Home Loan</strong>.</span></p>
+    <p class="say">"Same leak, same steps. These are first home buyers who stopped at the financial steps and haven't come back."</p>
+    <p class="click"><span>Click the drop-off at the income or expenses step and choose <strong>Create cohort</strong>. Name it <strong>High Value Application Abandoners</strong>, save it, then sync it to <strong>Braze</strong>.</span></p>
+    <p class="say">"That's our cohort. It syncs to Braze every hour, and their events stream to Braze in real time, carrying their progress: the steps they've done, what's still needed, the loan and the amount. The moment someone stalls, Braze knows."</p>
   </div>
 
   <div class="handoff">
@@ -326,9 +343,10 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
   </div>
   <div class="traps">
     <h3>If something goes wrong</h3>
-    <p><strong>A chart won't load:</strong> say the line anyway and move to the next tab.</p>
-    <p><strong>The AI assistant is slow:</strong> skip it. The funnel and the replay tell the same story.</p>
-    <p><strong>Tab 1 doesn't say "Hi, Darren":</strong> open tab 1's link again.</p>
+    <p><strong>The Global Agent is slow:</strong> switch to tab 4b, the same question already answered.</p>
+    <p><strong>Clicking the funnel bar doesn't offer replays:</strong> go straight to tab 5.</p>
+    <p><strong>Creating the cohort or the Braze sync misbehaves:</strong> say the line anyway; Akshin's demo already has the cohort in Braze.</p>
+    <p><strong>Tab 2 doesn't say "Hi, Darren":</strong> open tab 2's link again.</p>
     <p><strong>Never open Darren in Amplitude (tab 7) before Part 3.</strong> His finished application is the reveal.</p>
   </div>
 </section>
@@ -337,24 +355,17 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
   <h2>Simon, before you fly</h2>
   <p class="lede">Ticks are saved in your browser only.</p>
   <div class="group">
-    <h3>Send the data</h3>
-    <label class="check"><input type="checkbox" id="s-send"><span><code>npm run data:generate</code>, read the CANVAS and DARREN sections, then <code>npm run data:send -- --confirm</code>. About 3,200 events: the First Home Loan Win-Back journey (22 September on) and Darren's history. No real Braze data flows into Amplitude, so these synthetic events are the whole "after".</span></label>
+    <h3>Done</h3>
+    <label class="check"><input type="checkbox" id="s-send" checked><span>Data sent to Amplitude, including the First Home Loan Win-Back history and Darren (<code>lwb_001</code>).</span></label>
+    <label class="check"><input type="checkbox" id="s-tabs16" checked><span>Tabs 1 to 6, including the Global Agent backup (4b), the replay and the loan-type funnel.</span></label>
   </div>
   <div class="group">
-    <h3>Build in Amplitude, then paste links into tabs 4 to 9</h3>
-    <label class="check"><input type="checkbox" id="s-ai"><span><strong>Tab 4, AI assistant:</strong> try both prompts and tweak the wording until the answers are crisp.</span></label>
-    <label class="check"><input type="checkbox" id="s-replay"><span><strong>Tab 5, replay:</strong> on the live site, start a few applications on a phone, linger and abandon at Your income. Save the best.</span></label>
-    <label class="check"><input type="checkbox" id="s-cohort"><span><strong>Tab 6, cohort:</strong> <code>first_home_buyer</code> = true, <code>application_status</code> = started, <code>application_step</code> is income or expenses, did Property Details Entered in the last 30 days and not Application Submitted. Sync to Braze hourly.</span></label>
-    <label class="check"><input type="checkbox" id="s-darren"><span><strong>Tab 7, Darren:</strong> User Look-Up for user id <code>lwb_001</code>.</span></label>
-    <label class="check"><input type="checkbox" id="s-lift"><span><strong>Tab 8, "Canvas vs control":</strong> funnel <code>[Appboy] Canvas Entered</code> (canvas_name = First Home Loan Win-Back) → Application Submitted within 7 days, grouped by <code>canvas_variation_name</code>.</span></label>
-    <label class="check"><input type="checkbox" id="s-channel"><span><strong>Tab 9, "What brought them back":</strong> Application Resumed where <code>utm_campaign</code> = first_home_loan_win_back, grouped by <code>utm_medium</code>.</span></label>
-    <label class="check"><input type="checkbox" id="s-device"><span>Add a device-type breakdown to the <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x?linkingDashboardId=gsrgzl0t&amp;sharingId=N5saheX-">Application funnel</a> (tab 3).</span></label>
-  </div>
-  <div class="group">
-    <h3>Tell Akshin</h3>
-    <label class="check"><input type="checkbox" id="s-name"><span>Call the Canvas <strong>First Home Loan Win-Back</strong>, to match the charts.</span></label>
-    <label class="check"><input type="checkbox" id="s-json"><span>In his Darren profile: First Home Loan rate <strong>5.74%</strong> (comparison <strong>5.77%</strong>) as on the site, and <code>step_reached: "expenses"</code>, <code>steps_completed: 3</code>, <code>total_steps: 6</code>, so "three steps left" matches the six-step application Tom shows.</span></label>
-    <label class="check"><input type="checkbox" id="s-share"><span>Share this run sheet with Tom and Akshin.</span></label>
+    <h3>Still to do</h3>
+    <label class="check"><input type="checkbox" id="s-darren"><span><strong>Tab 7, Darren:</strong> User Look-Up for user id <code>lwb_001</code>. Send the link.</span></label>
+    <label class="check"><input type="checkbox" id="s-lift"><span><strong>Tab 8, "Canvas vs control":</strong> funnel <code>[Appboy] Canvas Entered</code> (canvas_name = First Home Loan Win-Back) → Application Submitted within 7 days, grouped by <code>canvas_variation_name</code>. Send the link.</span></label>
+    <label class="check"><input type="checkbox" id="s-channel"><span><strong>Tab 9, "What brought them back":</strong> Application Resumed where <code>utm_campaign</code> = first_home_loan_win_back, grouped by <code>utm_medium</code>. Send the link.</span></label>
+    <label class="check"><input type="checkbox" id="s-name"><span>Tell Akshin: call the Canvas <strong>First Home Loan Win-Back</strong>; in his Darren profile use rate <strong>5.74%</strong> (comparison <strong>5.77%</strong>) and <code>step_reached: "expenses"</code>, <code>steps_completed: 3</code>, <code>total_steps: 6</code>.</span></label>
+    <label class="check"><input type="checkbox" id="s-share"><span>Send Tom and Akshin this page's link.</span></label>
   </div>
 </section>
 
