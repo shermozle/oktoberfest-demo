@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Tom's run sheet for the Amplitude half of the Laneway Bank demo: the tabs to open, what to click and say, and the handover to Braze.">
+<link rel="icon" href="../assets/img/site/favicon.svg" type="image/svg+xml">
+<title>Laneway Bank Demo Script</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column in Laneway's own look (black on paper, Inter, the BANK tag),
+   with a run-of-show bar drawn to scale and three parts in order. */
+:root {
+  --paper: #f3eee6;
+  --page: #fbf9f5;
+  --ink: #161412;
+  --ink-soft: #5e5850;
+  --line: #ddd5c8;
+  --say-bg: #ffffff;
+  --click: #6b4e1f;
+  --amp: #1e61f0;
+  --braze: #c2410c;
+  --ok: #1f7a4d;
+  --font: Inter, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #24211d;
+    --page: #171513;
+    --ink: #f1ece4;
+    --ink-soft: #b3aa9d;
+    --line: #3a352f;
+    --say-bg: #1f1c19;
+    --click: #e2b46a;
+    --amp: #7aa3ff;
+    --braze: #fb8a57;
+    --ok: #5fcf96;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #24211d;
+  --page: #171513;
+  --ink: #f1ece4;
+  --ink-soft: #b3aa9d;
+  --line: #3a352f;
+  --say-bg: #1f1c19;
+  --click: #e2b46a;
+  --amp: #7aa3ff;
+  --braze: #fb8a57;
+  --ok: #5fcf96;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 16px/1.6 var(--font);
+  padding-inline: 20px;
+  padding-block: 0 80px;
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+h1, h2, h3 { text-wrap: balance; letter-spacing: -0.015em; margin: 0; }
+p { margin: 0; }
+a { color: inherit; text-underline-offset: 3px; }
+code { font-family: var(--mono); font-size: 0.86em; background: var(--paper); padding: 1px 5px; border-radius: 4px; }
+
+/* masthead */
+.mast { padding-block: 44px 28px; border-bottom: 1px solid var(--line); display: grid; gap: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: 0.02em; }
+.brand .word { font-size: 22px; letter-spacing: -0.02em; text-transform: uppercase; }
+.brand .tag { border: 1.5px solid currentColor; border-radius: 4px; padding: 1px 6px; font-size: 10px; letter-spacing: 0.16em; }
+.brand .x { color: var(--ink-soft); font-weight: 500; }
+h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
+.lede { color: var(--ink-soft); max-width: 62ch; }
+.links { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; }
+
+/* run of show, drawn to scale (6 + 9 + 4 = 19 minutes) */
+.show { padding-block: 28px; display: grid; gap: 12px; }
+.label { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); }
+.bar { display: flex; gap: 3px; height: 46px; }
+.bar div { display: flex; align-items: center; padding-inline: 12px; color: #fff; font-size: 13px; font-weight: 600; border-radius: 6px; min-width: 0; white-space: nowrap; overflow: hidden; }
+.bar .a { background: var(--amp); }
+.bar .b { background: var(--braze); }
+:root[data-theme="dark"] .bar div { color: #10131a; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bar div { color: #10131a; } }
+.show-rows { display: grid; gap: 6px; font-size: 14px; }
+.show-rows div { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: baseline; }
+.show-rows .n { font-weight: 700; }
+.show-rows .t { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.dot.a { background: var(--amp); } .dot.b { background: var(--braze); }
+
+/* legend */
+.legend { display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 13px; color: var(--ink-soft); padding-block: 4px 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+
+/* parts */
+.part { border-top: 1px solid var(--line); padding-block: 36px 8px; display: grid; gap: 22px; }
+.part-head { display: grid; gap: 6px; }
+.part-head .who { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.part.amp .who { color: var(--amp); }
+.part.braze .who { color: var(--braze); }
+.part-head h2 { font-size: 28px; font-weight: 800; }
+.beat { display: grid; gap: 12px; }
+.beat h3 { font-size: 18px; font-weight: 700; display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.beat h3 .time { font-size: 12px; font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.say { background: var(--say-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-size: 16.5px; line-height: 1.6; }
+.say + .say { margin-top: -4px; }
+.click { display: flex; gap: 10px; font-size: 14px; color: var(--click); font-weight: 500; }
+.click::before { content: "▸"; flex: none; }
+.prompt { border-left: 3px solid var(--amp); padding: 4px 0 4px 14px; font-weight: 600; }
+.prompt small { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amp); }
+
+.handoff { background: var(--ink); color: var(--page); border-radius: 12px; padding: 20px 22px; display: grid; gap: 8px; }
+.handoff .label { color: var(--page); opacity: 0.7; }
+.handoff p { font-size: 18px; font-weight: 600; line-height: 1.5; }
+
+.akshin { counter-reset: s; list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.akshin li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; }
+.akshin li::before { counter-increment: s; content: counter(s); width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--braze); color: var(--braze); display: grid; place-items: center; font-size: 12px; font-weight: 700; margin-top: 2px; }
+
+/* Darren's timeline: days relative to the demo */
+.timeline { display: grid; gap: 0; border-left: 2px solid var(--line); margin-left: 6px; }
+.timeline div { display: grid; grid-template-columns: 70px 1fr; gap: 12px; padding: 6px 0 6px 16px; position: relative; font-size: 15px; }
+.timeline div::before { content: ""; position: absolute; left: -7px; top: 13px; width: 12px; height: 12px; border-radius: 50%; background: var(--page); border: 2px solid var(--ink-soft); }
+.timeline .br::before { border-color: var(--braze); background: var(--braze); }
+.timeline .win::before { border-color: var(--ok); background: var(--ok); }
+.timeline .d { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; padding-top: 1px; }
+
+/* checklist */
+.prep { border-top: 1px solid var(--line); padding-block: 36px 0; display: grid; gap: 24px; }
+.prep h2 { font-size: 28px; font-weight: 800; }
+.group { display: grid; gap: 10px; }
+.group h3 { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+.check { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; font-size: 15px; }
+.check input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--ok); }
+.check input:focus-visible { outline: 2px solid var(--amp); outline-offset: 2px; }
+.check:has(input:checked) span { color: var(--ink-soft); text-decoration: line-through; text-decoration-color: var(--line); }
+
+.traps { display: grid; gap: 10px; padding: 18px 20px; background: var(--paper); border-radius: 12px; font-size: 15px; }
+.traps h3 { font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+
+@media (max-width: 520px) {
+  .bar div span.long { display: none; }
+  .timeline div { grid-template-columns: 1fr; gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* tab list and tab chips: the run sheet is driven by numbered browser tabs */
+.tabs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: tab; }
+.tabs li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: baseline; font-size: 15px; }
+.tabs li::before { counter-increment: tab; content: counter(tab); width: 26px; height: 26px; border-radius: 6px; background: var(--ink); color: var(--page); display: grid; place-items: center; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tabs .site::before { background: var(--braze); color: #fff; }
+.tabs a { word-break: break-all; }
+.todo { color: var(--ink-soft); font-style: italic; }
+.chip { font-size: 12px; font-weight: 700; border-radius: 6px; padding: 2px 8px; background: var(--paper); color: var(--ink); white-space: nowrap; }
+.typed { font-family: var(--mono); font-size: 14px; background: var(--paper); border-radius: 8px; padding: 10px 14px; }
+.note { font-size: 14px; color: var(--ink-soft); }
+.reset { background: var(--paper); border-radius: 12px; padding: 16px 20px; display: grid; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="mast">
+  <div class="brand"><span class="word">Laneway</span><span class="tag">BANK</span><span class="x">× Amplitude × Braze</span></div>
+  <h1>Tom's run sheet</h1>
+  <p class="lede">Tom presents the Amplitude half; Akshin presents Braze in the middle. Everything is set up beforehand. Lines in white boxes are what to say; brown lines are what to do. Numbers are approximate: say what's on screen.</p>
+</header>
+
+<section class="show" aria-label="Run of show">
+  <span class="label">Run of show · about 20 minutes</span>
+  <div class="bar" role="img" aria-label="Tom 7 minutes, Akshin 9 minutes, Tom 4 minutes">
+    <div class="a" style="flex: 7">Tom <span class="long">&nbsp;· 7 min</span></div>
+    <div class="b" style="flex: 9">Akshin <span class="long">&nbsp;· Braze · 9 min</span></div>
+    <div class="a" style="flex: 4">Tom <span class="long">&nbsp;· 4</span></div>
+  </div>
+  <div class="show-rows">
+    <div><span class="dot a"></span><span><span class="n">1.</span> Laneway Bank, Darren, where people drop out, the cohort</span><span class="t">7 min</span></div>
+    <div><span class="dot b"></span><span><span class="n">2.</span> Braze builds the journey and wins Darren back</span><span class="t">9 min</span></div>
+    <div><span class="dot a"></span><span><span class="n">3.</span> Did it work? Darren's story, then everyone</span><span class="t">4 min</span></div>
+  </div>
+</section>
+
+<section class="part">
+  <div class="part-head"><span class="who" style="color:var(--ink-soft)">Before you start · 5 minutes</span><h2>Open these tabs</h2></div>
+  <p>One Chrome window, in this order. Tab 1 sets Darren up in this browser, so open it first and use this same window for everything. Make sure you're signed in to Amplitude.</p>
+  <ol class="tabs">
+    <li class="site"><span><strong>Darren set-up</strong> · <a href="https://shermozle.github.io/oktoberfest-demo/account/?demo=darren">https://shermozle.github.io/oktoberfest-demo/account/?demo=darren</a><br><span class="note">Lands on "Hi, Darren". This is the site tab for Part 1.</span></span></li>
+    <li class="site"><span><strong>Landing page</strong> · <a href="https://shermozle.github.io/oktoberfest-demo/landing/">https://shermozle.github.io/oktoberfest-demo/landing/</a></span></li>
+    <li><span><strong>Application funnel</strong> · <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x?linkingDashboardId=gsrgzl0t&amp;sharingId=N5saheX-">Amplitude chart</a></span></li>
+    <li><span><strong>AI assistant</strong> · <span class="todo">link from Simon</span></span></li>
+    <li><span><strong>Replay, "Mobile, stops at Your income"</strong> · <span class="todo">link from Simon</span></span></li>
+    <li><span><strong>Cohort, "High Value Application Abandoners"</strong> · <span class="todo">link from Simon</span></span></li>
+    <li><span><strong>Darren in User Look-Up</strong> (user <code>lwb_001</code>) · <span class="todo">link from Simon</span></span></li>
+    <li><span><strong>Chart, "Canvas vs control"</strong> · <span class="todo">link from Simon</span></span></li>
+    <li><span><strong>Chart, "What brought them back"</strong> · <span class="todo">link from Simon</span></span></li>
+  </ol>
+</section>
+
+<section class="part amp">
+  <div class="part-head"><span class="who">Part 1 · Tom · about 7 minutes</span><h2>Find the leak</h2></div>
+
+  <div class="beat">
+    <h3>Laneway Bank <span class="time"><span class="chip">tab 2</span> 45 s</span></h3>
+    <p class="click"><span>Click tab 2, the landing page.</span></p>
+    <p class="say">"This is Laneway Bank. It's a Melbourne bank for people who'd rather pay off a house than talk to a branch manager about it. This page is where our paid campaigns land."</p>
+    <p class="click"><span>Click "See what you'd save" and drag the <strong>Kept in offset</strong> slider.</span></p>
+    <p class="say">"Everything a visitor does here goes to Amplitude, so we know who's seriously weighing up a loan and who's just browsing."</p>
+  </div>
+
+  <div class="beat">
+    <h3>Meet Darren <span class="time"><span class="chip">tab 1</span> 1 min</span></h3>
+    <p class="click"><span>Click tab 1, Darren's internet banking.</span></p>
+    <p class="say">"Let's follow one applicant. This is Darren. Darren's a first home buyer. Darren is also, as his transactions make clear, a hipster: craft beer, cedar and bergamot beard oil, oat flat whites, vinyl, and a sourdough starter on a monthly subscription. But look at the saver: eighty-two grand, nicknamed 'House deposit (do not touch)'. Darren is serious."</p>
+    <p class="click"><span>Click the page icon with the dot, top right, to open his application. Don't type anything.</span></p>
+    <p class="say">"Applying takes six steps. Step one asks for an email and a mobile, so from there on we know who he is. Hold on to that. Darren got through About you, the property and his income. Then he hit Your expenses. Given those transactions, you can see why he paused. He never came back."</p>
+  </div>
+
+  <div class="beat">
+    <h3>Where people drop out <span class="time"><span class="chip">tab 3</span> 1 min</span></h3>
+    <p class="click"><span>Click tab 3, the Application funnel.</span></p>
+    <p class="say">"Darren isn't alone. Here's the last month of applications. Steps 1 and 2 are fine: nearly nine in ten get through. Then step 3, Your income: only about 59% make it. Step 4, Your expenses, loses another third. After that, almost everyone finishes. So the leak is in the middle: the financial information."</p>
+    <p class="say">"And it's worse on a phone: about 55% get past the income step on mobile, against 66% on desktop."</p>
+  </div>
+
+  <div class="beat">
+    <h3>Asking why <span class="time"><span class="chip">tab 4</span> 1.5 min</span></h3>
+    <p class="click"><span>Click tab 4 and type:</span></p>
+    <p class="typed">Where are people dropping out of the home loan application, and which groups drop out most?</p>
+    <p class="say">"It's found the same cliff at steps 3 and 4, and that phones and paid social traffic do worst."</p>
+    <p class="click"><span>Type:</span></p>
+    <p class="typed">What do people who stop at Your income do before they leave?</p>
+    <p class="say">"They linger on that screen for minutes, then go. They're trying, and something stops them."</p>
+    <p class="note">If the answer is slow, keep talking and move on to the replay; it makes the same point.</p>
+  </div>
+
+  <div class="beat">
+    <h3>Watching it happen <span class="time"><span class="chip">tab 5</span> 1 min</span></h3>
+    <p class="click"><span>Click tab 5 and press play.</span></p>
+    <p class="say">"Numbers tell us where. Session Replay shows us why. Someone on their phone at the income step: they scroll, start typing, go back up, look again, and they're gone."</p>
+  </div>
+
+  <div class="beat">
+    <h3>We know who they are <span class="time"><span class="chip">tab 6</span> 2 min</span></h3>
+    <p class="click"><span>Click tab 6, the cohort.</span></p>
+    <p class="say">"Everyone who stops at step 3 or 4 has already given us their email and mobile. We know who they are, how far they got, and what's left."</p>
+    <p class="say">"We start with our highest-value group: first home buyers. A first home loan usually brings their everyday banking, savings and credit card with it for twenty years or more. So this cohort is first home buyers who stopped at income or expenses and haven't come back. Each one carries their progress: the steps done, what's still needed, the loan, the amount."</p>
+    <p class="say">"This cohort syncs to Braze every hour, and their events stream to Braze in real time. The moment someone stalls, Braze knows."</p>
+  </div>
+
+  <div class="handoff">
+    <span class="label">Hand over to Akshin</span>
+    <p>"So we've found where people drop out, we've seen why, and we've handed Braze exactly who to win back, with everything it needs to personalise the message. Akshin, how do we get them back?"</p>
+  </div>
+</section>
+
+<section class="part braze">
+  <div class="part-head"><span class="who">Part 2 · Akshin · about 9 minutes</span><h2>Win them back</h2></div>
+  <p>What's coming, so you're ready:</p>
+  <ol class="akshin">
+    <li><span>He opens with the audience we just sent him.</span></li>
+    <li><span>Braze's AI builds the whole journey (a Canvas) from a PDF brief.</span></li>
+    <li><span>A personalised email for <strong>Darren</strong>, three steps from finishing his First Home Loan.</span></li>
+    <li><span>Testing subject line, body and button together: 125 combinations.</span></li>
+    <li><span>If Darren clicks, a pop-up when he's back on the site. If not, an SMS.</span></li>
+    <li><span>An AI agent answers Darren's SMS about rates and passes him to a human lender.</span></li>
+    <li><span>Braze sends every message event back to Amplitude.</span></li>
+  </ol>
+  <div class="handoff">
+    <span class="label">He hands back with</span>
+    <p>"Now we'll switch back to Amplitude to see how effective our messages have been."</p>
+  </div>
+</section>
+
+<section class="part amp">
+  <div class="part-head"><span class="who">Part 3 · Tom · about 4 minutes</span><h2>Did it work?</h2></div>
+
+  <div class="beat">
+    <h3>Darren's story <span class="time"><span class="chip">tab 7</span> 1.5 min</span></h3>
+    <p class="click"><span>Click tab 7, Darren in Amplitude.</span></p>
+    <p class="say">"Remember Darren, stuck on Your expenses? Here he is in Amplitude. Look at the top: he finished. Application submitted, conditionally approved, documents uploaded. So how did he get there?"</p>
+    <p class="click"><span>Scroll down his timeline. The oldest events are at the bottom.</span></p>
+    <div class="timeline" aria-label="Darren's timeline">
+      <div><span class="d">9 Sep</span><span>Hears our ad on The Sourdough Hour podcast. Searches the site for "beard oil" (nothing), "craft beer" (nothing), then "first home". Reads about the First Home Loan, runs the borrowing power calculator.</span></div>
+      <div><span class="d">23 Sep</span><span>On his phone: three steps done, then the expenses screen, and gone.</span></div>
+      <div class="br"><span class="d">23 Sep</span><span>Within the hour, Akshin's journey picks him up.</span></div>
+      <div class="br"><span class="d">24 Sep</span><span>The email: opened, not clicked.</span></div>
+      <div class="br"><span class="d">25 Sep</span><span>The SMS. He replies with a question, asks about rates, then asks for a person: the agent hands him to a lender.</span></div>
+      <div class="win"><span class="d">5 Oct</span><span>7:48am: taps the link, lands back where he left off, sees the pop-up, finishes and submits.</span></div>
+      <div class="win"><span class="d">6 Oct</span><span>Uploads his last documents.</span></div>
+    </div>
+    <p class="say">"Read it from the bottom up. On the ninth of September he heard our ad on a podcast called The Sourdough Hour. The first thing he did on our site was search for beard oil. No results. Then craft beer. No results. Then, finally, 'first home'. He read about the First Home Loan and ran the borrowing power calculator."</p>
+    <p class="say">"On the twenty-third, on his phone, he got through three steps, sat on the expenses screen, and left. Within the hour, Akshin's journey picked him up. Next morning, the email: opened, not clicked. The day after, the SMS: he replied with a question, asked about rates, then asked for a person, and the agent handed him to a lender. And on the fifth of October, at a quarter to eight in the morning, he tapped the link, landed back where he left off, saw the pop-up, and finished."</p>
+    <p class="say">"Every Braze message, in Darren's timeline, right next to what he did on the site."</p>
+  </div>
+
+  <div class="beat">
+    <h3>Did it work for everyone? <span class="time"><span class="chip">tabs 8, 9</span> 1.5 min</span></h3>
+    <p class="click"><span>Click tab 8.</span></p>
+    <p class="say">"One person's a story. Here's everyone. Of the first home buyers in the journey, about 29% have gone on to submit. Braze held back a control group who got no messages: only about 13% of them came back by themselves. The journey more than doubled the number who finished."</p>
+    <p class="click"><span>Click tab 9.</span></p>
+    <p class="say">"And because Braze sends its events here, we can see which channel did the work: about half came back from the email, and half from the text message."</p>
+  </div>
+
+  <div class="beat">
+    <h3>Close <span class="time"><span class="chip">tab 3</span> 1 min</span></h3>
+    <p class="click"><span>Click tab 3, the funnel.</span></p>
+    <p class="say">"So that's the loop. Amplitude found where people drop out and why. Braze reached them by email, on the site, by SMS, and with an agent when they had questions. And the results came straight back into Amplitude, person by person and in aggregate."</p>
+    <p class="say">"We started with one group. Next, we build journeys for the others: the refinancers, the investors, the people on phones. Each stuck for a different reason, each with its own message."</p>
+  </div>
+</section>
+
+<section class="part">
+  <div class="reset">
+    <span class="label">After the session</span>
+    <p>Open <a href="https://shermozle.github.io/oktoberfest-demo/?demo=reset">https://shermozle.github.io/oktoberfest-demo/?demo=reset</a> to clear Darren out of the browser.</p>
+  </div>
+  <div class="traps">
+    <h3>If something goes wrong</h3>
+    <p><strong>A chart won't load:</strong> say the line anyway and move to the next tab.</p>
+    <p><strong>The AI assistant is slow:</strong> skip it. The funnel and the replay tell the same story.</p>
+    <p><strong>Tab 1 doesn't say "Hi, Darren":</strong> open tab 1's link again.</p>
+    <p><strong>Never open Darren in Amplitude (tab 7) before Part 3.</strong> His finished application is the reveal.</p>
+  </div>
+</section>
+
+<section class="prep">
+  <h2>Simon, before you fly</h2>
+  <p class="lede">Ticks are saved in your browser only.</p>
+  <div class="group">
+    <h3>Send the data</h3>
+    <label class="check"><input type="checkbox" id="s-send"><span><code>npm run data:generate</code>, read the CANVAS and DARREN sections, then <code>npm run data:send -- --confirm</code>. About 3,200 events: the First Home Loan Win-Back journey (22 September on) and Darren's history. No real Braze data flows into Amplitude, so these synthetic events are the whole "after".</span></label>
+  </div>
+  <div class="group">
+    <h3>Build in Amplitude, then paste links into tabs 4 to 9</h3>
+    <label class="check"><input type="checkbox" id="s-ai"><span><strong>Tab 4, AI assistant:</strong> try both prompts and tweak the wording until the answers are crisp.</span></label>
+    <label class="check"><input type="checkbox" id="s-replay"><span><strong>Tab 5, replay:</strong> on the live site, start a few applications on a phone, linger and abandon at Your income. Save the best.</span></label>
+    <label class="check"><input type="checkbox" id="s-cohort"><span><strong>Tab 6, cohort:</strong> <code>first_home_buyer</code> = true, <code>application_status</code> = started, <code>application_step</code> is income or expenses, did Property Details Entered in the last 30 days and not Application Submitted. Sync to Braze hourly.</span></label>
+    <label class="check"><input type="checkbox" id="s-darren"><span><strong>Tab 7, Darren:</strong> User Look-Up for user id <code>lwb_001</code>.</span></label>
+    <label class="check"><input type="checkbox" id="s-lift"><span><strong>Tab 8, "Canvas vs control":</strong> funnel <code>[Appboy] Canvas Entered</code> (canvas_name = First Home Loan Win-Back) → Application Submitted within 7 days, grouped by <code>canvas_variation_name</code>.</span></label>
+    <label class="check"><input type="checkbox" id="s-channel"><span><strong>Tab 9, "What brought them back":</strong> Application Resumed where <code>utm_campaign</code> = first_home_loan_win_back, grouped by <code>utm_medium</code>.</span></label>
+    <label class="check"><input type="checkbox" id="s-device"><span>Add a device-type breakdown to the <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x?linkingDashboardId=gsrgzl0t&amp;sharingId=N5saheX-">Application funnel</a> (tab 3).</span></label>
+  </div>
+  <div class="group">
+    <h3>Tell Akshin</h3>
+    <label class="check"><input type="checkbox" id="s-name"><span>Call the Canvas <strong>First Home Loan Win-Back</strong>, to match the charts.</span></label>
+    <label class="check"><input type="checkbox" id="s-json"><span>In his Darren profile: First Home Loan rate <strong>5.74%</strong> (comparison <strong>5.77%</strong>) as on the site, and <code>step_reached: "expenses"</code>, <code>steps_completed: 3</code>, <code>total_steps: 6</code>, so "three steps left" matches the six-step application Tom shows.</span></label>
+    <label class="check"><input type="checkbox" id="s-share"><span>Share this run sheet with Tom and Akshin.</span></label>
+  </div>
+</section>
+
+</div>
+
+<script>
+  // Ticks are a per-viewer convenience, kept in this browser only.
+  (function () {
+    var KEY = 'laneway-run-sheet-ticks';
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+    document.querySelectorAll('.check input').forEach(function (box) {
+      if (saved[box.id]) box.checked = true;
+      box.addEventListener('change', function () {
+        saved[box.id] = box.checked;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      });
+    });
+  })();
+</script>
+</body>
+</html>
