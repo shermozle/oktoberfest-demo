@@ -217,7 +217,7 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
     <li><span><strong>Funnel by loan type, for the cohort</strong> · <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x/edit/hnvfhnw6?linkingDashboardId=gsrgzl0t">Amplitude chart</a></span></li>
     <li><span><strong>Darren in User Look-Up</strong> (user <code>lwb_001</code>) · <a href="https://app.amplitude.com/analytics/braze/project/863610/search/amplitude_id%3D1737997665254/activity?_source=user%20lookup">Amplitude user activity</a></span></li>
     <li><span><strong>Chart, "Canvas vs control"</strong> · <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x/edit/t2r6gm5g">Amplitude chart</a></span></li>
-    <li><span><strong>Chart, "What brought them back"</strong> · <span class="todo">link to come from Simon</span><br><span class="note">If this tab never arrives, skip the tab 9 beat; the numbers are in the line below.</span></span></li>
+    <li><span><strong>Chart, "What brought them back"</strong> · <a href="https://app.amplitude.com/analytics/braze/chart/wk5p199x/edit/y0ka6fz2">Amplitude chart</a></span></li>
   </ol>
 </section>
 
@@ -358,11 +358,10 @@ h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.08; font-weight: 800; }
   <div class="group">
     <h3>Done</h3>
     <label class="check"><input type="checkbox" id="s-send" checked><span>Data sent to Amplitude, including the First Home Loan Win-Back history and Darren (<code>lwb_001</code>).</span></label>
-    <label class="check"><input type="checkbox" id="s-tabs16" checked><span>Tabs 1 to 8, including the Global Agent backup (4b), the replay, the loan-type funnel, Darren and Canvas vs control.</span></label>
+    <label class="check"><input type="checkbox" id="s-tabs16" checked><span>All nine tabs, including the Global Agent backup (4b).</span></label>
   </div>
   <div class="group">
     <h3>Still to do</h3>
-    <label class="check"><input type="checkbox" id="s-channel"><span><strong>Tab 9, "What brought them back":</strong> a funnel, <code>Application Resumed</code> where <code>utm_campaign</code> = first_home_loan_win_back → <code>Application Submitted</code>, conversion within 1 day, grouped by <code>utm_medium</code> (email, sms). Expect about 42 → 25 for email and 41 → 24 for SMS. Don't group <code>Application Submitted</code> by <code>utm_medium</code> on its own: it keeps the UTMs from when the application started, not the message that brought them back. Simpler alternative: <code>[Appboy] Email Clicked</code>, <code>[Appboy] SMS Short Link Clicked</code> and <code>[Appboy] In-App Message Clicked</code> side by side. Send the link.</span></label>
     <label class="check"><input type="checkbox" id="s-name"><span>Tell Akshin: call the Canvas <strong>First Home Loan Win-Back</strong>; in his Darren profile use rate <strong>5.74%</strong> (comparison <strong>5.77%</strong>) and <code>step_reached: "expenses"</code>, <code>steps_completed: 3</code>, <code>total_steps: 6</code>.</span></label>
     <label class="check"><input type="checkbox" id="s-share"><span>Send Tom and Akshin this page's link.</span></label>
   </div>
