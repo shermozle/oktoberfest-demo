@@ -1581,6 +1581,8 @@ const built = [
   ['talk-to-us/index.html', talkPage()],
   ['landing/index.html', landingPage()],
   ['pages/about/index.html', aboutPage()],
+  // Tom's run sheet for the demo, kept as a hand-written page.
+  ['run-sheet/index.html', readFileSync('src/run-sheet.html', 'utf8')],
   ['404.html', notFoundPage()],
 ];
 built.forEach(([path, html]) => emit(path, html));
